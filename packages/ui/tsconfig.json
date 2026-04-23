@@ -1,0 +1,9 @@
+{
+  "extends": "@zentro/typescript-config/react-library.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@zentro/ui/*": ["./src/*"]
+    }
+  }
+}
