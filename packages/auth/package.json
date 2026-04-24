@@ -1,0 +1,16 @@
+{
+  "name": "@zentro/auth",
+  "version": "1.0.0",
+  "description": "",
+  "exports": {
+    "./": "./src/index.ts",
+    "./client": "./src/client/index.ts"
+  },
+  "dependencies": {
+    "better-auth": "^1.6.9",
+    "@zentro/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@zentro/typescript-config": "workspace:*"
+  }
+}
