@@ -1,5 +1,4 @@
 @import "@zentro/ui/globals.css";
-@import "tailwindcss";
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
