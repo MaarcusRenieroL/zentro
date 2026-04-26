@@ -3,9 +3,11 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@zentro/ui/*": ["./src/*"],
       "@zentro/ui/shadcn/*": ["./src/components/shadcn/*"],
       "@zentro/ui/lib/*": ["./src/lib/*"]
-    }
+    },
+
   },
   "include": ["."],
   "exclude": ["node_modules", "dist"]
