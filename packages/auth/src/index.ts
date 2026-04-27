@@ -4,6 +4,7 @@ import { emailOTP } from "better-auth/plugins";
 
 import { db } from "@zentro/db";
 import * as schema from "@zentro/db/schema";
+import { sendVerificationEmail } from "./lib/email";
 
 export const auth = betterAuth({
   emailAndPassword: {
@@ -34,7 +35,11 @@ export const auth = betterAuth({
 
   plugins: [
     emailOTP({
-      async sendVerificationOTP() {},
+      async sendVerificationOTP({ email, otp, type }) {
+        if (type === "email-verification") {
+          await sendVerificationEmail(email, otp);
+        }
+      },
     }),
   ],
 });
