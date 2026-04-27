@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Mail, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Mail, RefreshCw, ArrowRight } from "lucide-react";
+
+import { authClient } from "@zentro/auth/client";
+import { toast } from "@zentro/ui/components/toast";
+
 import { Button } from "@zentro/ui/components/shadcn/button";
 import {
   InputOTP,
@@ -12,51 +17,111 @@ import {
 } from "@zentro/ui/components/shadcn/input-otp";
 
 export default function VerifyEmailPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const email = searchParams.get("email");
+
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [otp, setOtp] = useState("");
 
   const handleVerify = async () => {
     if (otp.length !== 6) return;
+
+    if (!email) {
+      toast.error("Error", {
+        description: "Invalid email",
+      });
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    // Redirect to dashboard on success
+
+    try {
+      const { error } = await authClient.emailOtp.verifyEmail({
+        email,
+        otp,
+      });
+
+      if (error) {
+        toast.error("Verification Failed", {
+          description: error.message,
+        });
+        return;
+      }
+
+      toast.success("Success", {
+        description: "Email successfully verified",
+      });
+
+      router.replace("/auth/create-organization");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResend = async () => {
+    if (!email) {
+      toast.error("Error", {
+        description: "Invalid email",
+      });
+      return;
+    }
+
     setIsResending(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsResending(false);
+
+    try {
+      const { error } = await authClient.emailOtp.sendVerificationOtp({
+        email,
+        type: "email-verification",
+      });
+
+      if (error) {
+        toast.error("Error", {
+          description: error.message,
+        });
+        return;
+      }
+
+      toast.success("Success", {
+        description: "Verification code resent",
+      });
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="mx-auto w-full max-w-md">
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
           <Mail className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+
+        <h1 className="text-2xl font-semibold tracking-tight">
           Verify your email
         </h1>
+
         <p className="mt-2 text-sm text-muted-foreground">
-          We sent a verification code to your email.
+          We sent a verification code
+          {email ? <> to {email}</> : null}.
           <br />
-          Enter the code below to continue.
+          Enter it below to continue.
         </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <div className="flex flex-col items-center gap-6">
+        <div className="space-y-6">
           <InputOTP maxLength={6} value={otp} onChange={setOtp}>
             <InputOTPGroup>
               <InputOTPSlot index={0} />
               <InputOTPSlot index={1} />
               <InputOTPSlot index={2} />
             </InputOTPGroup>
+
             <InputOTPSeparator />
+
             <InputOTPGroup>
               <InputOTPSlot index={3} />
               <InputOTPSlot index={4} />
@@ -66,45 +131,40 @@ export default function VerifyEmailPage() {
 
           <Button
             onClick={handleVerify}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             disabled={isLoading || otp.length !== 6}
+            className="w-full"
           >
             {isLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                Verifying...
-              </span>
+              <span>Verifying...</span>
             ) : (
               <span className="flex items-center gap-2">
-                Verify email
+                Verify Email
                 <ArrowRight className="h-4 w-4" />
               </span>
             )}
           </Button>
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Didn&apos;t receive the code?</span>
+            <span>Didn’t receive the code?</span>
+
             <button
               onClick={handleResend}
               disabled={isResending}
-              className="inline-flex items-center gap-1 text-primary hover:text-primary/80 disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-primary"
             >
-              {isResending ? (
-                <>
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Resend"
-              )}
+              <RefreshCw className="h-3 w-3" />
+              {isResending ? "Sending..." : "Resend"}
             </button>
           </div>
         </div>
       </div>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Wrong email?{" "}
-        <Link href="/auth/sign-up" className="text-primary hover:text-primary/80">
+        Wrong email{" "}
+        <Link
+          href="/auth/sign-up"
+          className="text-primary hover:text-primary/80"
+        >
           Use a different email
         </Link>
       </p>
