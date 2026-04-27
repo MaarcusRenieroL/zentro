@@ -1,20 +1,25 @@
 {
   "name": "@zentro/db",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./src/client/index.ts",
+    ".": "./src/client/index.ts",
     "./schema": "./src/schema/index.ts",
     "./drizzle": "./src/drizzle.ts"
   },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "drizzle-kit migrate"
+  },
   "dependencies": {
+    "@types/pg": "^8.20.0",
     "drizzle-orm": "^0.45.2",
-    "postgres": "^3.4.9"
+    "pg": "^8.20.0"
   },
   "devDependencies": {
-    "@zentro/typescript-config": "workspace:*",
     "@types/node": "^20",
+    "@zentro/typescript-config": "workspace:*",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.21.0"
