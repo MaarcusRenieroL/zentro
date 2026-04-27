@@ -1,6 +1,7 @@
 {
   "extends": "@zentro/typescript-config/nextjs.json",
   "compilerOptions": {
+    "declaration": false,
     "baseUrl": ".",
     "paths": {
       "~/*": ["./*"],

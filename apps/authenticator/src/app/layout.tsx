@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "../components/layout/navbar";
 import { Footer } from "../components/layout/footer";
 import { ThemeProvider } from "../components/theme-provider";
+import { Toaster } from "@zentro/ui/components/shadcn/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <Toaster />
           <div className="flex min-h-screen flex-col bg-background">
             <Navbar />
             <main className="flex flex-1 items-center justify-center px-6 py-12">
