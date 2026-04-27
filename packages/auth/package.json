@@ -3,14 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "exports": {
-    "./": "./src/index.ts",
+    ".": "./src/index.ts",
     "./client": "./src/client/index.ts"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.6.9",
+    "@zentro/db": "workspace:*",
     "better-auth": "^1.6.9",
-    "@zentro/db": "workspace:*"
+    "resend": "^6.12.2"
   },
   "devDependencies": {
+    "@types/node": "^25.6.0",
     "@zentro/typescript-config": "workspace:*"
   }
 }

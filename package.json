@@ -7,8 +7,8 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "dev:web": "--filter=@zentro/web dev --port 3000",
-    "dev:authenticator": "--filter=@zentro/authenticator dev --port 3001"
+    "dev:web": "--filter=@zentro/web dev",
+    "dev:authenticator": "turbo --filter=@zentro/authenticator dev"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
