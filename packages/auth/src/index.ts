@@ -1,34 +1,40 @@
 import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db, schema } from "@zentro/db";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { emailOTP } from "better-auth/plugins";
+
+import { db } from "@zentro/db";
+import * as schema from "@zentro/db/schema";
 
 export const auth = betterAuth({
+  emailAndPassword: {
+    enabled: true,
+  },
+  emailVerification: {
+    afterEmailVerification: async ({ email, id, name, emailVerified }) => {
+      console.log("id:", id);
+      console.log("email:", email);
+      console.log("name:", name);
+      console.log("emailVerified:", emailVerified);
+    },
+  },
+
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      user: schema.users,
-      account: schema.accounts,
-      verification: schema.verifications,
-      session: schema.sessions,
+      ...schema,
     },
   }),
+
   advanced: {
-    database: {
-      generateId: false,
-    },
     crossSubDomainCookies: {
       enabled: true,
-      domain: process.env.NODE_ENV === "production" ? "*.zentro.com" : "",
+      domain: process.env.NODE_ENV === "production" ? "zentro.com" : undefined,
     },
   },
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-    github: {
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    },
-  },
+
+  plugins: [
+    emailOTP({
+      async sendVerificationOTP() {},
+    }),
+  ],
 });

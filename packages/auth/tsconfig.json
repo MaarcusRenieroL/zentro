@@ -1,7 +1,7 @@
 {
   "extends": "@zentro/typescript-config/base.json",
   "compilerOptions": {
-    "declaration": true,
+    "declaration": false,
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
