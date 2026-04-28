@@ -111,7 +111,7 @@ export default function VerifyEmailPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="flex items-center justify-center rounded-xl border border-border bg-card p-6">
         <div className="space-y-6">
           <InputOTP maxLength={6} value={otp} onChange={setOtp}>
             <InputOTPGroup>

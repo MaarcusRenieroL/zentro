@@ -205,6 +205,7 @@ export default function SignupPage() {
               type="submit"
               disabled={!isValid || isSubmitting}
               className="w-full"
+              suppressHydrationWarning
             >
               {isSubmitting ? (
                 <span>Creating account...</span>
