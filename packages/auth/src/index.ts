@@ -22,11 +22,17 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      ...schema,
+      user: schema.users,
+      account: schema.accounts,
+      session: schema.sessions,
+      verification: schema.verifications,
     },
   }),
 
   advanced: {
+    database: {
+      generateId: false,
+    },
     crossSubDomainCookies: {
       enabled: true,
       domain: process.env.NODE_ENV === "production" ? "zentro.com" : undefined,
