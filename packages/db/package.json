@@ -1,6 +1,6 @@
 {
   "name": "@zentro/db",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "private": true,
   "exports": {
     ".": "./src/client/index.ts",
@@ -8,6 +8,7 @@
     "./drizzle": "./src/drizzle.ts"
   },
   "scripts": {
+    "check-types": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate"
