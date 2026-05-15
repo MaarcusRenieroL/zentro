@@ -5,6 +5,9 @@ import { emailOTP } from "better-auth/plugins";
 import { db } from "@zentro/db";
 import * as schema from "@zentro/db/schema";
 import { sendVerificationEmail } from "./lib/email";
+import { validateProductionEnv } from "./lib/env";
+
+validateProductionEnv();
 
 export const auth = betterAuth({
   emailAndPassword: {
