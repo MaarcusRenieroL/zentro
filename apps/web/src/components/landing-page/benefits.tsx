@@ -1,4 +1,5 @@
 import { Zap, Focus, Target } from "lucide-react";
+import { FC } from "react";
 
 const benefits = [
   {
@@ -27,7 +28,7 @@ const benefits = [
   },
 ];
 
-export const Benefits = () => {
+export const Benefits: FC = () => {
   return (
     <section id="benefits" className="border-t border-border/40 py-20 md:py-32">
       <div className="mx-auto max-w-6xl px-6">

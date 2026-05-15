@@ -1,4 +1,5 @@
 import { Blocks, Database, Users2, Puzzle } from "lucide-react";
+import { FC } from "react";
 
 const features = [
   {
@@ -27,7 +28,7 @@ const features = [
   },
 ];
 
-export const Features = () => {
+export const Features: FC = () => {
   return (
     <section id="features" className="border-t border-border/40 py-20 md:py-32">
       <div className="mx-auto max-w-6xl px-6">

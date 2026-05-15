@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FC } from "react";
 
 const footerLinks = {
   product: [
@@ -26,7 +27,7 @@ const footerLinks = {
   ],
 };
 
-export const Footer = () => {
+export const Footer: FC = () => {
   return (
     <footer className="border-t border-border/40 bg-card/30 py-12 md:py-16">
       <div className="mx-auto max-w-6xl px-6">

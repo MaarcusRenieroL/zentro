@@ -6,6 +6,7 @@ import {
   Layers,
   Zap,
 } from "lucide-react";
+import { FC } from "react";
 
 const modules = [
   { icon: LayoutGrid, name: "Tasks", description: "Plan and track work" },
@@ -16,7 +17,7 @@ const modules = [
   { icon: Zap, name: "Automations", description: "Streamline workflows" },
 ];
 
-export const Solution = () => {
+export const Solution: FC = () => {
   return (
     <section id="solution" className="border-t border-border/40 py-20 md:py-32">
       <div className="mx-auto max-w-6xl px-6">

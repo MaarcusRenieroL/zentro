@@ -1,9 +1,10 @@
 "use client";
 
-import { Button } from "@zentro/ui/components/shadcn/button";
+import { Button } from "@zentro/ui/shadcn/button";
 import Link from "next/link";
+import { FC } from "react";
 
-export const Navbar = () => {
+export const Navbar: FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">

@@ -8,6 +8,7 @@ import {
   Plus,
   MoreHorizontal,
 } from "lucide-react";
+import { FC } from "react";
 
 const sidebarItems = [
   { icon: Search, label: "Search", active: false },
@@ -24,7 +25,7 @@ const tasks = [
   { title: "Performance audit", status: "Todo", priority: "Low" },
 ];
 
-export const DashboardPreview = () => {
+export const DashboardPreview: FC = () => {
   return (
     <section className="border-t border-border/40 py-20 md:py-32">
       <div className="mx-auto max-w-6xl px-6">

@@ -1,7 +1,8 @@
-import { Button } from "@zentro/ui/components/shadcn/button";
+import { Button } from "@zentro/ui/shadcn/button";
 import { ArrowRight } from "lucide-react";
+import { FC } from "react";
 
-export const CTA = () => {
+export const CTA: FC = () => {
   return (
     <section className="border-t border-border/40 py-20 md:py-32">
       <div className="mx-auto max-w-6xl px-6">

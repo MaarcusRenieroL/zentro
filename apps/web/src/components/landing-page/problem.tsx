@@ -1,3 +1,5 @@
+import { FC } from "react";
+
 const tools = [
   { name: "Jira", category: "Tasks" },
   { name: "Notion", category: "Docs" },
@@ -9,7 +11,7 @@ const tools = [
   { name: "Monday", category: "Workflow" },
 ];
 
-export const Problem = () => {
+export const Problem: FC = () => {
   return (
     <section className="border-t border-border/40 py-20 md:py-32">
       <div className="mx-auto max-w-6xl px-6">

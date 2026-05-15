@@ -1,7 +1,8 @@
-import { Button } from "@zentro/ui/components/shadcn/button";
+import { Button } from "@zentro/ui/shadcn/button";
 import { ArrowRight } from "lucide-react";
+import { FC } from "react";
 
-export const Hero = () => {
+export const Hero: FC = () => {
   return (
     <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-32">
       {/* Subtle gradient background */}
