@@ -4,14 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Users, Building2, Check } from "lucide-react";
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { Input } from "@zentro/ui/components/shadcn/input";
+import { Button } from "@zentro/ui/shadcn/button";
+import { Input } from "@zentro/ui/shadcn/input";
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldDescription,
-} from "@zentro/ui/components/shadcn/field";
+} from "@zentro/ui/shadcn/field";
+import { EmptyState } from "@zentro/ui/components/empty-state";
 
 // Simulated pending invites
 const pendingInvites = [
@@ -80,50 +81,60 @@ export default function JoinOrganizationPage() {
         </p>
       </div>
 
-      {pendingInvites.length > 0 && (
-        <div className="mb-6 rounded-xl border border-border bg-card p-6">
-          <h2 className="mb-4 text-sm font-medium text-foreground">
-            Pending invitations
-          </h2>
-          <div className="flex flex-col gap-3">
-            {pendingInvites.map((invite) => (
-              <div
-                key={invite.id}
-                className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Building2 className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {invite.orgName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Invited by {invite.invitedBy} as {invite.role}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  disabled={isLoading === invite.id}
-                  onClick={() => handleAcceptInvite(invite.orgSlug, invite.id)}
+      <div className="mb-6 rounded-xl border border-border bg-card p-6">
+        {pendingInvites.length > 0 ? (
+          <>
+            <h2 className="mb-4 text-sm font-medium text-foreground">
+              Pending invitations
+            </h2>
+            <div className="flex flex-col gap-3">
+              {pendingInvites.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-4"
                 >
-                  {isLoading === invite.id ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  ) : (
-                    <span className="flex items-center gap-1">
-                      <Check className="h-4 w-4" />
-                      Join
-                    </span>
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {invite.orgName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Invited by {invite.invitedBy} as {invite.role}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    disabled={isLoading === invite.id}
+                    onClick={() =>
+                      handleAcceptInvite(invite.orgSlug, invite.id)
+                    }
+                  >
+                    {isLoading === invite.id ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <Check className="h-4 w-4" />
+                        Join
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <EmptyState
+            title="No pending invitations"
+            description="Enter an invite code below to join a workspace."
+            className="min-h-32 border-0 p-0"
+          />
+        )}
+      </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-4 text-sm font-medium text-foreground">
@@ -177,7 +188,7 @@ export default function JoinOrganizationPage() {
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Want to create your own workspace?{" "}
         <Link
-          href="/create-organization"
+          href="/auth/create-organization"
           className="text-primary hover:text-primary/80"
         >
           Create organization

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Building2, Users, AlertCircle } from "lucide-react";
-import { Button } from "@zentro/ui/components/shadcn/button";
+import { Button } from "@zentro/ui/shadcn/button";
 
 // Simulated invite data lookup
 const getInviteData = async (code: string) => {

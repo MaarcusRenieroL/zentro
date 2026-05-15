@@ -4,21 +4,21 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Eye, EyeOff } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { authClient } from "@zentro/auth/client";
 
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { Input } from "@zentro/ui/components/shadcn/input";
+import { Button } from "@zentro/ui/shadcn/button";
+import { Input } from "@zentro/ui/shadcn/input";
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@zentro/ui/components/shadcn/field";
-import { toast } from "@zentro/ui/components/toast";
+} from "@zentro/ui/shadcn/field";
+import { toastError, toastSuccess } from "@zentro/ui/lib/toast";
 import { GithubIcon, GoogleIcon } from "@zentro/ui/components/icons";
 
 const signupSchema = z.object({
@@ -40,7 +40,6 @@ export default function SignupPage() {
 
   const {
     handleSubmit,
-    watch,
     control,
     formState: { isSubmitting, isValid },
   } = useForm<SignupFormValues>({
@@ -53,7 +52,7 @@ export default function SignupPage() {
     mode: "onChange",
   });
 
-  const password = watch("password", "");
+  const password = useWatch({ control, name: "password" }) ?? "";
 
   const onSubmit = async (formValues: SignupFormValues) => {
     const { error } = await authClient.signUp.email({
@@ -63,15 +62,11 @@ export default function SignupPage() {
     });
 
     if (error) {
-      toast.error("Error", {
-        description: "Error creating user: " + error.message,
-      });
+      toastError(error, "Error creating user.");
       return;
     }
 
-    toast.success("Success", {
-      description: "User created successfully",
-    });
+    toastSuccess("Success", "User created successfully");
 
     await authClient.emailOtp.sendVerificationOtp({
       email: formValues.email,

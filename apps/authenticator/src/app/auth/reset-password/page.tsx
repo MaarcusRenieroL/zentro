@@ -3,13 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowRight, Check, CheckCircle2 } from "lucide-react";
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { Input } from "@zentro/ui/components/shadcn/input";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@zentro/ui/components/shadcn/field";
+import { Button } from "@zentro/ui/shadcn/button";
+import { Input } from "@zentro/ui/shadcn/input";
+import { Field, FieldGroup, FieldLabel } from "@zentro/ui/shadcn/field";
 
 export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);

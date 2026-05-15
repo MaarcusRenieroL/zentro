@@ -3,15 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { Input } from "@zentro/ui/components/shadcn/input";
+import { Button } from "@zentro/ui/shadcn/button";
+import { Input } from "@zentro/ui/shadcn/input";
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@zentro/ui/components/shadcn/field";
-import {GithubIcon, GoogleIcon} from "@zentro/ui/components/icons";
+} from "@zentro/ui/shadcn/field";
+import { GithubIcon, GoogleIcon } from "@zentro/ui/components/icons";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -121,7 +121,10 @@ export default function LoginPage() {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
-        <Link href="/auth/sign-up" className="text-primary hover:text-primary/80">
+        <Link
+          href="/auth/sign-up"
+          className="text-primary hover:text-primary/80"
+        >
           Sign up
         </Link>
       </p>

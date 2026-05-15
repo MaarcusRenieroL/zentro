@@ -3,14 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Building2, Check, Globe } from "lucide-react";
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { Input } from "@zentro/ui/components/shadcn/input";
+import { Button } from "@zentro/ui/shadcn/button";
+import { Input } from "@zentro/ui/shadcn/input";
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldDescription,
-} from "@zentro/ui/components/shadcn/field";
+} from "@zentro/ui/shadcn/field";
+import { LoadingState } from "@zentro/ui/components/loading-state";
 
 function slugify(text: string): string {
   return text
@@ -27,35 +28,39 @@ export default function CreateOrganizationPage() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
+  const [checkedSlug, setCheckedSlug] = useState("");
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
-
-  // Auto-generate slug from name unless user has edited it
-  useEffect(() => {
-    if (!slugEdited && name) {
-      setSlug(slugify(name));
-    }
-  }, [name, slugEdited]);
+  const workspaceSlug = slugEdited ? slug : slugify(name);
+  const visibleSlugAvailability =
+    workspaceSlug && checkedSlug === workspaceSlug ? slugAvailable : null;
 
   // Check slug availability (simulated)
   useEffect(() => {
-    if (!slug) {
-      setSlugAvailable(null);
+    if (!workspaceSlug) {
       return;
     }
 
+    let cancelled = false;
     const timer = setTimeout(async () => {
       setCheckingSlug(true);
       // Simulate API call to check slug availability
       await new Promise((resolve) => setTimeout(resolve, 500));
+      if (cancelled) {
+        return;
+      }
       // Simulate: most slugs are available except "acme" and "zentro"
       const reserved = ["acme", "zentro", "admin", "api", "app"];
-      setSlugAvailable(!reserved.includes(slug.toLowerCase()));
+      setCheckedSlug(workspaceSlug);
+      setSlugAvailable(!reserved.includes(workspaceSlug.toLowerCase()));
       setCheckingSlug(false);
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [slug]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [workspaceSlug]);
 
   const handleSlugChange = (value: string) => {
     setSlugEdited(true);
@@ -64,14 +69,14 @@ export default function CreateOrganizationPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!slugAvailable) return;
+    if (!visibleSlugAvailability) return;
 
     setIsLoading(true);
     // Simulate API call to create organization
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsLoading(false);
     // Redirect to workspace
-    router.push(`/${slug}`);
+    router.push(`/${workspaceSlug}`);
   };
 
   return (
@@ -118,17 +123,21 @@ export default function CreateOrganizationPage() {
                   type="text"
                   placeholder="acme"
                   required
-                  value={slug}
+                  value={workspaceSlug}
                   onChange={(e) => handleSlugChange(e.target.value)}
                   className="pl-9 pr-10"
                 />
-                {slug && (
+                {workspaceSlug && (
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                     {checkingSlug ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
-                    ) : slugAvailable ? (
+                      <LoadingState
+                        label="Checking workspace URL"
+                        className="min-h-0"
+                        showLabel={false}
+                      />
+                    ) : visibleSlugAvailability ? (
                       <Check className="h-4 w-4 text-green-500" />
-                    ) : slugAvailable === false ? (
+                    ) : visibleSlugAvailability === false ? (
                       <span className="text-xs text-destructive">Taken</span>
                     ) : null}
                   </div>
@@ -136,14 +145,18 @@ export default function CreateOrganizationPage() {
               </div>
               <FieldDescription>
                 <span className="text-muted-foreground">zentro.app/</span>
-                <span className="text-foreground">{slug || "your-org"}</span>
+                <span className="text-foreground">
+                  {workspaceSlug || "your-org"}
+                </span>
               </FieldDescription>
             </Field>
 
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isLoading || !name || !slug || !slugAvailable}
+              disabled={
+                isLoading || !name || !workspaceSlug || !visibleSlugAvailability
+              }
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -164,7 +177,7 @@ export default function CreateOrganizationPage() {
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Have an invite?{" "}
         <a
-          href="/join-organization"
+          href="/auth/join-organization"
           className="text-primary hover:text-primary/80"
         >
           Join an existing organization

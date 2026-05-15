@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, RefreshCw, ArrowRight } from "lucide-react";
 
 import { authClient } from "@zentro/auth/client";
-import { toast } from "@zentro/ui/components/toast";
+import { toastError, toastSuccess } from "@zentro/ui/lib/toast";
 
-import { Button } from "@zentro/ui/components/shadcn/button";
+import { Button } from "@zentro/ui/shadcn/button";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
   InputOTPSeparator,
-} from "@zentro/ui/components/shadcn/input-otp";
+} from "@zentro/ui/shadcn/input-otp";
+import { LoadingState } from "@zentro/ui/components/loading-state";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -30,9 +31,7 @@ export default function VerifyEmailPage() {
     if (otp.length !== 6) return;
 
     if (!email) {
-      toast.error("Error", {
-        description: "Invalid email",
-      });
+      toastError("Invalid email");
       return;
     }
 
@@ -45,15 +44,11 @@ export default function VerifyEmailPage() {
       });
 
       if (error) {
-        toast.error("Verification Failed", {
-          description: error.message,
-        });
+        toastError(error);
         return;
       }
 
-      toast.success("Success", {
-        description: "Email successfully verified",
-      });
+      toastSuccess("Success", "Email successfully verified");
 
       router.replace("/auth/create-organization");
     } finally {
@@ -63,9 +58,7 @@ export default function VerifyEmailPage() {
 
   const handleResend = async () => {
     if (!email) {
-      toast.error("Error", {
-        description: "Invalid email",
-      });
+      toastError("Invalid email");
       return;
     }
 
@@ -78,15 +71,11 @@ export default function VerifyEmailPage() {
       });
 
       if (error) {
-        toast.error("Error", {
-          description: error.message,
-        });
+        toastError(error);
         return;
       }
 
-      toast.success("Success", {
-        description: "Verification code resent",
-      });
+      toastSuccess("Success", "Verification code resent");
     } finally {
       setIsResending(false);
     }
@@ -169,5 +158,13 @@ export default function VerifyEmailPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<LoadingState label="Loading verification form..." />}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

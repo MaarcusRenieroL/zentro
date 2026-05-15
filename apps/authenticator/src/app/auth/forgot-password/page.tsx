@@ -1,17 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { JSX, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { Input } from "@zentro/ui/components/shadcn/input";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@zentro/ui/components/shadcn/field";
+import { Button } from "@zentro/ui/shadcn/button";
+import { Input } from "@zentro/ui/shadcn/input";
+import { Field, FieldGroup, FieldLabel } from "@zentro/ui/shadcn/field";
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPage(): JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [email, setEmail] = useState("");
@@ -116,7 +112,7 @@ export default function ForgotPasswordPage() {
 
       <p className="mt-6 text-center">
         <Link
-          href="/login"
+          href="/auth/sign-in"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
