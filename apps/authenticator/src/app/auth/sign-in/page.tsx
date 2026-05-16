@@ -12,17 +12,54 @@ import {
   FieldSeparator,
 } from "@zentro/ui/shadcn/field";
 import { GithubIcon, GoogleIcon } from "@zentro/ui/components/icons";
+import { Controller, useForm } from "react-hook-form";
+import { SignInFormValues, signInSchema } from "../../lib/zod-schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@zentro/auth/client";
+import { toastError, toastSuccess } from "@zentro/ui/index";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
+  const router = useRouter();
+
+  const {
+    handleSubmit,
+    control,
+    formState: { isSubmitting, isValid },
+  } = useForm<SignInFormValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    mode: "onChange",
+  });
+
+  const onSubmit = async (formValues: SignInFormValues) => {
+    const { error: signInError } = await authClient.signIn.email({
+      email: formValues.email,
+      password: formValues.password,
+    });
+
+    if (signInError) {
+      toastError(signInError, "Login failed");
+      return;
+    }
+
+    toastSuccess("Success", "Logged in successfully");
+
+    const response = await fetch("/api/auth/onboarding-redirect");
+
+    if (!response.ok) {
+      router.replace("/auth/sign-in");
+      return;
+    }
+
+    const { redirectTo } = (await response.json()) as { redirectTo: string };
+
+    router.replace(redirectTo);
   };
 
   return (
@@ -37,44 +74,71 @@ export default function LoginPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                required
-                autoComplete="email"
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  required
-                  autoComplete="current-password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
+            <Controller
+              name="email"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    required
+                    autoComplete="email"
+                    {...field}
+                  />
+                  {fieldState.error && (
+                    <p className="text-xs text-red-400 mt-2">
+                      {fieldState.error.message}
+                    </p>
                   )}
-                </button>
-              </div>
-            </Field>
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="password"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      required
+                      autoComplete="current-password"
+                      className="pr-10"
+                      {...field}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  {fieldState.error && (
+                    <p className="mt-2 text-xs text-red-400">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </Field>
+              )}
+            />
 
             <div className="flex items-center justify-end">
               <Link
@@ -88,9 +152,9 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isLoading}
+              disabled={!isValid || isSubmitting}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                   Signing in...

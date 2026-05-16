@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { authClient } from "@zentro/auth/client";
@@ -20,19 +19,7 @@ import {
 } from "@zentro/ui/shadcn/field";
 import { toastError, toastSuccess } from "@zentro/ui/lib/toast";
 import { GithubIcon, GoogleIcon } from "@zentro/ui/components/icons";
-
-const signupSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.email("Enter a valid email"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/\d/, "Password must contain a number")
-    .regex(/[a-z]/, "Password must contain a lowercase letter")
-    .regex(/[A-Z]/, "Password must contain an uppercase letter"),
-});
-
-type SignupFormValues = z.infer<typeof signupSchema>;
+import { SignupFormValues, signupSchema } from "../../lib/zod-schema";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);

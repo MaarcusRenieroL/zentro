@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, organization } from "better-auth/plugins";
 
 import { db } from "@zentro/db";
 import * as schema from "@zentro/db/schema";
@@ -29,6 +29,9 @@ export const auth = betterAuth({
       account: schema.accounts,
       session: schema.sessions,
       verification: schema.verifications,
+      organization: schema.organizations,
+      member: schema.members,
+      invitation: schema.invitations,
     },
   }),
 
@@ -43,6 +46,7 @@ export const auth = betterAuth({
   },
 
   plugins: [
+    organization(),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         if (type === "email-verification") {
