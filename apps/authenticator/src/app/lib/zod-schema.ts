@@ -16,5 +16,20 @@ export const signInSchema = z.object({
   password: z.string().min(1, "Enter your password"),
 });
 
+export const createOrganizationSchema = z.object({
+  name: z.string().min(2, "Organization name must be at least 2 characters"),
+  slug: z
+    .string()
+    .min(2, "Workspace URL must be at least 2 characters")
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Use lowercase letters, numbers, and single hyphens only",
+    ),
+});
+
 export type SignupFormValues = z.infer<typeof signupSchema>;
 export type SignInFormValues = z.infer<typeof signInSchema>;
+
+export type CreateOrganizationFormValues = z.infer<
+  typeof createOrganizationSchema
+>;

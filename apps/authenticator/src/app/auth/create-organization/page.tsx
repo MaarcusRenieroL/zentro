@@ -12,6 +12,14 @@ import {
   FieldDescription,
 } from "@zentro/ui/shadcn/field";
 import { LoadingState } from "@zentro/ui/components/loading-state";
+import { authClient } from "@zentro/auth/client";
+import { toastError, toastSuccess } from "@zentro/ui/lib/toast";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  CreateOrganizationFormValues,
+  createOrganizationSchema,
+} from "../../lib/zod-schema";
 
 function slugify(text: string): string {
   return text
@@ -24,18 +32,31 @@ function slugify(text: string): string {
 
 export default function CreateOrganizationPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
   const [checkedSlug, setCheckedSlug] = useState("");
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
+
+  const {
+    handleSubmit,
+    control,
+    setValue,
+    formState: { isSubmitting, isValid },
+  } = useForm<CreateOrganizationFormValues>({
+    resolver: zodResolver(createOrganizationSchema),
+    defaultValues: {
+      name: "",
+      slug: "",
+    },
+    mode: "onChange",
+  });
+
+  const name = useWatch({ control, name: "name" }) ?? "";
+  const slug = useWatch({ control, name: "slug" }) ?? "";
   const workspaceSlug = slugEdited ? slug : slugify(name);
   const visibleSlugAvailability =
     workspaceSlug && checkedSlug === workspaceSlug ? slugAvailable : null;
 
-  // Check slug availability (simulated)
   useEffect(() => {
     if (!workspaceSlug) {
       return;
@@ -44,16 +65,23 @@ export default function CreateOrganizationPage() {
     let cancelled = false;
     const timer = setTimeout(async () => {
       setCheckingSlug(true);
-      // Simulate API call to check slug availability
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (cancelled) {
-        return;
+
+      try {
+        const { error } = await authClient.organization.checkSlug({
+          slug: workspaceSlug,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        setCheckedSlug(workspaceSlug);
+        setSlugAvailable(!error);
+      } finally {
+        if (!cancelled) {
+          setCheckingSlug(false);
+        }
       }
-      // Simulate: most slugs are available except "acme" and "zentro"
-      const reserved = ["acme", "zentro", "admin", "api", "app"];
-      setCheckedSlug(workspaceSlug);
-      setSlugAvailable(!reserved.includes(workspaceSlug.toLowerCase()));
-      setCheckingSlug(false);
     }, 300);
 
     return () => {
@@ -62,21 +90,23 @@ export default function CreateOrganizationPage() {
     };
   }, [workspaceSlug]);
 
-  const handleSlugChange = (value: string) => {
-    setSlugEdited(true);
-    setSlug(slugify(value));
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = async (formValues: CreateOrganizationFormValues) => {
     if (!visibleSlugAvailability) return;
 
-    setIsLoading(true);
-    // Simulate API call to create organization
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    // Redirect to workspace
-    router.push(`/${workspaceSlug}`);
+    const normalizedSlug = slugify(formValues.slug);
+
+    const { data: organization, error } = await authClient.organization.create({
+      name: formValues.name,
+      slug: normalizedSlug,
+    });
+
+    if (error) {
+      toastError(error, "Could not create organization");
+      return;
+    }
+
+    toastSuccess("Success", "Organization created successfully");
+    router.replace(`http://${organization.slug}.localhost:3000/dashboard`);
   };
 
   return (
@@ -94,71 +124,119 @@ export default function CreateOrganizationPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="name">Organization name</FieldLabel>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Acme Inc."
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="organization"
-              />
-              <FieldDescription>
-                This is how your organization will appear to members.
-              </FieldDescription>
-            </Field>
+            <Controller
+              name="name"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor="name">Organization name</FieldLabel>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Acme Inc."
+                    required
+                    autoComplete="organization"
+                    name={field.name}
+                    ref={field.ref}
+                    value={field.value}
+                    onBlur={field.onBlur}
+                    onChange={(event) => {
+                      field.onChange(event);
 
-            <Field>
-              <FieldLabel htmlFor="slug">Workspace URL</FieldLabel>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <Input
-                  id="slug"
-                  type="text"
-                  placeholder="acme"
-                  required
-                  value={workspaceSlug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  className="pl-9 pr-10"
-                />
-                {workspaceSlug && (
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    {checkingSlug ? (
-                      <LoadingState
-                        label="Checking workspace URL"
-                        className="min-h-0"
-                        showLabel={false}
-                      />
-                    ) : visibleSlugAvailability ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : visibleSlugAvailability === false ? (
-                      <span className="text-xs text-destructive">Taken</span>
-                    ) : null}
+                      if (!slugEdited) {
+                        setValue("slug", slugify(event.target.value), {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                          shouldValidate: true,
+                        });
+                      }
+                    }}
+                  />
+                  <FieldDescription>
+                    This is how your organization will appear to members.
+                  </FieldDescription>
+
+                  {fieldState.error && (
+                    <p className="mt-2 text-xs text-red-400">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="slug"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor="slug">Workspace URL</FieldLabel>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      id="slug"
+                      type="text"
+                      placeholder="acme"
+                      required
+                      className="pl-9 pr-10"
+                      name={field.name}
+                      ref={field.ref}
+                      value={field.value}
+                      onBlur={field.onBlur}
+                      onChange={(event) => {
+                        setSlugEdited(true);
+                        field.onChange(slugify(event.target.value));
+                      }}
+                    />
+                    {workspaceSlug && (
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        {checkingSlug ? (
+                          <LoadingState
+                            label="Checking workspace URL"
+                            className="min-h-0"
+                            showLabel={false}
+                          />
+                        ) : visibleSlugAvailability ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : visibleSlugAvailability === false ? (
+                          <span className="text-xs text-destructive">
+                            Taken
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <FieldDescription>
-                <span className="text-muted-foreground">zentro.app/</span>
-                <span className="text-foreground">
-                  {workspaceSlug || "your-org"}
-                </span>
-              </FieldDescription>
-            </Field>
+                  <FieldDescription>
+                    <span className="text-muted-foreground">zentro.app/</span>
+                    <span className="text-foreground">
+                      {workspaceSlug || "your-org"}
+                    </span>
+                  </FieldDescription>
+
+                  {fieldState.error && (
+                    <p className="mt-2 text-xs text-red-400">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </Field>
+              )}
+            />
 
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={
-                isLoading || !name || !workspaceSlug || !visibleSlugAvailability
+                isSubmitting ||
+                checkingSlug ||
+                !isValid ||
+                visibleSlugAvailability !== true
               }
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                   Creating workspace...
