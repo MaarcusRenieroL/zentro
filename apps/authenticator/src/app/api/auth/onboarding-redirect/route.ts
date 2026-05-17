@@ -33,6 +33,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    sessionToken: session.session.token,
     redirectTo: getOrgAppUrl({
       orgSlug: firstOrganization.slug,
       app: "workspace",

@@ -19,7 +19,10 @@ const appBaseUrl =
   process.env.NEXT_PUBLIC_ZENTRO_APP_URL ??
   process.env.NEXT_PUBLIC_BASE_URL ??
   "http://localhost:3000";
+const authBaseUrl =
+  process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? "http://localhost:3001";
 const rootDomain = new URL(appBaseUrl).host;
+const protocol = new URL(appBaseUrl).protocol.replace(":", "");
 
 function normalizePath(path?: string) {
   if (!path) return "";
@@ -27,12 +30,22 @@ function normalizePath(path?: string) {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
-export function getOrgAppUrl({ path }: GetOrgAppUrlInput): string {
-  return `${appBaseUrl}${normalizePath(path)}`;
+export function getOrgAppUrl({
+  orgSlug,
+  app,
+  path,
+}: GetOrgAppUrlInput): string {
+  const normalizedPath = normalizePath(path);
+
+  if (app === "workspace") {
+    return `${protocol}://${orgSlug}.${rootDomain}${normalizedPath}`;
+  }
+
+  return `${protocol}://${orgSlug}.${app}.${rootDomain}${normalizedPath}`;
 }
 
 export function getAuthAppUrl({ path }: GetAuthAppUrlInput = {}): string {
-  return `${appBaseUrl}${normalizePath(path)}`;
+  return `${authBaseUrl}${normalizePath(path)}`;
 }
 
 function isOrgApp(value: string): value is Exclude<ZentroApp, "workspace"> {

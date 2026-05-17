@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowRight, Building2, Check, Globe } from "lucide-react";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
@@ -21,6 +20,11 @@ import {
   createOrganizationSchema,
 } from "../../lib/zod-schema";
 import { getOrgAppUrl } from "@zentro/utils";
+import { submitWorkspaceSessionBridge } from "../../../lib/session-bridge";
+
+type OnboardingRedirectResponse = {
+  sessionToken?: string;
+};
 
 function slugify(text: string): string {
   return text
@@ -32,7 +36,6 @@ function slugify(text: string): string {
 }
 
 export default function CreateOrganizationPage() {
-  const router = useRouter();
   const [slugEdited, setSlugEdited] = useState(false);
   const [checkedSlug, setCheckedSlug] = useState("");
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
@@ -107,13 +110,32 @@ export default function CreateOrganizationPage() {
     }
 
     toastSuccess("Success", "Organization created successfully");
-    router.replace(
-      getOrgAppUrl({
-        orgSlug: organization.slug,
-        app: "workspace",
-        path: "/dashboard",
-      }),
-    );
+
+    const redirectTo = getOrgAppUrl({
+      orgSlug: organization.slug,
+      app: "workspace",
+      path: "/dashboard",
+    });
+    let sessionToken: string | undefined;
+
+    try {
+      const response = await fetch("/api/auth/onboarding-redirect", {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const redirect =
+          (await response.json()) as OnboardingRedirectResponse;
+        sessionToken = redirect.sessionToken;
+      }
+    } catch {
+      sessionToken = undefined;
+    }
+
+    submitWorkspaceSessionBridge({
+      redirectTo,
+      sessionToken,
+    });
   };
 
   return (

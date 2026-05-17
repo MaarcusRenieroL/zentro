@@ -18,6 +18,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@zentro/auth/client";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { useRouter } from "next/navigation";
+import { submitWorkspaceSessionBridge } from "../../../lib/session-bridge";
+
+type OnboardingRedirectResponse = {
+  redirectTo?: string;
+  sessionToken?: string;
+};
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +44,7 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (formValues: SignInFormValues) => {
-    const { error: signInError } = await authClient.signIn.email({
+    const { data, error: signInError } = await authClient.signIn.email({
       email: formValues.email,
       password: formValues.password,
     });
@@ -50,16 +56,21 @@ export default function LoginPage() {
 
     toastSuccess("Success", "Logged in successfully");
 
-    const response = await fetch("/api/auth/onboarding-redirect");
+    const response = await fetch("/api/auth/onboarding-redirect", {
+      credentials: "include",
+    });
+
+    const redirect = (await response.json()) as OnboardingRedirectResponse;
 
     if (!response.ok) {
-      router.replace("/auth/sign-in");
+      router.replace(redirect.redirectTo ?? "/auth/sign-in");
       return;
     }
 
-    const { redirectTo } = (await response.json()) as { redirectTo: string };
-
-    router.replace(redirectTo);
+    submitWorkspaceSessionBridge({
+      redirectTo: redirect.redirectTo ?? "/auth/sign-in",
+      sessionToken: data?.token ?? redirect.sessionToken,
+    });
   };
 
   return (

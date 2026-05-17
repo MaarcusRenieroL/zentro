@@ -16,8 +16,21 @@ const baseURL =
 const secret = process.env.BETTER_AUTH_SECRET;
 
 const trustedOrigins = Array.from(
-  new Set([baseURL, process.env.NEXT_PUBLIC_BASE_URL, "http://localhost:3001"]),
+  new Set([
+    baseURL,
+    process.env.NEXT_PUBLIC_BASE_URL,
+    "http://localhost:3001",
+    "http://*.localhost:3000",
+  ]),
 ).filter((origin): origin is string => Boolean(origin));
+
+const crossSubDomainCookies =
+  process.env.NODE_ENV === "production"
+    ? {
+        enabled: true,
+        domain: "zentro.com",
+      }
+    : undefined;
 
 export const auth = betterAuth({
   baseURL,
@@ -52,9 +65,7 @@ export const auth = betterAuth({
     database: {
       generateId: false,
     },
-    crossSubDomainCookies: {
-      enabled: false,
-    },
+    crossSubDomainCookies,
   },
 
   plugins: [
