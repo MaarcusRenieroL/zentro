@@ -29,6 +29,9 @@ importers:
       '@zentro/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@zentro/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       better-auth:
         specifier: ^1.6.9
         version: 1.6.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.20.0)(kysely@0.28.16)(pg@8.20.0)(postgres@3.4.9))(next@16.2.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -87,9 +90,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@zentro/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@zentro/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@zentro/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       lucide-react:
         specifier: ^1.8.0
         version: 1.8.0(react@19.2.4)
@@ -276,6 +285,18 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
+      typescript:
+        specifier: ^5
+        version: 5.9.2
+
+  packages/utils:
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.39
+      '@zentro/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       typescript:
         specifier: ^5
         version: 5.9.2
@@ -6636,7 +6657,7 @@ snapshots:
 
   '@types/set-cookie-parser@2.4.10':
     dependencies:
-      '@types/node': 20.19.39
+      '@types/node': 25.6.0
 
   '@types/statuses@2.0.6': {}
 

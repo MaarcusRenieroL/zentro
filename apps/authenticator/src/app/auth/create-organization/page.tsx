@@ -20,6 +20,7 @@ import {
   CreateOrganizationFormValues,
   createOrganizationSchema,
 } from "../../lib/zod-schema";
+import { getOrgAppUrl } from "@zentro/utils";
 
 function slugify(text: string): string {
   return text
@@ -106,7 +107,13 @@ export default function CreateOrganizationPage() {
     }
 
     toastSuccess("Success", "Organization created successfully");
-    router.replace(`http://${organization.slug}.localhost:3000/dashboard`);
+    router.replace(
+      getOrgAppUrl({
+        orgSlug: organization.slug,
+        app: "workspace",
+        path: "/dashboard",
+      }),
+    );
   };
 
   return (

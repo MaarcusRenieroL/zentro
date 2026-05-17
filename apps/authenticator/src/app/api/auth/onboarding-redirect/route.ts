@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@zentro/auth";
+import { getOrgAppUrl } from "@zentro/utils";
 
 export async function GET() {
   const requestHeaders = await headers();
@@ -32,6 +33,10 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    redirectTo: `http://${firstOrganization.slug}.localhost:3000/dashboard`,
+    redirectTo: getOrgAppUrl({
+      orgSlug: firstOrganization.slug,
+      app: "workspace",
+      path: "/dashboard",
+    }),
   });
 }

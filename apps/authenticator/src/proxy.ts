@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@zentro/auth";
+import { getOrgAppUrl } from "@zentro/utils";
 
 const onboardingRoutes = [
   "/auth/create-organization",
@@ -43,7 +44,13 @@ export async function proxy(request: NextRequest) {
 
   if (isRoute(pathname, onboardingRoutes)) {
     return NextResponse.redirect(
-      new URL(`http://${firstOrganization.slug}.localhost:3000/dashboard`),
+      new URL(
+        getOrgAppUrl({
+          orgSlug: firstOrganization.slug,
+          app: "workspace",
+          path: "/dashboard",
+        }),
+      ),
     );
   }
 
