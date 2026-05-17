@@ -9,7 +9,20 @@ import { validateProductionEnv } from "./lib/env";
 
 validateProductionEnv();
 
+const baseURL =
+  process.env.BETTER_AUTH_URL ??
+  process.env.NEXT_PUBLIC_BASE_URL ??
+  "http://localhost:3000";
+const secret = process.env.BETTER_AUTH_SECRET;
+
+const trustedOrigins = Array.from(
+  new Set([baseURL, process.env.NEXT_PUBLIC_BASE_URL, "http://localhost:3001"]),
+).filter((origin): origin is string => Boolean(origin));
+
 export const auth = betterAuth({
+  baseURL,
+  secret,
+  trustedOrigins,
   emailAndPassword: {
     enabled: true,
   },
@@ -40,8 +53,7 @@ export const auth = betterAuth({
       generateId: false,
     },
     crossSubDomainCookies: {
-      enabled: true,
-      domain: process.env.NODE_ENV === "production" ? "zentro.com" : undefined,
+      enabled: false,
     },
   },
 

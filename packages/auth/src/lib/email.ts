@@ -1,9 +1,9 @@
 import { Resend } from "resend";
 import { authEnv } from "./env";
 
-const resend = new Resend(authEnv.RESEND_API_KEY);
-
 export async function sendVerificationEmail(email: string, otp: string) {
+  const resend = new Resend(authEnv.RESEND_API_KEY);
+
   await resend.emails.send({
     from: "Zentro <onboarding@resend.dev>",
     to: email,
