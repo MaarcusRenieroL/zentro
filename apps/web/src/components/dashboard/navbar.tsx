@@ -1,11 +1,15 @@
 "use client";
 
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { AccountNav } from "@zentro/ui/components/account-nav";
 import { authClient } from "@zentro/auth/client";
 import { useState } from "react";
 import { OrgSwitcher } from "@zentro/ui/components/org-switcher";
+import { Input } from "@zentro/ui/components/shadcn/input";
+import { HelpCircleIcon, SearchIcon } from "lucide-react";
+import { Button } from "@zentro/ui/components/shadcn/button";
+import { NotificationPopover } from "@zentro/ui/components/notification-popover";
 
 const authenticatorUrl =
   process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? "http://localhost:3001";
@@ -30,6 +34,7 @@ export const DashboardNavbar: FC<Props> = ({
   user,
 }) => {
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const id = useId();
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -50,7 +55,33 @@ export const DashboardNavbar: FC<Props> = ({
           <OrgSwitcher organizations={organizations} activeOrgSlug={orgSlug} />
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="w-full max-w-md">
+          <div className="relative">
+            <div className="text-muted-foreground pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3 peer-disabled:opacity-50">
+              <SearchIcon className="size-4" />
+              <span className="sr-only">Search</span>
+            </div>
+            <Input
+              id={id}
+              type="search"
+              placeholder="Search..."
+              className="peer px-9 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none [&::-webkit-search-results-button]:appearance-none [&::-webkit-search-results-decoration]:appearance-none"
+            />
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-3 peer-disabled:opacity-50">
+              <kbd className="text-muted-foreground bg-accent inline-flex h-5 max-h-full items-center rounded border px-1 font-[inherit] text-[0.625rem] font-medium">
+                ⌘k
+              </kbd>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-5">
+          <NotificationPopover />
+
+          <Button variant="secondary" className="rounded-full" size="icon-lg">
+            <HelpCircleIcon className="h-4 w-4" />
+          </Button>
+
           <AccountNav
             user={user}
             onSignOut={handleSignOut}
