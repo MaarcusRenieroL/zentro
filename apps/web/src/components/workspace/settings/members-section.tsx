@@ -13,9 +13,8 @@ import {
   AlertDialogTitle,
 } from "@zentro/ui/components/shadcn/alert-dialog";
 import { Avatar, AvatarFallback } from "@zentro/ui/components/shadcn/avatar";
-import { Button } from "@zentro/ui/components/shadcn/button";
 import { Badge } from "@zentro/ui/components/shadcn/badge";
-import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
+import { Button } from "@zentro/ui/components/shadcn/button";
 import {
   DropdownMenu,
   DropdownMenuContent,

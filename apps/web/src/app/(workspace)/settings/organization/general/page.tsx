@@ -11,7 +11,7 @@ export default async function GeneralSettingsPage(): Promise<JSX.Element> {
       organization={{
         name: organization.name,
         slug: organization.slug,
-        logo: organization.logo,
+        id: organization.id,
       }}
     />
   );
