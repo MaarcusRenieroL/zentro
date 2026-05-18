@@ -14,8 +14,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { authClient } from "@zentro/auth/client";
 import { toastError, toastSuccess } from "@zentro/ui/index";
-
-const RESET_PASSWORD_REDIRECT_URL = "http://localhost:3001/auth/reset-password";
+import { getResetPasswordRedirectUrl } from "../../lib/helpers";
 
 export default function ForgotPasswordPage(): JSX.Element {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -37,7 +36,7 @@ export default function ForgotPasswordPage(): JSX.Element {
   const onSubmit = async (formValues: ForgotPasswordFormValues) => {
     const { error } = await authClient.requestPasswordReset({
       email: formValues.email,
-      redirectTo: RESET_PASSWORD_REDIRECT_URL,
+      redirectTo: getResetPasswordRedirectUrl(),
     });
 
     if (error) {
@@ -66,7 +65,7 @@ export default function ForgotPasswordPage(): JSX.Element {
 
     const { error } = await authClient.requestPasswordReset({
       email,
-      redirectTo: RESET_PASSWORD_REDIRECT_URL,
+      redirectTo: getResetPasswordRedirectUrl(),
     });
 
     setIsResending(false);
