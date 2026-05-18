@@ -4,7 +4,7 @@ import { emailOTP, organization } from "better-auth/plugins";
 
 import { db } from "@zentro/db";
 import * as schema from "@zentro/db/schema";
-import { sendVerificationEmail } from "./lib/email";
+import { sendForgotPasswordEmail, sendVerificationEmail } from "./lib/email";
 import { validateProductionEnv } from "./lib/env";
 
 validateProductionEnv();
@@ -38,6 +38,10 @@ export const auth = betterAuth({
   trustedOrigins,
   emailAndPassword: {
     enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      sendForgotPasswordEmail(user.email, url);
+    },
+    resetPasswordTokenExpiresIn: 60,
   },
   emailVerification: {
     afterEmailVerification: async ({ email, id, name, emailVerified }) => {
