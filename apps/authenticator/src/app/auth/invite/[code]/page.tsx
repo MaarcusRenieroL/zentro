@@ -141,16 +141,18 @@ export default function InviteAcceptPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4 rounded-lg border border-border bg-secondary/30 p-4">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3 sm:gap-4 sm:p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60">
               <span className="text-lg font-bold text-primary-foreground">
                 {invite.orgName.charAt(0)}
               </span>
             </div>
-            <div className="flex-1">
-              <p className="font-medium text-foreground">{invite.orgName}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-foreground">
+                {invite.orgName}
+              </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Users className="h-3 w-3" />
                 <span>{invite.memberCount} members</span>
@@ -158,12 +160,12 @@ export default function InviteAcceptPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 rounded-lg bg-secondary/30 p-4 text-sm">
-            <div className="flex justify-between">
+          <div className="flex flex-col gap-2 rounded-lg bg-secondary/30 p-3 text-sm sm:p-4">
+            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-muted-foreground">Invited by</span>
               <span className="text-foreground">{invite.invitedBy}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-muted-foreground">Your role</span>
               <span className="text-foreground">{invite.role}</span>
             </div>

@@ -6,10 +6,7 @@ export const CTA: FC = () => {
   return (
     <section className="border-t border-border/40 py-20 md:py-32">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-linear-to-b from-secondary/80 to-card p-8 md:p-16">
-          {/* Subtle gradient orb */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
-
+        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-linear-to-b from-secondary/80 to-card p-6 sm:p-8 md:p-16">
           <div className="relative mx-auto max-w-2xl text-center">
             <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
               Ready to simplify how your team works?

@@ -101,7 +101,7 @@ export default function ForgotPasswordPage(): JSX.Element {
           </p>
         </div>
 
-        <div className="flex flex-col gap-5 rounded-xl border border-border bg-card p-6">
+        <div className="flex flex-col gap-5 rounded-xl border border-border bg-card p-4 sm:p-6">
           <p className="text-center text-sm text-muted-foreground">
             Didn&apos;t receive the email?
           </p>
@@ -143,7 +143,7 @@ export default function ForgotPasswordPage(): JSX.Element {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller

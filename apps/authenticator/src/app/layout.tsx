@@ -27,7 +27,7 @@ export default function RootLayout({
           <Toaster />
           <div className="flex min-h-screen flex-col bg-background">
             <Navbar />
-            <main className="flex flex-1 items-center justify-center px-6 py-12">
+            <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
               {children}
             </main>
             <Footer />

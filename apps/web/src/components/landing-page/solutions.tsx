@@ -32,7 +32,7 @@ export const Solution: FC = () => {
               context switching.
             </p>
 
-            <div className="mt-10 grid grid-cols-2 gap-4">
+            <div className="mt-10 grid gap-3 sm:grid-cols-2 sm:gap-4">
               {modules.map((module) => (
                 <div
                   key={module.name}
@@ -41,11 +41,11 @@ export const Solution: FC = () => {
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary">
                     <module.icon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">
                       {module.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-pretty text-xs text-muted-foreground">
                       {module.description}
                     </p>
                   </div>
@@ -90,7 +90,7 @@ export const Solution: FC = () => {
 
                 {/* Connection lines */}
                 <div className="mt-6 flex items-center justify-center gap-2">
-                  <div className="h-px flex-1 bg-linera-to-r from-transparent to-accent/40" />
+                  <div className="h-px flex-1 bg-linear-to-r from-transparent to-accent/40" />
                   <div className="flex h-8 w-8 items-center justify-center rounded-full border border-accent/40 bg-accent/10">
                     <Zap className="h-3 w-3 text-accent" />
                   </div>

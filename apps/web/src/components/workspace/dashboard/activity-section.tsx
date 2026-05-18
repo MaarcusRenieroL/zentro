@@ -60,22 +60,22 @@ export const ActivitySection: FC<Props> = ({ name, orgName }) => {
   ];
 
   return (
-    <div className="flex w-full flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+    <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div className="flex min-w-0 flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {greeting}, {name}
           </h1>
-          <p className="text-muted-foreground text-base">
+          <p className="text-sm text-muted-foreground sm:text-base">
             Here&apos;s what&apos;s happening in {orgName} today.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center">
           {activityStats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-card/70 flex h-11 items-center gap-2 rounded-md border px-4 text-sm shadow-sm"
+              className="flex h-11 items-center gap-2 rounded-md border bg-card/70 px-3 text-sm shadow-sm sm:px-4"
             >
               <stat.icon className={`size-4 ${stat.iconClassName}`} />
               <p className="whitespace-nowrap">{stat.label}</p>
@@ -86,11 +86,11 @@ export const ActivitySection: FC<Props> = ({ name, orgName }) => {
 
       <div className="bg-card/50 w-full rounded-md border p-5 shadow-sm lg:max-w-md">
         <h2 className="text-sm font-medium">Workspace overview</h2>
-        <div className="mt-5 grid grid-cols-3 divide-x divide-border">
+        <div className="mt-5 grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {workspaceStats.map((stat) => (
             <div
               key={stat.label}
-              className="flex items-start justify-center gap-3 px-4 first:pl-0 last:pr-0"
+              className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 sm:items-start sm:justify-center sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0"
             >
               <stat.icon className="text-muted-foreground mt-1 size-5" />
               <div>

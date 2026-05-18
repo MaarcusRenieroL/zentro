@@ -26,13 +26,13 @@ export const Problem: FC = () => {
           </p>
         </div>
 
-        <div className="mt-16 grid grid-cols-2 gap-3 sm:grid-cols-4 md:gap-4">
+        <div className="mt-12 grid gap-3 sm:grid-cols-2 md:mt-16 md:grid-cols-4 md:gap-4">
           {tools.map((tool) => (
             <div
               key={tool.name}
               className="group relative rounded-xl border border-border/60 bg-card/50 p-4 transition-colors hover:border-border hover:bg-card md:p-6"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm font-medium text-foreground md:text-base">
                   {tool.name}
                 </span>

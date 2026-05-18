@@ -56,7 +56,7 @@ export const DashboardPreview: FC = () => {
               </div>
             </div>
 
-            <div className="flex">
+            <div className="flex min-w-0">
               {/* Sidebar */}
               <div className="hidden w-56 shrink-0 border-r border-border/40 bg-secondary/30 p-4 md:block">
                 <div className="flex items-center gap-2 mb-6">
@@ -102,9 +102,9 @@ export const DashboardPreview: FC = () => {
               </div>
 
               {/* Main content */}
-              <div className="flex-1 p-6">
+              <div className="min-w-0 flex-1 p-4 sm:p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-6 flex items-center justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-medium text-foreground">
                       Tasks
@@ -129,7 +129,7 @@ export const DashboardPreview: FC = () => {
                   {tasks.map((task, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-4 rounded-lg border border-border/40 bg-background/50 p-4 transition-colors hover:border-border"
+                      className="flex items-center gap-3 rounded-lg border border-border/40 bg-background/50 p-3 transition-colors hover:border-border sm:gap-4 sm:p-4"
                     >
                       <div className="h-4 w-4 rounded border border-border/60" />
                       <div className="flex-1 min-w-0">

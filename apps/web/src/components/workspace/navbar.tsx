@@ -50,12 +50,12 @@ export const DashboardNavbar: FC<Props> = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-      <nav className="flex h-14 items-center justify-between px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-4">
+      <nav className="flex min-h-14 flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:flex-nowrap">
+        <div className="flex min-w-0 flex-1 items-center gap-4 lg:flex-none">
           <OrgSwitcher organizations={organizations} activeOrgSlug={orgSlug} />
         </div>
 
-        <div className="w-full max-w-md">
+        <div className="order-3 w-full lg:order-none lg:max-w-md">
           <div className="relative">
             <div className="text-muted-foreground pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3 peer-disabled:opacity-50">
               <SearchIcon className="size-4" />
@@ -75,10 +75,14 @@ export const DashboardNavbar: FC<Props> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-5">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           <NotificationPopover />
 
-          <Button variant="secondary" className="rounded-full" size="icon-lg">
+          <Button
+            variant="secondary"
+            className="hidden rounded-full sm:inline-flex"
+            size="icon-lg"
+          >
             <HelpCircleIcon className="h-4 w-4" />
           </Button>
 

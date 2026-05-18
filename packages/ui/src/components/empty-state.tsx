@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { Inbox } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
@@ -17,7 +17,7 @@ export function EmptyState({
   action,
   icon,
   className,
-}: EmptyStateProps) {
+}: EmptyStateProps): ReactElement {
   return (
     <div
       className={cn(

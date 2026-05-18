@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { Loader2 } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
@@ -12,7 +13,7 @@ export function LoadingState({
   label = "Loading...",
   className,
   showLabel = true,
-}: LoadingStateProps) {
+}: LoadingStateProps): ReactElement {
   return (
     <div
       className={cn(

@@ -124,8 +124,7 @@ export default function CreateOrganizationPage() {
       });
 
       if (response.ok) {
-        const redirect =
-          (await response.json()) as OnboardingRedirectResponse;
+        const redirect = (await response.json()) as OnboardingRedirectResponse;
         sessionToken = redirect.sessionToken;
       }
     } catch {
@@ -152,7 +151,7 @@ export default function CreateOrganizationPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller

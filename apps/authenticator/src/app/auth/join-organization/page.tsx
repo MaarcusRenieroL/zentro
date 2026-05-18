@@ -81,7 +81,7 @@ export default function JoinOrganizationPage() {
         </p>
       </div>
 
-      <div className="mb-6 rounded-xl border border-border bg-card p-6">
+      <div className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-6">
         {pendingInvites.length > 0 ? (
           <>
             <h2 className="mb-4 text-sm font-medium text-foreground">
@@ -91,14 +91,14 @@ export default function JoinOrganizationPage() {
               {pendingInvites.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between rounded-lg border border-border bg-secondary/30 p-4"
+                  className="flex flex-col gap-3 rounded-lg border border-border bg-secondary/30 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                       <Building2 className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">
                         {invite.orgName}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -108,7 +108,7 @@ export default function JoinOrganizationPage() {
                   </div>
                   <Button
                     size="sm"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto"
                     disabled={isLoading === invite.id}
                     onClick={() =>
                       handleAcceptInvite(invite.orgSlug, invite.id)
@@ -136,7 +136,7 @@ export default function JoinOrganizationPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <h2 className="mb-4 text-sm font-medium text-foreground">
           Have an invite code?
         </h2>

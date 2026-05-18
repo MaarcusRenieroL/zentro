@@ -4,12 +4,7 @@ import { FC } from "react";
 
 export const Hero: FC = () => {
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-32">
-      {/* Subtle gradient background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/2 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-accent/10 blur-3xl" />
-      </div>
-
+    <section className="relative overflow-hidden border-b border-border/40 bg-secondary/20 pt-28 pb-16 sm:pt-32 md:pt-40 md:pb-28">
       <div className="relative mx-auto max-w-4xl px-6 text-center">
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-secondary/50 px-4 py-1.5">
           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
@@ -18,7 +13,7 @@ export const Hero: FC = () => {
           </span>
         </div>
 
-        <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground md:text-6xl lg:text-7xl">
+        <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
           The operating system for your company
         </h1>
 

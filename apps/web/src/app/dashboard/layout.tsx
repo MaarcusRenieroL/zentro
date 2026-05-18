@@ -1,5 +1,5 @@
 import { JSX } from "react";
-import { DashboardNavbar } from "~/src/components/dashboard/navbar";
+import { DashboardNavbar } from "~/src/components/workspace/navbar";
 
 import { getOrgAppUrl } from "@zentro/utils";
 
