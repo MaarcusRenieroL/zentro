@@ -47,13 +47,19 @@ export const AccountNav: FC<Props> = ({
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <a href="/settings/members" className="flex items-center gap-2">
+          <a
+            href="/settings/organization/members"
+            className="flex items-center gap-2"
+          >
             <Users className="h-4 w-4" />
             Manage members
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href="/settings" className="flex items-center gap-2">
+          <a
+            href="/settings/organization/general"
+            className="flex items-center gap-2"
+          >
             <Building2 className="h-4 w-4" />
             Organization settings
           </a>
