@@ -55,10 +55,15 @@ export default function SignupPage() {
 
     toastSuccess("Success", "User created successfully");
 
-    await authClient.emailOtp.sendVerificationOtp({
-      email: formValues.email,
-      type: "email-verification",
-    });
+    const { error: emailOtpError } =
+      await authClient.emailOtp.sendVerificationOtp({
+        email: formValues.email,
+        type: "email-verification",
+      });
+
+    if (emailOtpError) {
+      toastError(emailOtpError.statusText, emailOtpError.message);
+    }
 
     router.replace(
       `/auth/verify-email?email=${encodeURIComponent(formValues.email)}`,

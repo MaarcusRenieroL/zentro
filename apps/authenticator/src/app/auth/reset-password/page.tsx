@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, EyeOff, ArrowRight, Check } from "lucide-react";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
@@ -15,6 +15,50 @@ import { authClient } from "@zentro/auth/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 
+function getResetPasswordErrorMessage(error: string | null) {
+  const normalizedError = error?.toLowerCase();
+
+  switch (normalizedError) {
+    case "invalid_token":
+    case "invalid-token":
+    case "invalid_token_error":
+    case "invalid_token_error_description":
+      return {
+        title: "Invalid reset link",
+        message:
+          "This reset link is invalid. Please request a new password reset link.",
+      };
+
+    case "expired_token":
+    case "expired-token":
+    case "otp_expired":
+    case "otp-expired":
+      return {
+        title: "Expired reset link",
+        message:
+          "This reset link has expired. Please request a new password reset link.",
+      };
+
+    case "too_many_attempts":
+    case "too-many-attempts":
+      return {
+        title: "Too many attempts",
+        message:
+          "Too many attempts. Please wait a bit before requesting another reset link.",
+      };
+
+    case undefined:
+      return null;
+
+    default:
+      return {
+        title: "Reset link error",
+        message:
+          "There was a problem with your reset link. Please request a new one.",
+      };
+  }
+}
+
 export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -25,16 +69,10 @@ export default function ResetPasswordPage() {
   const token = searchParams.get("token");
   const error = searchParams.get("error");
 
-  useEffect(() => {
-    if (error === "INVALID_TOKEN" || !token) {
-      toastError(
-        "Invalid reset link",
-        "Your reset password link is either invalid or expired. Please request a new one",
-      );
-
-      router.replace("/auth/forgot-password");
-    }
-  }, [error, token, router]);
+  const resetPasswordError = useMemo(
+    () => getResetPasswordErrorMessage(error),
+    [error],
+  );
 
   const {
     handleSubmit,
@@ -50,30 +88,6 @@ export default function ResetPasswordPage() {
   });
 
   const password = useWatch({ control, name: "newPassword" }) ?? "";
-
-  const onSubmit = async (formValues: ResetPasswordFormValues) => {
-    if (!token) {
-      toastError("Missing token", "Please request a new one");
-      router.replace("/auth/forgot-password");
-
-      return;
-    }
-
-    const { error } = await authClient.resetPassword({
-      newPassword: formValues.newPassword,
-      token: token,
-    });
-
-    if (error) {
-      toastError(error.statusText, error.message);
-      router.replace("/auth/forgot-password");
-
-      return;
-    }
-
-    toastSuccess("Success", "Your password has been reset.");
-    router.replace("/auth/sign-in");
-  };
 
   const passwordRequirements = [
     {
@@ -94,7 +108,48 @@ export default function ResetPasswordPage() {
     },
   ];
 
-  if (error === "INVALID_TOKEN" || !token) {
+  useEffect(() => {
+    if (!token || resetPasswordError) {
+      if (resetPasswordError) {
+        toastError(resetPasswordError.title, resetPasswordError.message);
+      } else {
+        toastError(
+          "Missing reset link",
+          "Please request a new password reset link.",
+        );
+      }
+
+      router.replace("/auth/forgot-password");
+    }
+  }, [token, resetPasswordError, router]);
+
+  const onSubmit = async (formValues: ResetPasswordFormValues) => {
+    if (!token) {
+      toastError("Missing reset link", "Please request a new one.");
+      router.replace("/auth/forgot-password");
+      return;
+    }
+
+    const { error } = await authClient.resetPassword({
+      newPassword: formValues.newPassword,
+      token,
+    });
+
+    if (error) {
+      toastError(
+        error.statusText ?? "Reset failed",
+        error.message ?? "Please request a new password reset link.",
+      );
+
+      router.replace("/auth/forgot-password");
+      return;
+    }
+
+    toastSuccess("Success", "Your password has been reset.");
+    router.replace("/auth/sign-in");
+  };
+
+  if (!token || resetPasswordError) {
     return null;
   }
 
@@ -104,6 +159,7 @@ export default function ResetPasswordPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Set new password
         </h1>
+
         <p className="mt-2 text-sm text-muted-foreground">
           Your new password must be different from previously used passwords.
         </p>
@@ -117,7 +173,8 @@ export default function ResetPasswordPage() {
               control={control}
               render={({ field, fieldState }) => (
                 <Field>
-                  <FieldLabel>New password</FieldLabel>
+                  <FieldLabel htmlFor="password">New password</FieldLabel>
+
                   <div className="relative">
                     <Input
                       id="password"
@@ -128,9 +185,10 @@ export default function ResetPasswordPage() {
                       className="pr-10"
                       {...field}
                     />
+
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowPassword((value) => !value)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
@@ -143,19 +201,25 @@ export default function ResetPasswordPage() {
                       )}
                     </button>
                   </div>
+
                   {password && (
                     <div className="mt-2 flex flex-col gap-1">
-                      {passwordRequirements.map((req) => (
+                      {passwordRequirements.map((requirement) => (
                         <div
-                          key={req.label}
+                          key={requirement.label}
                           className={`flex items-center gap-2 text-xs ${
-                            req.met ? "text-primary" : "text-muted-foreground"
+                            requirement.met
+                              ? "text-primary"
+                              : "text-muted-foreground"
                           }`}
                         >
                           <Check
-                            className={`h-3 w-3 ${req.met ? "opacity-100" : "opacity-30"}`}
+                            className={`h-3 w-3 ${
+                              requirement.met ? "opacity-100" : "opacity-30"
+                            }`}
                           />
-                          {req.label}
+
+                          {requirement.label}
                         </div>
                       ))}
                     </div>
@@ -175,9 +239,13 @@ export default function ResetPasswordPage() {
               control={control}
               render={({ field, fieldState }) => (
                 <Field>
-                  <FieldLabel>Confirm password</FieldLabel>
+                  <FieldLabel htmlFor="confirm-password">
+                    Confirm password
+                  </FieldLabel>
+
                   <div className="relative">
                     <Input
+                      id="confirm-password"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
                       required
@@ -185,11 +253,10 @@ export default function ResetPasswordPage() {
                       className="pr-10"
                       {...field}
                     />
+
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
+                      onClick={() => setShowConfirmPassword((value) => !value)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       aria-label={
                         showConfirmPassword ? "Hide password" : "Show password"
@@ -218,7 +285,7 @@ export default function ResetPasswordPage() {
               disabled={
                 isSubmitting ||
                 !isValid ||
-                !passwordRequirements.every((r) => r.met)
+                !passwordRequirements.every((requirement) => requirement.met)
               }
             >
               {isSubmitting ? (

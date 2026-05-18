@@ -20,20 +20,25 @@ export const forgotPasswordSchema = z.object({
   email: z.email("Enter a valid email"),
 });
 
-export const resetPasswordSchema = z.object({
-  newPassword: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/\d/, "Password must contain a number")
-    .regex(/[a-z]/, "Password must contain a lowercase letter")
-    .regex(/[A-Z]/, "Password must contain an uppercase letter"),
-  confirmNewPassword: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/\d/, "Password must contain a number")
-    .regex(/[a-z]/, "Password must contain a lowercase letter")
-    .regex(/[A-Z]/, "Password must contain an uppercase letter"),
-});
+export const resetPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/\d/, "Password must contain a number")
+      .regex(/[a-z]/, "Password must contain a lowercase letter")
+      .regex(/[A-Z]/, "Password must contain an uppercase letter"),
+    confirmNewPassword: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/\d/, "Password must contain a number")
+      .regex(/[a-z]/, "Password must contain a lowercase letter")
+      .regex(/[A-Z]/, "Password must contain an uppercase letter"),
+  })
+  .refine((value) => value.newPassword === value.confirmNewPassword, {
+    message: "Passwords do not match",
+    path: ["confirmNewPassword"],
+  });
 
 export const createOrganizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),

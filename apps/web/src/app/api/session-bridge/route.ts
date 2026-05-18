@@ -6,6 +6,7 @@ import { auth } from "@zentro/auth";
 import { getAuthAppUrl } from "@zentro/utils";
 
 const sessionCookieName = "better-auth.session_token";
+const secureSessionCookieName = `__Secure-${sessionCookieName}`;
 const sessionCookieMaxAge = 60 * 60 * 24 * 7;
 
 export const runtime = "nodejs";
@@ -32,41 +33,55 @@ function getSafeRedirectPath(value: FormDataEntryValue | string | null): string 
   return value;
 }
 
+function getHostSessionCookieName() {
+  return process.env.NODE_ENV === "production"
+    ? secureSessionCookieName
+    : sessionCookieName;
+}
+
+function serializeSessionCookie(
+  name: string,
+  value: string,
+  maxAge: number,
+) {
+  return [
+    `${name}=${value}`,
+    `Max-Age=${maxAge}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    process.env.NODE_ENV === "production" ? "Secure" : null,
+  ]
+    .filter(Boolean)
+    .join("; ");
+}
+
 function setHostSessionCookie(response: NextResponse, signedToken: string) {
   response.headers.append(
     "Set-Cookie",
-    [
-      `${sessionCookieName}=${signedToken}`,
-      `Max-Age=${sessionCookieMaxAge}`,
-      "Path=/",
-      "HttpOnly",
-      "SameSite=Lax",
-      process.env.NODE_ENV === "production" ? "Secure" : null,
-    ]
-      .filter(Boolean)
-      .join("; "),
+    serializeSessionCookie(
+      getHostSessionCookieName(),
+      signedToken,
+      sessionCookieMaxAge,
+    ),
   );
 }
 
 function clearHostSessionCookie(response: NextResponse) {
-  response.headers.append(
-    "Set-Cookie",
-    [
-      `${sessionCookieName}=`,
-      "Max-Age=0",
-      "Path=/",
-      "HttpOnly",
-      "SameSite=Lax",
-      process.env.NODE_ENV === "production" ? "Secure" : null,
-    ]
-      .filter(Boolean)
-      .join("; "),
-  );
+  for (const name of [sessionCookieName, secureSessionCookieName]) {
+    response.headers.append("Set-Cookie", serializeSessionCookie(name, "", 0));
+  }
 }
 
 async function getSessionFromToken(signedToken: string) {
   const headers = new Headers();
-  headers.set("cookie", `${sessionCookieName}=${signedToken}`);
+  headers.set(
+    "cookie",
+    [
+      `${sessionCookieName}=${signedToken}`,
+      `${secureSessionCookieName}=${signedToken}`,
+    ].join("; "),
+  );
 
   return auth.api.getSession({ headers });
 }
