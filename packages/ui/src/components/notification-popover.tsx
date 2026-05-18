@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type FC, useState } from "react";
 
 import { BellIcon, CircleIcon } from "lucide-react";
 
@@ -37,7 +37,7 @@ const notifications = [
   },
 ];
 
-export const NotificationPopover = () => {
+export const NotificationPopover: FC = () => {
   const [readMessages, setReadMessages] = useState([3]);
 
   return (
