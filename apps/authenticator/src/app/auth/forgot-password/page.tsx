@@ -5,21 +5,55 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
-import { Field, FieldGroup, FieldLabel } from "@zentro/ui/shadcn/field";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@zentro/ui/shadcn/field";
+import {
+  ForgotPasswordFormValues,
+  forgotPasswordSchema,
+} from "../../lib/zod-schema";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@zentro/auth/client";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 
 export default function ForgotPasswordPage(): JSX.Element {
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [email, setEmail] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
+  const {
+    handleSubmit,
+    control,
+    formState: { isSubmitting, isValid },
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: "",
+    },
+    mode: "onChange",
+  });
+
+  const onSubmit = async (formValues: ForgotPasswordFormValues) => {
+    const { error } = await authClient.requestPasswordReset({
+      email: formValues.email,
+      redirectTo: "http://localhost:3001/auth/reset-password",
+    });
+
+    if (error) {
+      toastError(error.statusText, error.message);
+      return;
+    }
+
+    toastSuccess("Success", "Email sent successfully");
+
     setIsSubmitted(true);
+
+    return;
   };
+
+  const resendEmail = () => {};
 
   if (isSubmitted) {
     return (
@@ -31,22 +65,13 @@ export default function ForgotPasswordPage(): JSX.Element {
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Check your email
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            We sent a password reset link to
-          </p>
-          <p className="mt-1 text-sm font-medium text-foreground">{email}</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="flex flex-col gap-5 rounded-xl border border-border bg-card p-6">
           <p className="text-center text-sm text-muted-foreground">
             Didn&apos;t receive the email?{" "}
-            <button
-              onClick={() => setIsSubmitted(false)}
-              className="text-primary hover:text-primary/80"
-            >
-              Click to resend
-            </button>
           </p>
+          <Button onClick={() => resendEmail()}>Click to resend</Button>
         </div>
 
         <p className="mt-6 text-center">
@@ -74,27 +99,37 @@ export default function ForgotPasswordPage(): JSX.Element {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-6">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Field>
+            <Controller
+              name="email"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    required
+                    autoComplete="email"
+                    {...field}
+                  />
+                  {fieldState.error && (
+                    <p className="text-xs text-red-400 mt-2">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </Field>
+              )}
+            />
 
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isLoading}
+              disabled={isSubmitting || !isValid}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                   Sending...
