@@ -14,12 +14,12 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "@types/pg": "^8.20.0",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.20.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^20.19.26",
+    "@types/pg": "^8.20.0",
     "@zentro/typescript-config": "workspace:*",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
