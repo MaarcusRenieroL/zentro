@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { ThemeProvider } from "../components/theme-provider";
+import { ThemeProvider } from "../components/providers/theme-provider";
 import { JSX } from "react";
+import { AppTRPCProvider } from "../components/providers/trpc-provider";
 
 export const metadata: Metadata = {
   title: "Zentro — The Operating System for Your Company",
@@ -45,7 +46,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <AppTRPCProvider>{children}</AppTRPCProvider>
         </ThemeProvider>
       </body>
     </html>
