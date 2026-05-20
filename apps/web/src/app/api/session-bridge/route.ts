@@ -21,7 +21,9 @@ function signSessionToken(token: string, secret: string): string {
   return encodeURIComponent(`${token}.${signature}`);
 }
 
-function getSafeRedirectPath(value: FormDataEntryValue | string | null): string {
+function getSafeRedirectPath(
+  value: FormDataEntryValue | string | null,
+): string {
   if (typeof value !== "string") {
     return "/dashboard";
   }
@@ -39,11 +41,7 @@ function getHostSessionCookieName() {
     : sessionCookieName;
 }
 
-function serializeSessionCookie(
-  name: string,
-  value: string,
-  maxAge: number,
-) {
+function serializeSessionCookie(name: string, value: string, maxAge: number) {
   return [
     `${name}=${value}`,
     `Max-Age=${maxAge}`,

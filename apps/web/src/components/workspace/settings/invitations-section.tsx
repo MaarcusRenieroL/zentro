@@ -29,15 +29,6 @@ import {
 } from "~/src/lib/zod-schema";
 import { NewInvitation } from "@zentro/db/schema";
 
-type Invitation = {
-  id: string;
-  email: string;
-  role: "admin" | "member";
-  invitedBy: string;
-  expiresAt: string;
-  status: "pending" | "expired";
-};
-
 type Props = {
   organizationId: string;
   invitations: NewInvitation[];
@@ -176,55 +167,63 @@ export const InvitationsSection: FC<Props> = ({
         <CardContent className="p-4">
           {pendingInvitations.length > 0 ? (
             <div className="space-y-3">
-              {pendingInvitations.map((invitation) => (
-                <div
-                  key={invitation.id}
-                  className="flex flex-col gap-4 rounded-md border bg-background/60 p-4 lg:flex-row lg:items-center lg:justify-between"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary">
-                      <MailIcon className="size-4 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {invitation.email}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Invited by invited_email · {invitation.role}
-                      </p>
-                    </div>
-                  </div>
+              {pendingInvitations.map((invitation) => {
+                const invitationId = invitation.id;
 
-                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                    <span className="text-xs text-muted-foreground">
-                      Expires expires_at
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      // onClick={() => handleResend(invitation.id)}
-                      disabled={loadingInviteId === invitation.id}
-                    >
-                      <RotateCwIcon
-                        className={`size-3.5 ${
-                          loadingInviteId === invitation.id
-                            ? "animate-spin"
-                            : ""
-                        }`}
-                      />
-                      Resend
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      // onClick={() => handleCancel(invitation.id)}
-                    >
-                      <XIcon className="size-3.5" />
-                      Cancel
-                    </Button>
+                if (!invitationId) {
+                  return null;
+                }
+
+                return (
+                  <div
+                    key={invitationId}
+                    className="flex flex-col gap-4 rounded-md border bg-background/60 p-4 lg:flex-row lg:items-center lg:justify-between"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary">
+                        <MailIcon className="size-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {invitation.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Invited by invited_email · {invitation.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                      <span className="text-xs text-muted-foreground">
+                        Expires expires_at
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleResend(invitationId)}
+                        disabled={loadingInviteId === invitationId}
+                      >
+                        <RotateCwIcon
+                          className={`size-3.5 ${
+                            loadingInviteId === invitationId
+                              ? "animate-spin"
+                              : ""
+                          }`}
+                        />
+                        Resend
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleCancel(invitationId)}
+                      >
+                        <XIcon className="size-3.5" />
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="mt-6 rounded-md border border-dashed bg-background/40 p-10 text-center">

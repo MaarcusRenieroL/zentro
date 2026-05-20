@@ -6,12 +6,8 @@
     "declarationMap": false,
     "baseUrl": ".",
     "paths": {
-      "~/*": [
-        "./src*"
-      ],
-      "@zentro/ui/*": [
-        "../../packages/ui/src/*"
-      ]
+      "~/*": ["./src/*"],
+      "@zentro/ui/*": ["../../packages/ui/src/*"]
     },
     "plugins": [
       {
@@ -26,7 +22,5 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

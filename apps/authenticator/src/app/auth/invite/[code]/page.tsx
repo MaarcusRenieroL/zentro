@@ -33,8 +33,8 @@ export default function InviteAcceptPage() {
   const [data, setData] = useState<InvitationType | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isAccepting, setIsAccepting] = useState(false);
-  const [error, setError] = useState<"expired" | "invalid" | null>(null);
+  const [isAccepting] = useState(false);
+  const [error] = useState<"expired" | "invalid" | null>(null);
 
   const invite = params.code as string;
 

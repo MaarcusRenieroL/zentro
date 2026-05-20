@@ -4,8 +4,10 @@
   "globalEnv": [
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
+    "AUTHENTICATOR_INTERNAL_URL",
     "DATABASE_URL",
     "NEXT_PUBLIC_BASE_URL",
+    "NODE_ENV",
     "RESEND_API_KEY"
   ],
   "tasks": {

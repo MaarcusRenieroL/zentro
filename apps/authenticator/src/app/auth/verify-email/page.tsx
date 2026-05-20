@@ -16,7 +16,7 @@ import {
   InputOTPSeparator,
 } from "@zentro/ui/shadcn/input-otp";
 import { LoadingState } from "@zentro/ui/components/loading-state";
-import { submitWorkspaceSessionBridge } from "~//lib/session-bridge";
+import { submitWorkspaceSessionBridge } from "~/lib/session-bridge";
 import { getOtpErrorMessage } from "../../lib/helpers";
 
 type OnboardingRedirectResponse = {
