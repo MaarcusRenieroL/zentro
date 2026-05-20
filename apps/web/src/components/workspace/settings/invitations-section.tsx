@@ -1,9 +1,11 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { authClient } from "@zentro/auth/client";
 import { Button } from "@zentro/ui/components/shadcn/button";
 import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
+import { Field, FieldLabel } from "@zentro/ui/components/shadcn/field";
 import { Input } from "@zentro/ui/components/shadcn/input";
-import { Label } from "@zentro/ui/components/shadcn/label";
 import {
   Select,
   SelectContent,
@@ -11,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@zentro/ui/components/shadcn/select";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import {
   MailIcon,
   PlusIcon,
@@ -18,7 +21,13 @@ import {
   SendIcon,
   XIcon,
 } from "lucide-react";
-import { FC, FormEvent, useState } from "react";
+import { FC, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  InviteMemberFormValues,
+  inviteMemberSchema,
+} from "~/src/lib/zod-schema";
+import { NewInvitation } from "@zentro/db/schema";
 
 type Invitation = {
   id: string;
@@ -29,60 +38,47 @@ type Invitation = {
   status: "pending" | "expired";
 };
 
-const initialInvitations: Invitation[] = [
-  {
-    id: "1",
-    email: "franky@strawhats.com",
-    role: "member",
-    invitedBy: "Monkey D. Luffy",
-    expiresAt: "May 25, 2026",
-    status: "pending",
-  },
-  {
-    id: "2",
-    email: "brook@strawhats.com",
-    role: "admin",
-    invitedBy: "Nami",
-    expiresAt: "May 26, 2026",
-    status: "pending",
-  },
-];
+type Props = {
+  organizationId: string;
+  invitations: NewInvitation[];
+};
 
-export const InvitationsSection: FC = () => {
+export const InvitationsSection: FC<Props> = ({
+  organizationId,
+  invitations: initialInvitations,
+}) => {
   const [invitations, setInvitations] = useState(initialInvitations);
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "member">("member");
   const [loadingInviteId, setLoadingInviteId] = useState<string | null>(null);
-  const [isSending, setIsSending] = useState(false);
+
+  const {
+    handleSubmit,
+    control,
+    formState: { isSubmitting, isValid },
+  } = useForm<InviteMemberFormValues>({
+    resolver: zodResolver(inviteMemberSchema),
+    defaultValues: {
+      email: "",
+      role: "member",
+    },
+  });
 
   const pendingInvitations = invitations.filter(
     (invitation) => invitation.status === "pending",
   );
 
-  const handleSendInvite = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSendInvite = async (formValues: InviteMemberFormValues) => {
+    const { error } = await authClient.organization.inviteMember({
+      email: formValues.email,
+      role: formValues.role,
+      organizationId: organizationId,
+    });
 
-    if (!email.trim()) {
+    if (error) {
+      toastError(error.statusText, error.message);
       return;
     }
 
-    setIsSending(true);
-    window.setTimeout(() => {
-      setInvitations((currentInvitations) => [
-        {
-          id: crypto.randomUUID(),
-          email: email.trim().toLowerCase(),
-          role,
-          invitedBy: "Monkey D. Luffy",
-          expiresAt: "May 25, 2026",
-          status: "pending",
-        },
-        ...currentInvitations,
-      ]);
-      setEmail("");
-      setRole("member");
-      setIsSending(false);
-    }, 400);
+    toastSuccess("Success", "Organization Invite sent successfully");
   };
 
   const handleResend = (id: string) => {
@@ -101,36 +97,71 @@ export const InvitationsSection: FC = () => {
       <Card className="rounded-md bg-card/50 py-0 shadow-sm">
         <CardContent className="p-4">
           <form
-            onSubmit={handleSendInvite}
-            className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-end"
+            onSubmit={handleSubmit(handleSendInvite)}
+            className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-start"
           >
-            <div className="space-y-2">
-              <Label htmlFor="invite-email">Email address</Label>
-              <Input
-                id="invite-email"
-                type="email"
-                value={email}
-                placeholder="member@company.com"
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invite-role">Role</Label>
-              <Select
-                value={role}
-                onValueChange={(value) => setRole(value as "admin" | "member")}
-              >
-                <SelectTrigger id="invite-role" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" disabled={!email.trim() || isSending}>
-              {isSending ? (
+            <Controller
+              name="email"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field className="space-y-2">
+                  <FieldLabel htmlFor="invite-email">Email address</FieldLabel>
+
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    placeholder="member@company.com"
+                    autoComplete="email"
+                    aria-invalid={Boolean(fieldState.error)}
+                    {...field}
+                  />
+
+                  {fieldState.error ? (
+                    <p className="text-xs text-destructive">
+                      {fieldState.error.message}
+                    </p>
+                  ) : null}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="role"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field className="space-y-2">
+                  <FieldLabel htmlFor="invite-role">Role</FieldLabel>
+
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger
+                      id="invite-role"
+                      className="w-full"
+                      aria-invalid={Boolean(fieldState.error)}
+                    >
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {fieldState.error ? (
+                    <p className="text-xs text-destructive">
+                      {fieldState.error.message}
+                    </p>
+                  ) : null}
+                </Field>
+              )}
+            />
+
+            <Button
+              type="submit"
+              disabled={isSubmitting || !isValid}
+              className="lg:mt-7"
+            >
+              {isSubmitting ? (
                 <RotateCwIcon className="size-4 animate-spin" />
               ) : (
                 <SendIcon className="size-4" />
@@ -159,19 +190,19 @@ export const InvitationsSection: FC = () => {
                         {invitation.email}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Invited by {invitation.invitedBy} · {invitation.role}
+                        Invited by invited_email · {invitation.role}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                     <span className="text-xs text-muted-foreground">
-                      Expires {invitation.expiresAt}
+                      Expires expires_at
                     </span>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleResend(invitation.id)}
+                      // onClick={() => handleResend(invitation.id)}
                       disabled={loadingInviteId === invitation.id}
                     >
                       <RotateCwIcon
@@ -186,7 +217,7 @@ export const InvitationsSection: FC = () => {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleCancel(invitation.id)}
+                      // onClick={() => handleCancel(invitation.id)}
                     >
                       <XIcon className="size-3.5" />
                       Cancel

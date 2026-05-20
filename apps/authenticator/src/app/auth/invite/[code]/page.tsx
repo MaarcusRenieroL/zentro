@@ -1,72 +1,72 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { authClient } from "@zentro/auth/client";
+import { Button } from "@zentro/ui/components/shadcn/button";
+import { toastError } from "@zentro/ui/index";
+import {
+  AlertCircleIcon,
+  ArrowRightIcon,
+  Building2Icon,
+  UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { ArrowRight, Building2, Users, AlertCircle } from "lucide-react";
-import { Button } from "@zentro/ui/shadcn/button";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-// Simulated invite data lookup
-const getInviteData = async (code: string) => {
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  // Simulate different scenarios
-  if (code === "expired") {
-    return { error: "expired" };
-  }
-  if (code === "invalid") {
-    return { error: "invalid" };
-  }
-
-  return {
-    orgName: "Design Team",
-    orgSlug: "design-team",
-    orgLogo: null,
-    invitedBy: "Sarah Chen",
-    invitedByEmail: "sarah@designteam.com",
-    role: "Member",
-    memberCount: 12,
-  };
+type InvitationType = {
+  organizationId: string;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: Date;
+  createdAt: Date;
+  inviterId: string;
+  id: string;
+  organizationName: string;
+  organizationSlug: string;
+  inviterEmail: string;
 };
 
 export default function InviteAcceptPage() {
-  const router = useRouter();
   const params = useParams();
-  const code = params.code as string;
+  const router = useRouter();
+  const [data, setData] = useState<InvitationType | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
-  const [invite, setInvite] = useState<{
-    orgName: string;
-    orgSlug: string;
-    orgLogo: string | null;
-    invitedBy: string;
-    invitedByEmail: string;
-    role: string;
-    memberCount: number;
-  } | null>(null);
   const [error, setError] = useState<"expired" | "invalid" | null>(null);
+
+  const invite = params.code as string;
+
+  const getInviteData = async (code: string) => {
+    const { data, error } = await authClient.organization.getInvitation({
+      query: {
+        id: code,
+      },
+    });
+
+    if (error || data == null) {
+      toastError(error.statusText, error.message);
+      return null;
+    }
+
+    return data;
+  };
 
   useEffect(() => {
     const fetchInvite = async () => {
-      const result = await getInviteData(code);
-      if ("error" in result) {
-        setError(result.error as "expired" | "invalid");
-      } else {
-        setInvite(result);
-      }
+      const result = await getInviteData(invite);
+
+      setData(result as InvitationType);
       setIsLoading(false);
     };
-    fetchInvite();
-  }, [code]);
 
-  const handleAccept = async () => {
-    if (!invite) return;
-    setIsAccepting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    router.push(`/${invite.orgSlug}`);
-  };
+    fetchInvite();
+  }, [invite]);
+
+  if (!invite) return null;
+
+  if (!data) return null;
 
   if (isLoading) {
     return (
@@ -85,7 +85,7 @@ export default function InviteAcceptPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
-            <AlertCircle className="h-7 w-7 text-destructive" />
+            <AlertCircleIcon className="h-7 w-7 text-destructive" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {error === "expired" ? "Invite expired" : "Invalid invite"}
@@ -104,13 +104,13 @@ export default function InviteAcceptPage() {
           >
             <span className="flex items-center gap-2">
               Enter invite code
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRightIcon className="h-4 w-4" />
             </span>
           </Button>
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => router.push("/create-organization")}
+            onClick={() => router.replace("/auth/create-organization")}
           >
             Create new organization
           </Button>
@@ -125,19 +125,17 @@ export default function InviteAcceptPage() {
     );
   }
 
-  if (!invite) return null;
-
   return (
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <Building2 className="h-7 w-7 text-primary" />
+          <Building2Icon className="h-7 w-7 text-primary" />
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Join {invite.orgName}
+          Join {data.organizationName}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {invite.invitedBy} has invited you to join their organization.
+          {data.organizationName} has invited you to join their organization.
         </p>
       </div>
 
@@ -146,16 +144,16 @@ export default function InviteAcceptPage() {
           <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3 sm:gap-4 sm:p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60">
               <span className="text-lg font-bold text-primary-foreground">
-                {invite.orgName.charAt(0)}
+                {data.organizationName.charAt(0)}
               </span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-foreground">
-                {invite.orgName}
+                {data.organizationName}
               </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Users className="h-3 w-3" />
-                <span>{invite.memberCount} members</span>
+                <UsersIcon className="h-3 w-3" />
+                <span>0 members</span>
               </div>
             </div>
           </div>
@@ -163,18 +161,18 @@ export default function InviteAcceptPage() {
           <div className="flex flex-col gap-2 rounded-lg bg-secondary/30 p-3 text-sm sm:p-4">
             <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-muted-foreground">Invited by</span>
-              <span className="text-foreground">{invite.invitedBy}</span>
+              <span className="text-foreground">{data.inviterEmail}</span>
             </div>
             <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-muted-foreground">Your role</span>
-              <span className="text-foreground">{invite.role}</span>
+              <span className="text-foreground">{data.role}</span>
             </div>
           </div>
 
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             disabled={isAccepting}
-            onClick={handleAccept}
+            onClick={() => {}}
           >
             {isAccepting ? (
               <span className="flex items-center gap-2">
@@ -184,7 +182,7 @@ export default function InviteAcceptPage() {
             ) : (
               <span className="flex items-center gap-2">
                 Accept invitation
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRightIcon className="h-4 w-4" />
               </span>
             )}
           </Button>
@@ -201,7 +199,10 @@ export default function InviteAcceptPage() {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Wrong account?{" "}
-        <Link href="/login" className="text-primary hover:text-primary/80">
+        <Link
+          href="/auth/sign-in"
+          className="text-primary hover:text-primary/80"
+        >
           Sign in with a different account
         </Link>
       </p>

@@ -4,7 +4,11 @@ import { emailOTP, organization } from "better-auth/plugins";
 
 import { db } from "@zentro/db";
 import * as schema from "@zentro/db/schema";
-import { sendForgotPasswordEmail, sendVerificationEmail } from "./lib/email";
+import {
+  sendForgotPasswordEmail,
+  sendVerificationEmail,
+  sendOrgInviteEmail,
+} from "./lib/email";
 import { validateProductionEnv } from "./lib/env";
 
 validateProductionEnv();
@@ -73,7 +77,26 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    organization(),
+    organization({
+      requireEmailVerificationOnInvitation: true,
+      sendInvitationEmail: async ({ invitation, organization, inviter }) => {
+        await sendOrgInviteEmail(invitation, organization, inviter);
+      },
+      organizationHooks: {
+        beforeCreateInvitation: async ({ invitation }) => {
+          const customExpiryDate = new Date(
+            Date.now() + 1000 * 60 * 60 * 24 * 7,
+          );
+
+          return {
+            data: {
+              ...invitation,
+              expiryDate: customExpiryDate,
+            },
+          };
+        },
+      },
+    }),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         if (type === "email-verification") {

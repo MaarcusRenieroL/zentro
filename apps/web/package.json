@@ -12,6 +12,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@zentro/auth": "workspace:*",
+    "@zentro/db": "workspace:*",
     "@zentro/ui": "workspace:*",
     "@zentro/utils": "workspace:*",
     "lucide-react": "^1.8.0",
