@@ -1,3 +1,4 @@
-export { appRouter } from "./root";
-export type { AppRouter } from "./root";
+export * from "./server";
+export * from "./react";
+
 export type { TRPCContext } from "./types";
