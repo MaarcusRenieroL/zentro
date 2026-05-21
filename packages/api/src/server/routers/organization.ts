@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { count, eq } from "@zentro/db/drizzle";
+import { and, count, eq } from "@zentro/db/drizzle";
 import { invitations, members, organizations, users } from "@zentro/db/schema";
 
 import { orgInviteDetailsSchema } from "../../types/zod-schema";
@@ -42,6 +42,18 @@ export const organizationRouter = router({
       }
 
       if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+        await ctx.db
+          .update(invitations)
+          .set({
+            status: "expired",
+          })
+          .where(
+            and(
+              eq(invitations.id, invitationId),
+              eq(invitations.status, "pending"),
+            ),
+          );
+
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Invitation expired. Please request a new one.",

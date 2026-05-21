@@ -1,7 +1,10 @@
 "use client";
 
 import { useTrpcClient } from "@zentro/api/react";
+import { authClient } from "@zentro/auth/client";
 import { Button } from "@zentro/ui/components/shadcn/button";
+import { toastError, toastSuccess } from "@zentro/ui/index";
+import { getOrgAppUrl } from "@zentro/utils";
 import {
   AlertCircleIcon,
   ArrowRightIcon,
@@ -28,7 +31,7 @@ export default function InviteAcceptPage() {
 
   const [data, setData] = useState<InvitationType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAccepting] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
   const [error, setError] = useState<"expired" | "invalid" | null>(null);
 
   useEffect(() => {
@@ -44,7 +47,7 @@ export default function InviteAcceptPage() {
             invitationId: invite,
           });
 
-        setData(inviteDetails as InvitationType);
+        setData(inviteDetails);
       } catch (error) {
         const trpcError = error as TRPCErrorLike;
 
@@ -65,6 +68,39 @@ export default function InviteAcceptPage() {
 
     fetchInvite();
   }, [invite, router, trpcClient]);
+
+  const handleAcceptInvite = async (code: string) => {
+    if (!data) {
+      toastError("Invite details unavailable", "Please refresh and try again.");
+      return;
+    }
+
+    setIsAccepting(true);
+
+    const { error } = await authClient.organization.acceptInvitation({
+      invitationId: code,
+    });
+
+    if (error) {
+      toastError(error.statusText, error.message);
+      setIsAccepting(false);
+      return;
+    }
+
+    toastSuccess("Success", "Invite accepted successfully");
+    router.push(
+      getOrgAppUrl({
+        app: "workspace",
+        orgSlug: data.organizationSlug,
+        path: "/dashboard",
+      }),
+    );
+    return;
+  };
+
+  const handleDeclineInvite = () => {
+    router.push("/auth/create-organization");
+  };
 
   const memberCountLabel =
     data?.membersCount === 1
@@ -105,10 +141,10 @@ export default function InviteAcceptPage() {
         <div className="flex flex-col gap-3">
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-            onClick={() => router.push("/join-organization")}
+            onClick={() => router.push("/auth/join-organization")}
           >
             <span className="flex items-center gap-2">
-              Enter invite code
+              Go to invitations
               <ArrowRightIcon className="h-4 w-4" />
             </span>
           </Button>
@@ -179,18 +215,26 @@ export default function InviteAcceptPage() {
           <Button
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             disabled={isAccepting}
-            onClick={() => {}}
+            onClick={() => handleAcceptInvite(invite)}
           >
-            <span className="flex items-center gap-2">
-              Accept invitation
-              <ArrowRightIcon className="h-4 w-4" />
-            </span>
+            {isAccepting ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                Joining...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                Accept invitation
+                <ArrowRightIcon className="h-4 w-4" />
+              </span>
+            )}
           </Button>
 
           <Button
             variant="ghost"
             className="w-full text-muted-foreground hover:text-foreground"
-            onClick={() => router.push("/")}
+            disabled={isAccepting}
+            onClick={handleDeclineInvite}
           >
             Decline
           </Button>

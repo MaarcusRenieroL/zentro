@@ -72,9 +72,33 @@ export const InvitationsSection: FC<Props> = ({
     toastSuccess("Success", "Organization Invite sent successfully");
   };
 
-  const handleResend = (id: string) => {
+  const handleResend = async (id: string) => {
+    const invitation = invitations.find(
+      (currentInvitation) => currentInvitation.id === id,
+    );
+
+    if (!invitation) {
+      toastError("Invite not found", "Please refresh and try again.");
+      return;
+    }
+
     setLoadingInviteId(id);
-    window.setTimeout(() => setLoadingInviteId(null), 700);
+
+    const { error } = await authClient.organization.inviteMember({
+      email: invitation.email,
+      role: invitation.role as "member" | "admin" | "owner",
+      organizationId,
+      resend: true,
+    });
+
+    setLoadingInviteId(null);
+
+    if (error) {
+      toastError(error.statusText, error.message);
+      return;
+    }
+
+    toastSuccess("Success", "Invitation resent successfully.");
   };
 
   const handleCancel = (id: string) => {
