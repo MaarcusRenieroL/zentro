@@ -1,4 +1,5 @@
 import { router, publicProcedure } from "./trpc";
+import { organizationRouter } from "./routers/organization";
 
 export const appRouter = router({
   health: publicProcedure.query(() => {
@@ -7,6 +8,7 @@ export const appRouter = router({
       message: "tRPC is working",
     };
   }),
+  organization: organizationRouter,
 });
 
 export type AppRouter = typeof appRouter;
