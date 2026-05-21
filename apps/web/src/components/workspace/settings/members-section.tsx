@@ -119,12 +119,26 @@ export const MembersSection: FC<Props> = ({
   const ownerCount = members.filter((member) => member.role === "owner").length;
   const canManageMembers = currentUser?.role === "owner";
 
-  const handleRoleChange = (memberId: string, role: Role) => {
+  const handleRoleChange = async (memberId: string, role: Role) => {
     setMembers((currentMembers) =>
       currentMembers.map((member) =>
         member.id === memberId ? { ...member, role } : member,
       ),
     );
+
+    const { error } = await authClient.organization.updateMemberRole({
+      organizationId: orgId,
+      memberId: memberId,
+      role: role,
+    });
+
+    if (error) {
+      toastError(error.statusText, error.message);
+      return;
+    }
+
+    toastSuccess("Success", "User role updated successfully");
+    router.refresh();
   };
 
   const handleRemoveMember = async () => {
