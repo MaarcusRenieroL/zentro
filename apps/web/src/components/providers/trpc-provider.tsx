@@ -6,8 +6,8 @@ import { createTRPCContext } from "@trpc/tanstack-react-query";
 import { FC, ReactNode, useState } from "react";
 import superjson from "superjson";
 
-import { makeQueryClient } from "@zentro/api";
-import type { AppRouter } from "@zentro/api";
+import { makeQueryClient } from "@zentro/api/react";
+import type { AppRouter } from "@zentro/api/server";
 
 const { TRPCProvider } = createTRPCContext<AppRouter>();
 
