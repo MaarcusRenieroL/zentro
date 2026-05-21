@@ -1,5 +1,6 @@
 "use client";
 
+import { authClient } from "@zentro/auth/client";
 import { type DataTableColumnDef } from "@zentro/ui/components/data-table";
 import { DataTable } from "@zentro/ui/components/data-table";
 import {
@@ -28,12 +29,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@zentro/ui/components/shadcn/select";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import {
   AlertCircleIcon,
   MoreHorizontalIcon,
   ShieldIcon,
   Trash2Icon,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FC, useMemo, useState } from "react";
 import { formatRelativeDate } from "~/src/lib/helpers";
 import { Member } from "~/src/lib/types";
@@ -96,17 +99,23 @@ const RoleControl: FC<RoleControlProps> = ({
 
 type Props = {
   members: Member[];
-  userId: string;
+  user: {
+    id: string;
+  };
+  orgId: string;
 };
 
 export const MembersSection: FC<Props> = ({
   members: initialMembers,
-  userId,
+  user,
+  orgId,
 }) => {
   const [members, setMembers] = useState(initialMembers);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
 
-  const currentUser = members.find((member) => member.userId === userId);
+  const router = useRouter();
+
+  const currentUser = members.find((member) => member.userId === user.id);
   const ownerCount = members.filter((member) => member.role === "owner").length;
   const canManageMembers = currentUser?.role === "owner";
 
@@ -118,14 +127,21 @@ export const MembersSection: FC<Props> = ({
     );
   };
 
-  const handleRemoveMember = () => {
+  const handleRemoveMember = async () => {
     if (!memberToRemove) return;
 
-    setMembers((currentMembers) =>
-      currentMembers.filter((member) => member.id !== memberToRemove.id),
-    );
+    const { error } = await authClient.organization.removeMember({
+      organizationId: orgId,
+      memberIdOrEmail: memberToRemove.user.email,
+    });
 
-    setMemberToRemove(null);
+    if (error) {
+      toastError(error.statusText, error.message);
+      return;
+    }
+
+    toastSuccess("Success", "User removed from organization successfully");
+    router.refresh();
   };
 
   const columns = useMemo<DataTableColumnDef<Member>[]>(
@@ -138,7 +154,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === userId;
+          const isCurrentUser = member.id === user.id;
 
           return (
             <div className="flex min-w-70 items-center gap-3">
@@ -178,7 +194,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === userId;
+          const isCurrentUser = member.id === user.id;
 
           return (
             <RoleControl
@@ -214,7 +230,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === userId;
+          const isCurrentUser = member.id === user.id;
 
           if (isCurrentUser) {
             return (
@@ -250,7 +266,7 @@ export const MembersSection: FC<Props> = ({
         },
       },
     ],
-    [canManageMembers, userId],
+    [canManageMembers, user],
   );
 
   return (

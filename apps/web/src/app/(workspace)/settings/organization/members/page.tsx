@@ -16,6 +16,10 @@ export default async function MembersSettingsPage(): Promise<JSX.Element> {
   });
 
   return (
-    <MembersSection members={membersList.members} userId={session.user.id} />
+    <MembersSection
+      members={membersList.members}
+      user={session!.user}
+      orgId={organization.id}
+    />
   );
 }

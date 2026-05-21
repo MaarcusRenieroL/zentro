@@ -21,10 +21,19 @@ export const getDashboardContext = cache(async () => {
     redirect(getAuthAppUrl({ path: "/auth/sign-in" }));
   }
 
-  if (!session.user.emailVerified) {
+  if (!session.user) {
+    redirect(getAuthAppUrl({ path: "/auth/sign-in" }));
+  }
+
+  const sessionWithUser = {
+    ...session,
+    user: session.user,
+  };
+
+  if (!sessionWithUser.user.emailVerified) {
     redirect(
       getAuthAppUrl({
-        path: `/auth/verify-email?email=${encodeURIComponent(session.user.email)}`,
+        path: `/auth/verify-email?email=${encodeURIComponent(sessionWithUser.user.email)}`,
       }),
     );
   }
@@ -60,6 +69,6 @@ export const getDashboardContext = cache(async () => {
   return {
     organization,
     organizations,
-    session,
+    session: sessionWithUser,
   };
 });

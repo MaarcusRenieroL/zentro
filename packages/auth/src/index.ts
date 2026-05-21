@@ -40,6 +40,16 @@ export const auth = betterAuth({
   baseURL,
   secret,
   trustedOrigins,
+  user: {
+    additionalFields: {
+      role: {
+        type: ["member", "admin", "owner"],
+        required: true,
+        defaultValue: "member",
+        input: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
