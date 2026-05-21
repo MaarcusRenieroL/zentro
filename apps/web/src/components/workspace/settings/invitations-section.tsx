@@ -28,6 +28,8 @@ import {
   inviteMemberSchema,
 } from "~/src/lib/zod-schema";
 import { NewInvitation } from "@zentro/db/schema";
+import { useRouter } from "next/navigation";
+import { formatRelativeDate } from "~/src/lib/helpers";
 
 type Props = {
   organizationId: string;
@@ -36,14 +38,21 @@ type Props = {
 
 export const InvitationsSection: FC<Props> = ({
   organizationId,
-  invitations: initialInvitations,
+  invitations,
 }) => {
-  const [invitations, setInvitations] = useState(initialInvitations);
-  const [loadingInviteId, setLoadingInviteId] = useState<string | null>(null);
+  const [resendingInviteId, setResendingInviteId] = useState<string | null>(
+    null,
+  );
+  const [cancelingInviteId, setCancelingInviteId] = useState<string | null>(
+    null,
+  );
+
+  const router = useRouter();
 
   const {
     handleSubmit,
     control,
+    reset,
     formState: { isSubmitting, isValid },
   } = useForm<InviteMemberFormValues>({
     resolver: zodResolver(inviteMemberSchema),
@@ -53,9 +62,12 @@ export const InvitationsSection: FC<Props> = ({
     },
   });
 
-  const pendingInvitations = invitations.filter(
-    (invitation) => invitation.status === "pending",
-  );
+  const pendingInvitations = invitations.filter((invitation) => {
+    const expiresAt = invitation.expiresAt;
+    const isExpired = Boolean(expiresAt && expiresAt.getTime() < Date.now());
+
+    return invitation.status === "pending" && !isExpired;
+  });
 
   const handleSendInvite = async (formValues: InviteMemberFormValues) => {
     const { error } = await authClient.organization.inviteMember({
@@ -70,6 +82,11 @@ export const InvitationsSection: FC<Props> = ({
     }
 
     toastSuccess("Success", "Organization Invite sent successfully");
+    reset({
+      email: "",
+      role: "member",
+    });
+    router.refresh();
   };
 
   const handleResend = async (id: string) => {
@@ -82,29 +99,46 @@ export const InvitationsSection: FC<Props> = ({
       return;
     }
 
-    setLoadingInviteId(id);
+    setResendingInviteId(id);
 
-    const { error } = await authClient.organization.inviteMember({
-      email: invitation.email,
-      role: invitation.role as "member" | "admin" | "owner",
-      organizationId,
-      resend: true,
-    });
+    try {
+      const { error } = await authClient.organization.inviteMember({
+        email: invitation.email,
+        role: invitation.role as "member" | "admin" | "owner",
+        organizationId,
+        resend: true,
+      });
 
-    setLoadingInviteId(null);
+      if (error) {
+        toastError(error.statusText, error.message);
+        return;
+      }
 
-    if (error) {
-      toastError(error.statusText, error.message);
-      return;
+      toastSuccess("Success", "Invitation resent successfully.");
+      router.refresh();
+    } finally {
+      setResendingInviteId(null);
     }
-
-    toastSuccess("Success", "Invitation resent successfully.");
   };
 
-  const handleCancel = (id: string) => {
-    setInvitations((currentInvitations) =>
-      currentInvitations.filter((invitation) => invitation.id !== id),
-    );
+  const handleCancel = async (id: string) => {
+    setCancelingInviteId(id);
+
+    try {
+      const { error } = await authClient.organization.cancelInvitation({
+        invitationId: id,
+      });
+
+      if (error) {
+        toastError(error.statusText, error.message);
+        return;
+      }
+
+      toastSuccess("Success", "Invitation cancelled successfully.");
+      router.refresh();
+    } finally {
+      setCancelingInviteId(null);
+    }
   };
 
   return (
@@ -212,24 +246,28 @@ export const InvitationsSection: FC<Props> = ({
                           {invitation.email}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Invited by invited_email · {invitation.role}
+                          {invitation.role}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                       <span className="text-xs text-muted-foreground">
-                        Expires expires_at
+                        Expires{" "}
+                        {formatRelativeDate(invitation.expiresAt ?? null)}
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleResend(invitationId)}
-                        disabled={loadingInviteId === invitationId}
+                        disabled={
+                          resendingInviteId === invitationId ||
+                          cancelingInviteId === invitationId
+                        }
                       >
                         <RotateCwIcon
                           className={`size-3.5 ${
-                            loadingInviteId === invitationId
+                            resendingInviteId === invitationId
                               ? "animate-spin"
                               : ""
                           }`}
@@ -240,8 +278,16 @@ export const InvitationsSection: FC<Props> = ({
                         variant="destructive"
                         size="sm"
                         onClick={() => handleCancel(invitationId)}
+                        disabled={
+                          cancelingInviteId === invitationId ||
+                          resendingInviteId === invitationId
+                        }
                       >
-                        <XIcon className="size-3.5" />
+                        {cancelingInviteId === invitationId ? (
+                          <RotateCwIcon className="size-3.5 animate-spin" />
+                        ) : (
+                          <XIcon className="size-3.5" />
+                        )}
                         Cancel
                       </Button>
                     </div>
