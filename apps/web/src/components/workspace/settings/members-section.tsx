@@ -35,49 +35,10 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { FC, useMemo, useState } from "react";
+import { formatRelativeDate } from "~/src/lib/helpers";
+import { Member } from "~/src/lib/types";
 
 type Role = "owner" | "admin" | "member";
-
-type Member = {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  joinedAt: string;
-};
-
-const currentUserId = "1";
-
-const initialMembers: Member[] = [
-  {
-    id: "1",
-    name: "Monkey D. Luffy",
-    email: "luffy@strawhats.com",
-    role: "owner",
-    joinedAt: "Jan 15, 2026",
-  },
-  {
-    id: "2",
-    name: "Roronoa Zoro",
-    email: "zoro@strawhats.com",
-    role: "admin",
-    joinedAt: "Jan 18, 2026",
-  },
-  {
-    id: "3",
-    name: "Nami",
-    email: "nami@strawhats.com",
-    role: "member",
-    joinedAt: "Feb 2, 2026",
-  },
-  {
-    id: "4",
-    name: "Usopp",
-    email: "usopp@strawhats.com",
-    role: "member",
-    joinedAt: "Feb 20, 2026",
-  },
-];
 
 function getInitials(name: string) {
   return name
@@ -133,11 +94,19 @@ const RoleControl: FC<RoleControlProps> = ({
   );
 };
 
-export const MembersSection: FC = () => {
+type Props = {
+  members: Member[];
+  userId: string;
+};
+
+export const MembersSection: FC<Props> = ({
+  members: initialMembers,
+  userId,
+}) => {
   const [members, setMembers] = useState(initialMembers);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
 
-  const currentUser = members.find((member) => member.id === currentUserId);
+  const currentUser = members.find((member) => member.userId === userId);
   const ownerCount = members.filter((member) => member.role === "owner").length;
   const canManageMembers = currentUser?.role === "owner";
 
@@ -169,20 +138,20 @@ export const MembersSection: FC = () => {
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === currentUserId;
+          const isCurrentUser = member.id === userId;
 
           return (
-            <div className="flex min-w-[280px] items-center gap-3">
+            <div className="flex min-w-70 items-center gap-3">
               <Avatar className="size-10 shrink-0">
                 <AvatarFallback className="text-xs font-medium">
-                  {getInitials(member.name)}
+                  {getInitials(member.user.name)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center gap-2">
                   <p className="truncate text-sm font-medium text-foreground">
-                    {member.name}
+                    {member.user.name}
                   </p>
 
                   {isCurrentUser ? (
@@ -193,7 +162,7 @@ export const MembersSection: FC = () => {
                 </div>
 
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                  {member.email}
+                  {member.user.email}
                 </p>
               </div>
             </div>
@@ -209,7 +178,7 @@ export const MembersSection: FC = () => {
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === currentUserId;
+          const isCurrentUser = member.id === userId;
 
           return (
             <RoleControl
@@ -230,7 +199,7 @@ export const MembersSection: FC = () => {
         },
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
-            {row.original.joinedAt}
+            {formatRelativeDate(row.original.createdAt)}
           </span>
         ),
       },
@@ -245,7 +214,7 @@ export const MembersSection: FC = () => {
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === currentUserId;
+          const isCurrentUser = member.id === userId;
 
           if (isCurrentUser) {
             return (
@@ -281,7 +250,7 @@ export const MembersSection: FC = () => {
         },
       },
     ],
-    [canManageMembers],
+    [canManageMembers, userId],
   );
 
   return (
@@ -326,8 +295,8 @@ export const MembersSection: FC = () => {
             <AlertDialogTitle>Remove member?</AlertDialogTitle>
 
             <AlertDialogDescription>
-              {memberToRemove?.name} will lose access to this organization and
-              its workspace apps.
+              {memberToRemove?.user.name} will lose access to this organization
+              and its workspace apps.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
