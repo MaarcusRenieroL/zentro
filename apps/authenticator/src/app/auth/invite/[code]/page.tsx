@@ -1,8 +1,7 @@
 "use client";
 
-import { authClient } from "@zentro/auth/client";
+import { useTrpcClient } from "@zentro/api/react";
 import { Button } from "@zentro/ui/components/shadcn/button";
-import { toastError } from "@zentro/ui/index";
 import {
   AlertCircleIcon,
   ArrowRightIcon,
@@ -12,61 +11,67 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { InvitationType } from "~/app/lib/types";
 
-type InvitationType = {
-  organizationId: string;
-  email: string;
-  role: string;
-  status: string;
-  expiresAt: Date;
-  createdAt: Date;
-  inviterId: string;
-  id: string;
-  organizationName: string;
-  organizationSlug: string;
-  inviterEmail: string;
+type TRPCErrorLike = {
+  data?: {
+    code?: string;
+  };
 };
 
 export default function InviteAcceptPage() {
   const params = useParams();
   const router = useRouter();
-  const [data, setData] = useState<InvitationType | null>(null);
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAccepting] = useState(false);
-  const [error] = useState<"expired" | "invalid" | null>(null);
+  const trpcClient = useTrpcClient();
 
   const invite = params.code as string;
 
-  const getInviteData = async (code: string) => {
-    const { data, error } = await authClient.organization.getInvitation({
-      query: {
-        id: code,
-      },
-    });
-
-    if (error || data == null) {
-      toastError(error.statusText, error.message);
-      return null;
-    }
-
-    return data;
-  };
+  const [data, setData] = useState<InvitationType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAccepting] = useState(false);
+  const [error, setError] = useState<"expired" | "invalid" | null>(null);
 
   useEffect(() => {
     const fetchInvite = async () => {
-      const result = await getInviteData(invite);
+      if (!invite) {
+        setIsLoading(false);
+        return;
+      }
 
-      setData(result as InvitationType);
-      setIsLoading(false);
+      try {
+        const inviteDetails =
+          await trpcClient.organization.getInviteDetails.query({
+            invitationId: invite,
+          });
+
+        setData(inviteDetails as InvitationType);
+      } catch (error) {
+        const trpcError = error as TRPCErrorLike;
+
+        if (trpcError.data?.code === "UNAUTHORIZED") {
+          router.replace(
+            `/auth/sign-in?redirectTo=${encodeURIComponent(`/auth/invite/${invite}`)}`,
+          );
+          return;
+        }
+
+        setError(
+          trpcError.data?.code === "BAD_REQUEST" ? "expired" : "invalid",
+        );
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchInvite();
-  }, [invite]);
+  }, [invite, router, trpcClient]);
+
+  const memberCountLabel =
+    data?.membersCount === 1
+      ? "1 member"
+      : `${data?.membersCount ?? 0} members`;
 
   if (!invite) return null;
-
-  if (!data) return null;
 
   if (isLoading) {
     return (
@@ -125,6 +130,8 @@ export default function InviteAcceptPage() {
     );
   }
 
+  if (!data) return null;
+
   return (
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
@@ -142,7 +149,7 @@ export default function InviteAcceptPage() {
       <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3 sm:gap-4 sm:p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/60">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-linear-to-br from-primary to-primary/60">
               <span className="text-lg font-bold text-primary-foreground">
                 {data.organizationName.charAt(0)}
               </span>
@@ -153,7 +160,7 @@ export default function InviteAcceptPage() {
               </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <UsersIcon className="h-3 w-3" />
-                <span>0 members</span>
+                <span>{memberCountLabel}</span>
               </div>
             </div>
           </div>
@@ -161,7 +168,7 @@ export default function InviteAcceptPage() {
           <div className="flex flex-col gap-2 rounded-lg bg-secondary/30 p-3 text-sm sm:p-4">
             <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-muted-foreground">Invited by</span>
-              <span className="text-foreground">{data.inviterEmail}</span>
+              <span className="text-foreground">{data.inviterName}</span>
             </div>
             <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
               <span className="text-muted-foreground">Your role</span>
@@ -174,17 +181,10 @@ export default function InviteAcceptPage() {
             disabled={isAccepting}
             onClick={() => {}}
           >
-            {isAccepting ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                Joining...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                Accept invitation
-                <ArrowRightIcon className="h-4 w-4" />
-              </span>
-            )}
+            <span className="flex items-center gap-2">
+              Accept invitation
+              <ArrowRightIcon className="h-4 w-4" />
+            </span>
           </Button>
 
           <Button
@@ -196,16 +196,6 @@ export default function InviteAcceptPage() {
           </Button>
         </div>
       </div>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Wrong account?{" "}
-        <Link
-          href="/auth/sign-in"
-          className="text-primary hover:text-primary/80"
-        >
-          Sign in with a different account
-        </Link>
-      </p>
     </div>
   );
 }

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "../components/layout/navbar";
 import { Footer } from "../components/layout/footer";
-import { ThemeProvider } from "../components/theme-provider";
+import { ThemeProvider } from "../components/providers/theme-provider";
 import { Toaster } from "@zentro/ui/shadcn/sonner";
+import { AppTRPCProvider } from "~/components/providers/trpc-provider";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -28,7 +29,7 @@ export default function RootLayout({
           <div className="flex min-h-screen flex-col bg-background">
             <Navbar />
             <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
-              {children}
+              <AppTRPCProvider>{children}</AppTRPCProvider>
             </main>
             <Footer />
           </div>
