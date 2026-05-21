@@ -122,7 +122,7 @@ export async function sendOrgInviteEmail(
 ) {
   const appUrl = "http://localhost:3001";
 
-  const inviteUrl = `${appUrl}/auth/invite/code/${encodeURIComponent(
+  const inviteUrl = `${appUrl}/auth/invite/${encodeURIComponent(
     invitation.id,
   )}`;
 

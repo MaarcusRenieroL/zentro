@@ -32,6 +32,7 @@ export default function InviteAcceptPage() {
   const [data, setData] = useState<InvitationType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [isDeclining, setIsDeclining] = useState(false);
   const [error, setError] = useState<"expired" | "invalid" | null>(null);
 
   useEffect(() => {
@@ -98,7 +99,21 @@ export default function InviteAcceptPage() {
     return;
   };
 
-  const handleDeclineInvite = () => {
+  const handleDeclineInvite = async () => {
+    setIsDeclining(true);
+
+    const { error } = await authClient.organization.rejectInvitation({
+      invitationId: invite,
+    });
+
+    if (error) {
+      toastError(error.statusText, error.message);
+      return;
+    }
+
+    setIsDeclining(false);
+
+    toastSuccess("Success", "Invite rejected successfully");
     router.push("/auth/create-organization");
   };
 
@@ -233,7 +248,7 @@ export default function InviteAcceptPage() {
           <Button
             variant="ghost"
             className="w-full text-muted-foreground hover:text-foreground"
-            disabled={isAccepting}
+            disabled={isDeclining}
             onClick={handleDeclineInvite}
           >
             Decline
