@@ -22,6 +22,7 @@ type Props = {
     slug: string;
     href: string;
   }[];
+  createOrganizationHref: string;
   user: {
     email: string;
     name: string;
@@ -31,6 +32,7 @@ type Props = {
 export const DashboardNavbar: FC<Props> = ({
   orgSlug,
   organizations,
+  createOrganizationHref,
   user,
 }) => {
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -52,10 +54,14 @@ export const DashboardNavbar: FC<Props> = ({
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <nav className="flex min-h-14 flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:flex-nowrap">
         <div className="flex min-w-0 flex-1 items-center gap-4 lg:flex-none">
-          <OrgSwitcher organizations={organizations} activeOrgSlug={orgSlug} />
+          <OrgSwitcher
+            organizations={organizations}
+            activeOrgSlug={orgSlug}
+            createOrganizationHref={createOrganizationHref}
+          />
         </div>
 
-        <div className="order-3 w-full lg:order-none lg:max-w-md">
+        <div className="order-3 w-full lg:order-0 lg:max-w-md">
           <div className="relative">
             <div className="text-muted-foreground pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3 peer-disabled:opacity-50">
               <SearchIcon className="size-4" />

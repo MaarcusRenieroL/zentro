@@ -38,7 +38,7 @@ function getInitials(name: string) {
 export const OrgSwitcher: FC<Props> = ({
   organizations,
   activeOrgSlug,
-  createOrganizationHref = "http://localhost:3001/auth/create-organization",
+  createOrganizationHref,
 }) => {
   const activeOrganization =
     organizations.find((org) => org.slug === activeOrgSlug) ?? organizations[0];

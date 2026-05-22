@@ -1,7 +1,7 @@
 import { JSX } from "react";
 import { DashboardNavbar } from "~/src/components/workspace/navbar";
 
-import { getOrgAppUrl } from "@zentro/utils";
+import { getAuthAppUrl, getOrgAppUrl } from "@zentro/utils";
 
 import { getDashboardContext } from "~/src/lib/dashboard-context";
 
@@ -26,6 +26,9 @@ export default async function DashboardLayout({
             path: "/dashboard",
           }),
         }))}
+        createOrganizationHref={getAuthAppUrl({
+          path: "/auth/create-organization",
+        })}
         user={{
           name: session.user.name,
           email: session.user.email,
