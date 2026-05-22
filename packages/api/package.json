@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react/index.ts",
-    "./server": "./src/server/index.ts"
+    "./server": "./src/server/index.ts",
+    "./types/zod-schema": "./src/types/zod-schema.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"
