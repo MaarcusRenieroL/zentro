@@ -148,8 +148,8 @@ export const DangerZoneSection: FC<Props> = ({
               <AlertDialogTitle>Leave organization?</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              You will be removed from this workspace. The other {totalMembers}{" "}
-              members will keep access.
+              You will be removed from this workspace. The other{" "}
+              {totalMembers - 1} members will keep access.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <p className="mt-4 text-sm text-muted-foreground">
