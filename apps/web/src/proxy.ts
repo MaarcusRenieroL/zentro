@@ -34,9 +34,13 @@ export async function proxy(request: NextRequest) {
     headers: request.headers,
   });
 
-  const firstOrganization = organizations[0];
+  const activeOrganization =
+    organizations.find(
+      (organization) =>
+        organization.id === session.session.activeOrganizationId,
+    ) ?? organizations[0];
 
-  if (!firstOrganization) {
+  if (!activeOrganization) {
     return NextResponse.redirect(
       new URL(getAuthAppUrl({ path: "/auth/create-organization" })),
     );
@@ -46,7 +50,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(
       new URL(
         getOrgAppUrl({
-          orgSlug: firstOrganization.slug,
+          orgSlug: activeOrganization.slug,
           app: "workspace",
           path: request.nextUrl.pathname,
         }),

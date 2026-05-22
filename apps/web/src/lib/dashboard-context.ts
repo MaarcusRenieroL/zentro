@@ -44,16 +44,20 @@ export const getDashboardContext = cache(async () => {
     headers: requestHeaders,
   });
 
-  const firstOrganization = organizations[0];
+  const activeOrganization =
+    organizations.find(
+      (organization) =>
+        organization.id === sessionWithUser.session.activeOrganizationId,
+    ) ?? organizations[0];
 
-  if (!firstOrganization) {
+  if (!activeOrganization) {
     redirect(getAuthAppUrl({ path: "/auth/create-organization" }));
   }
 
   if (!resolvedApp || resolvedApp.app !== "workspace") {
     redirect(
       getOrgAppUrl({
-        orgSlug: firstOrganization.slug,
+        orgSlug: activeOrganization.slug,
         app: "workspace",
         path: "/dashboard",
       }),

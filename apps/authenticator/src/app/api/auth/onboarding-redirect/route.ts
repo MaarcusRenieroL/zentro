@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@zentro/auth";
-import { getOrgAppUrl } from "@zentro/utils";
 
 export async function GET() {
   const requestHeaders = await headers();
@@ -20,24 +19,7 @@ export async function GET() {
     });
   }
 
-  const organizations = await auth.api.listOrganizations({
-    headers: requestHeaders,
-  });
-
-  const firstOrganization = organizations[0];
-
-  if (!firstOrganization) {
-    return NextResponse.json({
-      redirectTo: "/auth/create-organization",
-    });
-  }
-
   return NextResponse.json({
     sessionToken: session.session.token,
-    redirectTo: getOrgAppUrl({
-      orgSlug: firstOrganization.slug,
-      app: "workspace",
-      path: "/dashboard",
-    }),
   });
 }

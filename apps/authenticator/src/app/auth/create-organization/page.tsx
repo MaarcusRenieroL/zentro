@@ -109,6 +109,10 @@ export default function CreateOrganizationPage() {
       return;
     }
 
+    await authClient.organization.setActive({
+      organizationId: organization.id,
+    });
+
     toastSuccess("Success", "Organization created successfully");
 
     const redirectTo = getOrgAppUrl({

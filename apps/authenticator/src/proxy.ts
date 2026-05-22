@@ -2,11 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { auth } from "@zentro/auth";
 import { getOrgAppUrl } from "@zentro/utils";
 
-const onboardingRoutes = [
-  "/auth/create-organization",
-  "/auth/join-organization",
-  "/auth/invite",
-];
+const onboardingRoutes = ["/auth/join-organization", "/auth/invite"];
 
 function isRoute(pathname: string, routes: string[]) {
   return routes.some(
