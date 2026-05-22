@@ -10,6 +10,8 @@ import {
   sendOrgInviteEmail,
 } from "./lib/email";
 import { validateProductionEnv } from "./lib/env";
+import { ac, member, owner, admin } from "./permissions";
+import { userAdditionalFields } from "./additional-fields";
 
 validateProductionEnv();
 
@@ -41,14 +43,7 @@ export const auth = betterAuth({
   secret,
   trustedOrigins,
   user: {
-    additionalFields: {
-      role: {
-        type: ["member", "admin", "owner"],
-        required: true,
-        defaultValue: "member",
-        input: false,
-      },
-    },
+    additionalFields: userAdditionalFields,
   },
   emailAndPassword: {
     enabled: true,
@@ -88,6 +83,12 @@ export const auth = betterAuth({
 
   plugins: [
     organization({
+      ac,
+      roles: {
+        owner,
+        admin,
+        member,
+      },
       requireEmailVerificationOnInvitation: true,
       sendInvitationEmail: async ({ invitation, organization, inviter }) => {
         await sendOrgInviteEmail(invitation, organization, inviter);
