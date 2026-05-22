@@ -99,15 +99,13 @@ const RoleControl: FC<RoleControlProps> = ({
 
 type Props = {
   members: Member[];
-  user: {
-    id: string;
-  };
+  userId: string;
   orgId: string;
 };
 
 export const MembersSection: FC<Props> = ({
   members: initialMembers,
-  user,
+  userId,
   orgId,
 }) => {
   const [members, setMembers] = useState(initialMembers);
@@ -115,7 +113,7 @@ export const MembersSection: FC<Props> = ({
 
   const router = useRouter();
 
-  const currentUser = members.find((member) => member.userId === user.id);
+  const currentUser = members.find((member) => member.userId === userId);
   const ownerCount = members.filter((member) => member.role === "owner").length;
   const canManageMembers = currentUser?.role === "owner";
 
@@ -168,7 +166,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === user.id;
+          const isCurrentUser = member.id === userId;
 
           return (
             <div className="flex min-w-70 items-center gap-3">
@@ -208,7 +206,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === user.id;
+          const isCurrentUser = member.id === userId;
 
           return (
             <RoleControl
@@ -244,7 +242,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === user.id;
+          const isCurrentUser = member.id === userId;
 
           if (isCurrentUser) {
             return (
@@ -280,7 +278,7 @@ export const MembersSection: FC<Props> = ({
         },
       },
     ],
-    [canManageMembers, user],
+    [canManageMembers, userId],
   );
 
   return (

@@ -9,6 +9,8 @@ import {
   resolveOrgAppFromHost,
 } from "@zentro/utils";
 
+const defaultRole = "member";
+
 export const getDashboardContext = cache(async () => {
   const requestHeaders = await headers();
   const resolvedApp = resolveOrgAppFromHost(requestHeaders.get("host") ?? "");
@@ -66,9 +68,20 @@ export const getDashboardContext = cache(async () => {
     redirect(getAuthAppUrl({ path: "/auth/create-organization" }));
   }
 
+  const organizationRole = await auth.api.getActiveMemberRole({
+    headers: requestHeaders,
+    query: {
+      organizationId: organization.id,
+    },
+  });
+
   return {
     organization,
     organizations,
+    roles: {
+      user: sessionWithUser.user.role ?? defaultRole,
+      organization: organizationRole.role ?? defaultRole,
+    },
     session: sessionWithUser,
   };
 });

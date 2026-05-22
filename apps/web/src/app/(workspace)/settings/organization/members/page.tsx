@@ -18,7 +18,7 @@ export default async function MembersSettingsPage(): Promise<JSX.Element> {
   return (
     <MembersSection
       members={membersList.members}
-      user={session!.user}
+      userId={session!.user.id}
       orgId={organization.id}
     />
   );
