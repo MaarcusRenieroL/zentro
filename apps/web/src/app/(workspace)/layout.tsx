@@ -20,10 +20,14 @@ export default async function DashboardLayout({
           id: org.id,
           name: org.name,
           slug: org.slug,
-          href: getOrgAppUrl({
-            orgSlug: org.slug,
-            app: "workspace",
-            path: "/dashboard",
+          href: getAuthAppUrl({
+            path: `/api/auth/workspace-session-bridge?redirectTo=${encodeURIComponent(
+              getOrgAppUrl({
+                orgSlug: org.slug,
+                app: "workspace",
+                path: "/dashboard",
+              }),
+            )}`,
           }),
         }))}
         createOrganizationHref={getAuthAppUrl({
