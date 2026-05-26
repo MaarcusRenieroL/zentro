@@ -101,12 +101,17 @@ type Props = {
   members: Member[];
   userId: string;
   orgId: string;
+  permissions: {
+    canRemoveMembers: boolean;
+    canUpdateMemberRoles: boolean;
+  };
 };
 
 export const MembersSection: FC<Props> = ({
   members: initialMembers,
   userId,
   orgId,
+  permissions,
 }) => {
   const [members, setMembers] = useState(initialMembers);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
@@ -115,7 +120,8 @@ export const MembersSection: FC<Props> = ({
 
   const currentUser = members.find((member) => member.userId === userId);
   const ownerCount = members.filter((member) => member.role === "owner").length;
-  const canManageMembers = currentUser?.role === "owner";
+  const canManageMembers =
+    permissions.canRemoveMembers || permissions.canUpdateMemberRoles;
 
   const handleRoleChange = async (memberId: string, role: Role) => {
     setMembers((currentMembers) =>
@@ -206,11 +212,11 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === userId;
+          const isCurrentUser = member.userId === userId;
 
           return (
             <RoleControl
-              disabled={!canManageMembers}
+              disabled={!permissions.canUpdateMemberRoles}
               isCurrentUser={isCurrentUser}
               member={member}
               onRoleChange={handleRoleChange}
@@ -242,7 +248,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === userId;
+          const isCurrentUser = member.userId === userId;
 
           if (isCurrentUser) {
             return (
@@ -255,7 +261,10 @@ export const MembersSection: FC<Props> = ({
           return (
             <div className="flex justify-end">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild disabled={!canManageMembers}>
+                <DropdownMenuTrigger
+                  asChild
+                  disabled={!permissions.canRemoveMembers}
+                >
                   <Button variant="ghost" size="icon-sm">
                     <MoreHorizontalIcon className="size-4" />
                     <span className="sr-only">Open member actions</span>

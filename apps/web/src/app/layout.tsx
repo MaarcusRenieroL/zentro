@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "../components/providers/theme-provider";
 import { JSX } from "react";
 import { AppTRPCProvider } from "../components/providers/trpc-provider";
+import { Toaster } from "@zentro/ui/shadcn/sonner";
 
 export const metadata: Metadata = {
   title: "Zentro — The Operating System for Your Company",
@@ -47,6 +48,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AppTRPCProvider>{children}</AppTRPCProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

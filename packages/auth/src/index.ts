@@ -117,3 +117,5 @@ export const auth = betterAuth({
     }),
   ],
 });
+
+export * from "./authorization";

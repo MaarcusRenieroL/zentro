@@ -6,7 +6,7 @@ import { MembersSection } from "~/src/components/workspace/settings/members-sect
 import { getDashboardContext } from "~/src/lib/dashboard-context";
 
 export default async function MembersSettingsPage(): Promise<JSX.Element> {
-  const { session, organization } = await getDashboardContext();
+  const { session, organization, permissions } = await getDashboardContext();
 
   const membersList = await auth.api.listMembers({
     headers: await headers(),
@@ -20,6 +20,7 @@ export default async function MembersSettingsPage(): Promise<JSX.Element> {
       members={membersList.members}
       userId={session!.user.id}
       orgId={organization.id}
+      permissions={permissions}
     />
   );
 }

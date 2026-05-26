@@ -2,7 +2,11 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth } from "@zentro/auth";
+import {
+  auth,
+  getOrganizationPermissions,
+  type OrganizationRole,
+} from "@zentro/auth";
 import {
   getAuthAppUrl,
   getOrgAppUrl,
@@ -79,13 +83,16 @@ export const getDashboardContext = cache(async () => {
     },
   });
 
+  const role = (organizationRole.role ?? defaultRole) as OrganizationRole;
+
   return {
     organization,
     organizations,
     roles: {
       user: sessionWithUser.user.role ?? defaultRole,
-      organization: organizationRole.role ?? defaultRole,
+      organization: role,
     },
     session: sessionWithUser,
+    permissions: getOrganizationPermissions(organizationRole.role),
   };
 });
