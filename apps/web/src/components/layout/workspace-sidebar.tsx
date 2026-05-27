@@ -88,7 +88,6 @@ const sidebarSections: SidebarSection[] = [
         label: "Projects",
         href: "/projects",
         icon: FolderIcon,
-        disabled: true,
         children: [
           {
             label: "All projects",
