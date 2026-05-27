@@ -3,10 +3,13 @@ import { headers } from "next/headers";
 import { auth } from "@zentro/auth";
 
 import { InvitationsSection } from "~/src/components/workspace/settings/invitations-section";
-import { getDashboardContext } from "~/src/lib/dashboard-context";
+import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
+import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
 
 export default async function InvitationsSettingsPage(): Promise<JSX.Element> {
-  const { organization } = await getDashboardContext();
+  const { authorization, organization } = await getAuthorizedDashboardContext({
+    members: ["invite"],
+  });
 
   const invitations = await auth.api.listInvitations({
     headers: await headers(),
@@ -16,9 +19,11 @@ export default async function InvitationsSettingsPage(): Promise<JSX.Element> {
   });
 
   return (
-    <InvitationsSection
-      organizationId={organization.id}
-      invitations={invitations}
-    />
+    <AuthorizationBoundary isAllowed={authorization.isAllowed}>
+      <InvitationsSection
+        organizationId={organization.id}
+        invitations={invitations}
+      />
+    </AuthorizationBoundary>
   );
 }

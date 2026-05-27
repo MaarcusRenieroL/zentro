@@ -2,7 +2,7 @@ import { admin, member, owner, statement } from "./permissions";
 
 export type OrganizationRole = "owner" | "admin" | "member";
 
-type PermissionRequest = {
+export type PermissionRequest = {
   [Resource in keyof typeof statement]?: (typeof statement)[Resource][number][];
 };
 

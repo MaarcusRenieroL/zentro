@@ -1,18 +1,23 @@
 import { JSX } from "react";
+import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
 
 import { GeneralSection } from "~/src/components/workspace/settings/general-section";
-import { getDashboardContext } from "~/src/lib/dashboard-context";
+import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
 
 export default async function GeneralSettingsPage(): Promise<JSX.Element> {
-  const { organization } = await getDashboardContext();
+  const { authorization, organization } = await getAuthorizedDashboardContext({
+    organization: ["update"],
+  });
 
   return (
-    <GeneralSection
-      organization={{
-        name: organization.name,
-        slug: organization.slug,
-        id: organization.id,
-      }}
-    />
+    <AuthorizationBoundary isAllowed={authorization.isAllowed}>
+      <GeneralSection
+        organization={{
+          name: organization.name,
+          slug: organization.slug,
+          id: organization.id,
+        }}
+      />
+    </AuthorizationBoundary>
   );
 }

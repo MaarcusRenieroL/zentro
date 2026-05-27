@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import {
   auth,
   getOrganizationPermissions,
+  hasOrganizationPermission,
   type OrganizationRole,
+  type PermissionRequest,
 } from "@zentro/auth";
 import {
   getAuthAppUrl,
@@ -14,6 +16,30 @@ import {
 } from "@zentro/utils";
 
 const defaultRole = "member";
+
+export function canAccessOrganizationPermission(
+  role: OrganizationRole,
+  permission: PermissionRequest,
+) {
+  return hasOrganizationPermission(role, permission);
+}
+
+export async function getAuthorizedDashboardContext(
+  permission: PermissionRequest,
+) {
+  const context = await getDashboardContext();
+
+  return {
+    ...context,
+    authorization: {
+      isAllowed: canAccessOrganizationPermission(
+        context.roles.organization,
+        permission,
+      ),
+      permission,
+    },
+  };
+}
 
 export const getDashboardContext = cache(async () => {
   const requestHeaders = await headers();
@@ -93,6 +119,6 @@ export const getDashboardContext = cache(async () => {
       organization: role,
     },
     session: sessionWithUser,
-    permissions: getOrganizationPermissions(organizationRole.role),
+    permissions: getOrganizationPermissions(role),
   };
 });

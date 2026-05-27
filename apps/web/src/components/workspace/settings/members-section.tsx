@@ -37,7 +37,7 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FC, useMemo, useState } from "react";
+import { FC, useCallback, useMemo, useState } from "react";
 import { formatRelativeDate } from "~/src/lib/helpers";
 import { Member } from "~/src/lib/types";
 
@@ -120,30 +120,31 @@ export const MembersSection: FC<Props> = ({
 
   const currentUser = members.find((member) => member.userId === userId);
   const ownerCount = members.filter((member) => member.role === "owner").length;
-  const canManageMembers =
-    permissions.canRemoveMembers || permissions.canUpdateMemberRoles;
 
-  const handleRoleChange = async (memberId: string, role: Role) => {
-    setMembers((currentMembers) =>
-      currentMembers.map((member) =>
-        member.id === memberId ? { ...member, role } : member,
-      ),
-    );
+  const handleRoleChange = useCallback(
+    async (memberId: string, role: Role) => {
+      setMembers((currentMembers) =>
+        currentMembers.map((member) =>
+          member.id === memberId ? { ...member, role } : member,
+        ),
+      );
 
-    const { error } = await authClient.organization.updateMemberRole({
-      organizationId: orgId,
-      memberId: memberId,
-      role: role,
-    });
+      const { error } = await authClient.organization.updateMemberRole({
+        organizationId: orgId,
+        memberId: memberId,
+        role: role,
+      });
 
-    if (error) {
-      toastError(error.statusText, error.message);
-      return;
-    }
+      if (error) {
+        toastError(error.statusText, error.message);
+        return;
+      }
 
-    toastSuccess("Success", "User role updated successfully");
-    router.refresh();
-  };
+      toastSuccess("Success", "User role updated successfully");
+      router.refresh();
+    },
+    [orgId, router],
+  );
 
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
@@ -287,7 +288,12 @@ export const MembersSection: FC<Props> = ({
         },
       },
     ],
-    [canManageMembers, userId],
+    [
+      handleRoleChange,
+      permissions.canRemoveMembers,
+      permissions.canUpdateMemberRoles,
+      userId,
+    ],
   );
 
   return (
