@@ -52,3 +52,27 @@ export const organizationProcedure = protectedProcedure.use(({ ctx, next }) => {
     },
   });
 });
+
+type ActiveOrganizationWithMembers = {
+  members?: {
+    role?: string | null;
+  }[];
+};
+
+export const adminProcedure = organizationProcedure.use(({ ctx, next }) => {
+  const activeOrganization =
+    ctx.activeOrganization as ActiveOrganizationWithMembers;
+
+  const role = activeOrganization.members?.[0]?.role;
+
+  if (role !== "admin" && role !== "owner") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You must be an organization admin to perform this action",
+    });
+  }
+
+  return next({
+    ctx,
+  });
+});
