@@ -144,10 +144,10 @@ export const InvitationsSection: FC<Props> = ({
   return (
     <div className="space-y-6">
       <Card className="rounded-md bg-card/50 py-0 shadow-sm">
-        <CardContent className="p-4">
+        <CardContent className="p-4 sm:p-5">
           <form
             onSubmit={handleSubmit(handleSendInvite)}
-            className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-start"
+            className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px] xl:grid-cols-[minmax(0,1fr)_180px_auto] xl:items-start"
           >
             <Controller
               name="email"
@@ -208,7 +208,7 @@ export const InvitationsSection: FC<Props> = ({
             <Button
               type="submit"
               disabled={isSubmitting || !isValid}
-              className="lg:mt-7"
+              className="w-full md:col-span-2 xl:col-span-1 xl:mt-7 xl:w-auto"
             >
               {isSubmitting ? (
                 <RotateCwIcon className="size-4 animate-spin" />
@@ -222,7 +222,7 @@ export const InvitationsSection: FC<Props> = ({
       </Card>
 
       <Card className="rounded-md bg-card/50 py-0 shadow-sm">
-        <CardContent className="p-4">
+        <CardContent className="p-4 sm:p-5">
           {pendingInvitations.length > 0 ? (
             <div className="space-y-3">
               {pendingInvitations.map((invitation) => {
@@ -251,7 +251,7 @@ export const InvitationsSection: FC<Props> = ({
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center lg:justify-end">
                       <span className="text-xs text-muted-foreground">
                         Expires{" "}
                         {formatRelativeDate(invitation.expiresAt ?? null)}
@@ -259,6 +259,7 @@ export const InvitationsSection: FC<Props> = ({
                       <Button
                         variant="outline"
                         size="sm"
+                        className="w-full sm:w-auto"
                         onClick={() => handleResend(invitationId)}
                         disabled={
                           resendingInviteId === invitationId ||
@@ -277,6 +278,7 @@ export const InvitationsSection: FC<Props> = ({
                       <Button
                         variant="destructive"
                         size="sm"
+                        className="w-full sm:w-auto"
                         onClick={() => handleCancel(invitationId)}
                         disabled={
                           cancelingInviteId === invitationId ||
@@ -296,7 +298,7 @@ export const InvitationsSection: FC<Props> = ({
               })}
             </div>
           ) : (
-            <div className="mt-6 rounded-md border border-dashed bg-background/40 p-10 text-center">
+            <div className="mt-6 rounded-md border border-dashed bg-background/40 p-6 text-center sm:p-10">
               <MailIcon className="mx-auto size-10 text-muted-foreground" />
               <h3 className="mt-4 text-base font-semibold text-foreground">
                 No pending invitations
@@ -306,7 +308,7 @@ export const InvitationsSection: FC<Props> = ({
               </p>
               <Button
                 variant="outline"
-                className="mt-5"
+                className="mt-5 w-full sm:w-auto"
                 onClick={() => document.getElementById("invite-email")?.focus()}
               >
                 <PlusIcon className="size-4" />

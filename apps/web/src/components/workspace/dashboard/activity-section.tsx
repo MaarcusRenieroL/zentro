@@ -60,10 +60,10 @@ export const ActivitySection: FC<Props> = ({ name, orgName }) => {
   ];
 
   return (
-    <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+    <div className="grid w-full gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,460px)] xl:items-start">
       <div className="flex min-w-0 flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
             {greeting}, {name}
           </h1>
           <p className="text-sm text-muted-foreground sm:text-base">
@@ -71,20 +71,20 @@ export const ActivitySection: FC<Props> = ({ name, orgName }) => {
           </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-center">
           {activityStats.map((stat) => (
             <div
               key={stat.label}
-              className="flex h-11 items-center gap-2 rounded-md border bg-card/70 px-3 text-sm shadow-sm sm:px-4"
+              className="flex h-11 min-w-0 items-center gap-2 rounded-md border bg-card/70 px-3 text-sm shadow-sm sm:px-4"
             >
-              <stat.icon className={`size-4 ${stat.iconClassName}`} />
-              <p className="whitespace-nowrap">{stat.label}</p>
+              <stat.icon className={`size-4 shrink-0 ${stat.iconClassName}`} />
+              <p className="truncate">{stat.label}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="bg-card/50 w-full rounded-md border p-5 shadow-sm lg:max-w-md">
+      <div className="w-full rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
         <h2 className="text-sm font-medium">Workspace overview</h2>
         <div className="mt-5 grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {workspaceStats.map((stat) => (

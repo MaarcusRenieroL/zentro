@@ -83,8 +83,8 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
       ) : null}
 
       <Card className="rounded-md bg-card/50 py-0 shadow-sm">
-        <CardContent className="p-5 sm:p-6">
-          <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
                 Organization name
@@ -131,8 +131,8 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
       </Card>
 
       <Card className="rounded-md bg-card/50 py-0 shadow-sm">
-        <CardContent className="p-5 sm:p-6">
-          <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
                 Workspace URL
@@ -168,12 +168,21 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
             <p className="text-sm text-muted-foreground">
               You have unsaved changes.
             </p>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={handleCancel}>
+            <div className="grid gap-2 sm:flex">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={handleCancel}
+              >
                 <RotateCcwIcon className="size-4" />
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting || !isValid}>
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={isSubmitting || !isValid}
+              >
                 <CheckCircle2Icon className="size-4" />
                 Save changes
               </Button>

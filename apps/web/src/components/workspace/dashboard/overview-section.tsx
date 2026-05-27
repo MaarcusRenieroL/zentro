@@ -7,15 +7,15 @@ import { CalendarSection } from "./calendar-section";
 
 export const OverviewSection: FC = () => {
   return (
-    <div className="grid w-full gap-5 xl:grid-cols-7">
-      <div className="flex flex-col gap-5 xl:col-span-2">
+    <div className="grid w-full gap-5 lg:grid-cols-2 xl:grid-cols-7">
+      <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
         <QuickActions />
         <PinnedSection />
       </div>
-      <div className="xl:col-span-3">
+      <div className="min-w-0 lg:col-span-2 xl:col-span-3">
         <RecentActivitySection />
       </div>
-      <div className="flex flex-col gap-5 xl:col-span-2">
+      <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
         <CalendarSection />
         <TasksSection />
       </div>

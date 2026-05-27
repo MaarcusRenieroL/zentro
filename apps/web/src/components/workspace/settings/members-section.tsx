@@ -176,7 +176,7 @@ export const MembersSection: FC<Props> = ({
           const isCurrentUser = member.id === userId;
 
           return (
-            <div className="flex min-w-70 items-center gap-3">
+            <div className="flex min-w-56 items-center gap-3 sm:min-w-70">
               <Avatar className="size-10 shrink-0">
                 <AvatarFallback className="text-xs font-medium">
                   {getInitials(member.user.name)}
@@ -298,15 +298,17 @@ export const MembersSection: FC<Props> = ({
 
   return (
     <div className="space-y-6">
-      <DataTable
-        columns={columns}
-        data={members}
-        emptyMessage="No members found."
-        filterPlaceholder="Search members..."
-        getRowId={(member) => member.id}
-        initialPageSize={5}
-        showRowSelection
-      />
+      <div className="-mx-4 sm:mx-0">
+        <DataTable
+          columns={columns}
+          data={members}
+          emptyMessage="No members found."
+          filterPlaceholder="Search members..."
+          getRowId={(member) => member.id}
+          initialPageSize={5}
+          showRowSelection
+        />
+      </div>
 
       {ownerCount === 1 && currentUser?.role === "owner" ? (
         <div className="flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">

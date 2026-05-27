@@ -227,7 +227,7 @@ export function DataTable<TData, TValue>({
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {selectedRows.length > 0 && renderBulkActions ? (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">
@@ -276,8 +276,8 @@ export function DataTable<TData, TValue>({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-md border">
-        <Table>
+      <div className="overflow-x-auto rounded-md border">
+        <Table className="min-w-[720px]">
           <TableHeader className="bg-secondary/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -346,7 +346,7 @@ export function DataTable<TData, TValue>({
             {selectedRows.length} of {table.getFilteredRowModel().rows.length}{" "}
             row(s) selected.
           </p>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Select
               value={`${table.getState().pagination.pageSize}`}
               onValueChange={(value) => table.setPageSize(Number(value))}

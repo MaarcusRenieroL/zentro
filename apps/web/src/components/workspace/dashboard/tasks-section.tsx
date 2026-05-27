@@ -33,8 +33,8 @@ export const TasksSection: FC = () => {
   ];
 
   return (
-    <section className="rounded-md border bg-card/50 p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-medium text-foreground">My tasks</h2>
         <Link
           href="/tasks"
@@ -47,7 +47,7 @@ export const TasksSection: FC = () => {
         {myTasks.map((task) => (
           <div
             key={task.id}
-            className="flex items-center gap-3 py-3 first:pt-0"
+            className="flex min-w-0 items-center gap-3 py-3 first:pt-0"
           >
             <Checkbox className="size-4 rounded border-border" />
             <div className="min-w-0 flex-1">
@@ -60,7 +60,7 @@ export const TasksSection: FC = () => {
                   : task.priority === "Medium"
                     ? "text-yellow-400"
                     : "text-green-400"
-              }`}
+              } shrink-0`}
             >
               {task.priority}
             </span>

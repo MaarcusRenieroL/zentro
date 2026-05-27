@@ -79,8 +79,8 @@ export const RecentActivitySection: FC = () => {
   ];
 
   return (
-    <section className="h-full rounded-md border bg-card/50 p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <section className="h-full rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-medium text-foreground">
           Recent activity
         </h2>
@@ -96,13 +96,13 @@ export const RecentActivitySection: FC = () => {
           <Link
             key={activity.id}
             href={activity.href}
-            className="group flex items-center gap-4 py-4 first:pt-0 last:pb-0"
+            className="group flex min-w-0 items-start gap-3 py-4 first:pt-0 last:pb-0 sm:items-center sm:gap-4"
           >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-medium text-foreground">
               {activity.userInitials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-foreground">
+              <p className="text-sm text-foreground sm:truncate">
                 <span className="font-medium">{activity.user}</span>{" "}
                 <span className="text-muted-foreground">{activity.action}</span>{" "}
                 <span className="font-medium">{activity.target}</span>

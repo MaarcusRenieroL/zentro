@@ -30,8 +30,8 @@ export const CalendarSection: FC = () => {
   ];
 
   return (
-    <section className="rounded-md border bg-card/50 p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-medium text-foreground">Today</h2>
         <Link
           href="/calendar"
@@ -44,11 +44,9 @@ export const CalendarSection: FC = () => {
         {todaySchedule.map((event, idx) => (
           <div
             key={idx}
-            className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 sm:gap-4"
+            className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 py-3 first:pt-0 last:pb-0 sm:grid-cols-[80px_minmax(0,1fr)_auto] sm:gap-4"
           >
-            <p className="w-16 shrink-0 text-sm text-muted-foreground sm:w-20">
-              {event.time}
-            </p>
+            <p className="text-sm text-muted-foreground">{event.time}</p>
             <div className="min-w-0 flex-1 border-l border-border pl-4">
               <p className="truncate text-sm font-medium text-foreground">
                 {event.title}

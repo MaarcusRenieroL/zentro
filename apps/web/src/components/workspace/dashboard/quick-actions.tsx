@@ -20,7 +20,7 @@ const actions = [
 
 export const QuickActions: FC = () => {
   return (
-    <section className="rounded-md border bg-card/50 p-5 shadow-sm">
+    <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
       <h2 className="text-base font-medium">Quick actions</h2>
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
@@ -29,7 +29,7 @@ export const QuickActions: FC = () => {
             key={action.label}
             variant="secondary"
             size="lg"
-            className="h-12 justify-start gap-2 rounded-md border bg-background/60 px-3 font-normal text-foreground hover:bg-secondary/70"
+            className="h-11 min-w-0 justify-start gap-2 rounded-md border bg-background/60 px-3 font-normal text-foreground hover:bg-secondary/70"
           >
             <action.icon className={`size-4 ${action.className}`} />
             <span className="truncate">{action.label}</span>

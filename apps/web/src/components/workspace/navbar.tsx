@@ -56,8 +56,8 @@ export const DashboardNavbar: FC<Props> = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-      <nav className="grid min-h-14 grid-cols-[minmax(280px,1fr)_minmax(360px,640px)_minmax(180px,1fr)] items-center gap-4 px-4 py-2 sm:px-6 max-md:flex max-md:flex-wrap max-md:justify-between">
-        <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+      <nav className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-4 py-2 sm:px-6 max-md:flex max-md:flex-wrap max-md:justify-between">
+        <div className="flex min-w-0 items-center gap-3 overflow-hidden justify-self-start">
           <SidebarTrigger />
 
           <OrgSwitcher
@@ -75,8 +75,8 @@ export const DashboardNavbar: FC<Props> = ({
           </div>
         </div>
 
-        <div className="hidden min-w-0 items-center gap-2 md:flex">
-          <div className="relative min-w-0 flex-1">
+        <div className="hidden min-w-0 items-center justify-center gap-2 md:flex">
+          <div className="relative w-72 lg:w-80 xl:w-96">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3 text-muted-foreground peer-disabled:opacity-50">
               <SearchIcon className="size-4" />
               <span className="sr-only">Search</span>
@@ -86,7 +86,7 @@ export const DashboardNavbar: FC<Props> = ({
               id={id}
               type="search"
               placeholder="Search..."
-              className="peer h-9 px-9 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none [&::-webkit-search-results-button]:appearance-none [&::-webkit-search-results-decoration]:appearance-none"
+              className="peer h-9 px-9 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none [&::-webkit-search-results-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
             />
 
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-3 peer-disabled:opacity-50">
@@ -102,7 +102,7 @@ export const DashboardNavbar: FC<Props> = ({
           </Button>
         </div>
 
-        <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 sm:gap-4">
+        <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 justify-self-end sm:gap-4">
           <Button
             className="rounded-full md:hidden"
             variant="secondary"

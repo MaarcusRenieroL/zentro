@@ -75,7 +75,7 @@ export const DangerZoneSection: FC<Props> = ({
     <div className="space-y-6">
       {!isOwner ? (
         <Card className="rounded-md border-destructive/30 bg-destructive/5 py-0 shadow-sm">
-          <CardContent className="p-5 sm:p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10">
                 <LogOutIcon className="size-5 text-destructive" />
@@ -90,7 +90,7 @@ export const DangerZoneSection: FC<Props> = ({
                 </p>
                 <Button
                   variant="destructive"
-                  className="mt-5"
+                  className="mt-5 w-full sm:w-auto"
                   onClick={() => setIsLeaveDialogOpen(true)}
                 >
                   <LogOutIcon className="size-4" />
@@ -104,7 +104,7 @@ export const DangerZoneSection: FC<Props> = ({
 
       {organizationRole === "owner" && (
         <Card className="rounded-md bg-card/50 py-0 opacity-70 shadow-sm">
-          <CardContent className="p-5 sm:p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10">
                 <Building2Icon className="size-5 text-destructive" />
@@ -119,7 +119,7 @@ export const DangerZoneSection: FC<Props> = ({
                 </p>
                 <Button
                   variant="destructive"
-                  className="mt-5"
+                  className="mt-5 w-full sm:w-auto"
                   onClick={() => deleteOrganization()}
                 >
                   Delete organization

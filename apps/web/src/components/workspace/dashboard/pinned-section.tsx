@@ -51,8 +51,8 @@ export const PinnedSection: FC = () => {
   ];
 
   return (
-    <section className="rounded-md border bg-card/50 p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-medium text-foreground">Pinned</h2>
         <Button
           variant="link"
@@ -68,7 +68,7 @@ export const PinnedSection: FC = () => {
           <Link
             key={item.id}
             href={item.href}
-            className="group flex items-center justify-between gap-3 rounded-md border bg-background/60 p-3 transition-colors hover:border-primary/50 hover:bg-secondary/60"
+            className="group flex min-w-0 items-center justify-between gap-3 rounded-md border bg-background/60 p-3 transition-colors hover:border-primary/50 hover:bg-secondary/60"
           >
             <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary/70">
               <item.icon
@@ -84,7 +84,7 @@ export const PinnedSection: FC = () => {
               <p className="truncate text-sm font-medium text-foreground">
                 {item.title}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 truncate text-xs text-muted-foreground">
                 {item.app} · {item.updatedAt}
               </p>
             </div>
