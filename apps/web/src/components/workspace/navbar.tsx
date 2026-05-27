@@ -1,15 +1,15 @@
 "use client";
 
-import { FC, useId } from "react";
+import { FC, useId, useState } from "react";
 
 import { AccountNav } from "@zentro/ui/components/account-nav";
 import { authClient } from "@zentro/auth/client";
-import { useState } from "react";
 import { OrgSwitcher } from "@zentro/ui/components/org-switcher";
 import { Input } from "@zentro/ui/components/shadcn/input";
 import { HelpCircleIcon, SearchIcon } from "lucide-react";
 import { Button } from "@zentro/ui/components/shadcn/button";
 import { NotificationPopover } from "@zentro/ui/components/notification-popover";
+import { SidebarTrigger } from "@zentro/ui/components/shadcn/sidebar";
 
 const authenticatorUrl =
   process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? "http://localhost:3001";
@@ -54,6 +54,7 @@ export const DashboardNavbar: FC<Props> = ({
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <nav className="flex min-h-14 flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:flex-nowrap">
         <div className="flex min-w-0 flex-1 items-center gap-4 lg:flex-none">
+          <SidebarTrigger />
           <OrgSwitcher
             organizations={organizations}
             activeOrgSlug={orgSlug}
@@ -61,7 +62,7 @@ export const DashboardNavbar: FC<Props> = ({
           />
         </div>
 
-        <div className="order-3 w-full lg:order-0 lg:max-w-md">
+        <div className="order-3 w-full lg:order-0 lg:max-w-md hidden md:block">
           <div className="relative">
             <div className="text-muted-foreground pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3 peer-disabled:opacity-50">
               <SearchIcon className="size-4" />
@@ -82,6 +83,14 @@ export const DashboardNavbar: FC<Props> = ({
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+          <Button
+            className="md:hidden rounded-full sm:inline-flex"
+            variant="secondary"
+            size="icon-lg"
+          >
+            <SearchIcon />
+          </Button>
+
           <NotificationPopover />
 
           <Button
