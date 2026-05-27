@@ -1,6 +1,14 @@
 import { router, publicProcedure } from "./trpc";
 import { organizationRouter } from "./routers/organization";
 import { userRouter } from "./routers/user";
+import { activityRouter } from "./routers/activity";
+import { commentRouter } from "./routers/comment";
+import { docsRouter } from "./routers/doc";
+import { fileRouter } from "./routers/file";
+import { memberRouter } from "./routers/member";
+import { projectRouter } from "./routers/project";
+import { searchRouter } from "./routers/search";
+import { taskRouter } from "./routers/task";
 
 export const appRouter = router({
   health: publicProcedure.query(() => {
@@ -9,7 +17,15 @@ export const appRouter = router({
       message: "tRPC is working",
     };
   }),
+  activity: activityRouter,
+  comment: commentRouter,
+  docs: docsRouter,
+  file: fileRouter,
+  member: memberRouter,
   organization: organizationRouter,
+  project: projectRouter,
+  search: searchRouter,
+  task: taskRouter,
   user: userRouter,
 });
 
