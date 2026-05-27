@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@zentro/ui/components/shadcn/button";
-import { ChevronDownIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { ChevronDownIcon, SearchIcon } from "lucide-react";
 import {
   InputGroup,
   InputGroupAddon,
@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@zentro/ui/components/shadcn/dropdown-menu";
+import { CreateProjectModal } from "./create-project-modal";
 
 export const ProjectToolbar = () => {
   return (
@@ -24,10 +25,7 @@ export const ProjectToolbar = () => {
             Track active work across your workspace.
           </p>
         </div>
-        <Button size="lg" className="flex items-center gap-2 text-white">
-          <PlusIcon className="h-4 w-4" />
-          <span>New Project</span>
-        </Button>
+        <CreateProjectModal />
       </div>
       <div className="flex items-center justify-between gap-5">
         <InputGroup>
