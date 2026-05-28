@@ -21,19 +21,11 @@ import {
 } from "../../lib/zod-schema";
 import { getOrgAppUrl } from "@zentro/utils";
 import { submitWorkspaceSessionBridge } from "../../../lib/session-bridge";
+import { slugify } from "@zentro/utils";
 
 type OnboardingRedirectResponse = {
   sessionToken?: string;
 };
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .trim();
-}
 
 export default function CreateOrganizationPage() {
   const [slugEdited, setSlugEdited] = useState(false);

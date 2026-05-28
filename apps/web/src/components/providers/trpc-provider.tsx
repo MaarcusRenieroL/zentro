@@ -2,14 +2,11 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
-import { createTRPCContext } from "@trpc/tanstack-react-query";
 import { FC, ReactNode, useState } from "react";
 import superjson from "superjson";
 
-import { makeQueryClient } from "@zentro/api/react";
+import { makeQueryClient, TrpcProvider } from "@zentro/api/react";
 import type { AppRouter } from "@zentro/api/server";
-
-const { TRPCProvider } = createTRPCContext<AppRouter>();
 
 type Props = {
   children: ReactNode;
@@ -31,9 +28,9 @@ export const AppTRPCProvider: FC<Props> = ({ children }) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+      <TrpcProvider trpcClient={trpcClient} queryClient={queryClient}>
         {children}
-      </TRPCProvider>
+      </TrpcProvider>
     </QueryClientProvider>
   );
 };
