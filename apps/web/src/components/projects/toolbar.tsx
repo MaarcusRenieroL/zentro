@@ -15,7 +15,11 @@ import {
 } from "@zentro/ui/components/shadcn/dropdown-menu";
 import { CreateProjectModal } from "./create-project-modal";
 
-export const ProjectToolbar = () => {
+type ProjectToolbarProps = {
+  onProjectCreated: () => void | Promise<void>;
+};
+
+export const ProjectToolbar = ({ onProjectCreated }: ProjectToolbarProps) => {
   return (
     <div className="flex flex-col gap-5">
       <div className="w-full flex items-center justify-between">
@@ -25,7 +29,7 @@ export const ProjectToolbar = () => {
             Track active work across your workspace.
           </p>
         </div>
-        <CreateProjectModal />
+        <CreateProjectModal onProjectCreated={onProjectCreated} />
       </div>
       <div className="flex items-center justify-between gap-5">
         <InputGroup>

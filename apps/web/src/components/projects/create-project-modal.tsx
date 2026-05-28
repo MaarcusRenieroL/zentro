@@ -32,7 +32,13 @@ import { toastError, toastSuccess } from "@zentro/ui/index";
 import { LoadingState } from "@zentro/ui/components/loading-state";
 import { slugify } from "@zentro/utils";
 
-export const CreateProjectModal = () => {
+type CreateProjectModalProps = {
+  onProjectCreated: () => void | Promise<void>;
+};
+
+export const CreateProjectModal = ({
+  onProjectCreated,
+}: CreateProjectModalProps) => {
   const [open, setOpen] = useState<boolean>(false);
   const [slugEdited, setSlugEdited] = useState(false);
 
@@ -95,6 +101,7 @@ export const CreateProjectModal = () => {
 
       toastSuccess("Success", "Project created successfully");
 
+      await onProjectCreated();
       reset();
       setSlugEdited(false);
       setOpen(false);

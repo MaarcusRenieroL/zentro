@@ -7,7 +7,6 @@ import {
   EyeIcon,
   FolderKanbanIcon,
   MoreHorizontalIcon,
-  PlusIcon,
   SettingsIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -23,70 +22,42 @@ import {
   DropdownMenuTrigger,
 } from "@zentro/ui/shadcn/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@zentro/ui/shadcn/tabs";
+import type { Project as DbProject } from "@zentro/db/schema";
 
-type Project = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  status: "Active" | "Archived";
-  tasksCount: number;
-  docsCount: number;
-  members: number;
-  updated: string;
+type ProjectListProps = {
+  isLoading: boolean;
+  projects: DbProject[];
 };
 
-const projects: Project[] = [
-  {
-    id: "1",
-    name: "Website Redesign",
-    slug: "website-redesign",
-    description: "Complete redesign of the company website with modern UI/UX.",
-    status: "Active",
-    tasksCount: 24,
-    docsCount: 8,
-    members: 5,
-    updated: "Updated 2 hours ago",
-  },
-  {
-    id: "2",
-    name: "Mobile App Launch",
-    slug: "mobile-app-launch",
-    description: "Launch iOS and Android versions of our core product.",
-    status: "Active",
-    tasksCount: 42,
-    docsCount: 15,
-    members: 8,
-    updated: "Updated 5 hours ago",
-  },
-  {
-    id: "3",
-    name: "Internal Knowledge Base",
-    slug: "internal-knowledge-base",
-    description:
-      "Build centralized knowledge repository for team documentation.",
-    status: "Archived",
-    tasksCount: 12,
-    docsCount: 28,
-    members: 3,
-    updated: "Updated 3 days ago",
-  },
-];
+function formatProjectStatus(status: string) {
+  return status === "archived" ? "Archived" : "Active";
+}
 
-export const ProjectList = () => {
+function formatUpdatedAt(updatedAt: Date) {
+  return `Updated ${updatedAt.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year:
+      updatedAt.getFullYear() === new Date().getFullYear()
+        ? undefined
+        : "numeric",
+  })}`;
+}
+
+export const ProjectList = ({ isLoading, projects }: ProjectListProps) => {
   const [status, setStatus] = useState("all");
 
   const filteredProjects = useMemo(() => {
     if (status === "active") {
-      return projects.filter((project) => project.status === "Active");
+      return projects.filter((project) => project.status === "active");
     }
 
     if (status === "archived") {
-      return projects.filter((project) => project.status === "Archived");
+      return projects.filter((project) => project.status === "archived");
     }
 
     return projects;
-  }, [status]);
+  }, [projects, status]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -98,7 +69,11 @@ export const ProjectList = () => {
         </TabsList>
       </Tabs>
 
-      {filteredProjects.length === 0 ? (
+      {isLoading ? (
+        <div className="rounded-md border bg-card p-8 text-center text-sm text-muted-foreground sm:p-12">
+          Loading projects...
+        </div>
+      ) : filteredProjects.length === 0 ? (
         <div className="rounded-md border bg-card p-8 text-center sm:p-12">
           <div className="mb-4 flex justify-center">
             <div className="rounded-md bg-secondary p-3">
@@ -114,11 +89,6 @@ export const ProjectList = () => {
             Create a project to start organizing and tracking work across your
             team.
           </p>
-
-          <Button className="mt-6">
-            <PlusIcon className="size-4" />
-            Create project
-          </Button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -145,20 +115,20 @@ export const ProjectList = () => {
                 </div>
 
                 <p className="mt-2 line-clamp-1 text-sm text-muted-foreground">
-                  {project.description}
+                  {project.description || "No description provided."}
                 </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <Badge
                     variant={
-                      project.status === "Active" ? "default" : "secondary"
+                      project.status === "active" ? "default" : "secondary"
                     }
                   >
-                    {project.status}
+                    {formatProjectStatus(project.status)}
                   </Badge>
 
                   <span className="text-xs text-muted-foreground">
-                    {project.tasksCount} tasks · {project.docsCount} docs
+                    0 tasks · 0 docs
                   </span>
                 </div>
               </div>
@@ -166,28 +136,20 @@ export const ProjectList = () => {
               <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
                 <div className="text-left sm:text-right">
                   <p className="text-xs text-muted-foreground">
-                    {project.updated}
+                    {formatUpdatedAt(project.updatedAt)}
                   </p>
 
                   <div className="mt-2 flex -space-x-2 sm:justify-end">
-                    {Array.from({ length: Math.min(project.members, 3) }).map(
-                      (_, index) => (
-                        <Avatar
-                          key={index}
-                          className="size-6 border border-background"
-                        >
-                          <AvatarFallback className="text-xs">
-                            {String.fromCharCode(65 + index)}
-                          </AvatarFallback>
-                        </Avatar>
-                      ),
-                    )}
-
-                    {project.members > 3 ? (
-                      <div className="flex size-6 items-center justify-center rounded-full border border-background bg-secondary text-xs font-medium text-muted-foreground">
-                        +{project.members - 3}
-                      </div>
-                    ) : null}
+                    {Array.from({ length: 1 }).map((_, index) => (
+                      <Avatar
+                        key={index}
+                        className="size-6 border border-background"
+                      >
+                        <AvatarFallback className="text-xs">
+                          {String.fromCharCode(65 + index)}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
                   </div>
                 </div>
 

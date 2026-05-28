@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { checkSlugSchema, createProjectSchema } from "../../types/zod-schema";
-import { adminProcedure, router } from "../trpc";
+import { adminProcedure, organizationProcedure, router } from "../trpc";
 import { projects } from "@zentro/db/schema";
 import { and, eq } from "@zentro/db/drizzle";
 
@@ -54,4 +54,14 @@ export const projectRouter = router({
         available: !project,
       };
     }),
+  getProjectsByOrgId: organizationProcedure.query(async ({ ctx }) => {
+    const { activeOrganization, db } = ctx;
+
+    const projectList = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.organizationId, activeOrganization.id));
+
+    return projectList;
+  }),
 });

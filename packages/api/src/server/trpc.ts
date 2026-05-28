@@ -29,10 +29,18 @@ export const protectedProcedure = trpc.procedure.use(({ ctx, next }) => {
     });
   }
 
+  if (!ctx.activeOrganization) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "No active organization selected",
+    });
+  }
+
   return next({
     ctx: {
       ...ctx,
       user: ctx.user,
+      activeOrganization: ctx.activeOrganization,
     },
   });
 });
