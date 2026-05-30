@@ -1,13 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTrpcClient } from "@zentro/api/react";
 import { Badge } from "@zentro/ui/components/shadcn/badge";
 import { Button } from "@zentro/ui/components/shadcn/button";
 import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
 import { Input } from "@zentro/ui/components/shadcn/input";
 import { Label } from "@zentro/ui/components/shadcn/label";
 import { Textarea } from "@zentro/ui/components/shadcn/textarea";
-import { toastSuccess } from "@zentro/ui/index";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import {
   CheckCircle2Icon,
   ClockIcon,
@@ -16,6 +17,7 @@ import {
   RocketIcon,
   UserIcon,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FC, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -44,8 +46,16 @@ const formatDate = (date: Date) => {
   });
 };
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+
+  return "Something went wrong. Please try again.";
+};
+
 export const GeneralSection: FC<Props> = ({ project }) => {
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
+  const trpc = useTrpcClient();
+  const router = useRouter();
 
   const {
     control,
@@ -76,13 +86,37 @@ export const GeneralSection: FC<Props> = ({ project }) => {
   };
 
   const handleSave = async (values: ProjectGeneralSectionFormValues) => {
-    reset(values);
-    setSaveState("saved");
-    toastSuccess("Saved locally", "Connect this form to updateProject next.");
+    try {
+      const updatedProject = await trpc.project.updateProjectBySlug.mutate({
+        currentSlug: project.slug,
+        name: values.name,
+        slug: values.slug,
+        description: values.description,
+      });
 
-    window.setTimeout(() => {
+      toastSuccess("Success", "Project updated successfully.");
+
+      reset({
+        name: updatedProject.name,
+        slug: updatedProject.slug,
+        description: updatedProject.description ?? "",
+      });
+
+      setSaveState("saved");
+
+      if (updatedProject.slug !== project.slug) {
+        router.replace(`/projects/${updatedProject.slug}/settings/general`);
+        return;
+      }
+
+      window.setTimeout(() => {
+        setSaveState("idle");
+      }, 2500);
+    } catch (error) {
       setSaveState("idle");
-    }, 2500);
+
+      toastError("Failed to update project", getErrorMessage(error));
+    }
   };
 
   return (
@@ -90,7 +124,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
       {saveState === "saved" ? (
         <div className="flex items-center gap-3 rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-foreground">
           <CheckCircle2Icon className="size-4 text-green-500" />
-          Project settings saved locally.
+          Project settings saved.
         </div>
       ) : null}
 
@@ -279,6 +313,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                 variant="outline"
                 className="w-full sm:w-auto"
                 onClick={handleCancel}
+                disabled={isSubmitting}
               >
                 <RotateCcwIcon className="size-4" />
                 Cancel
@@ -289,7 +324,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                 disabled={isSubmitting || !isValid}
               >
                 <CheckCircle2Icon className="size-4" />
-                Save changes
+                {isSubmitting ? "Saving..." : "Save changes"}
               </Button>
             </div>
           </div>

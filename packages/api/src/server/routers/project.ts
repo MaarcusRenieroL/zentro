@@ -3,6 +3,7 @@ import {
   checkSlugSchema,
   createProjectSchema,
   getProjectBySlugSchema,
+  updateProjectBySlugSchema,
 } from "../../types/zod-schema";
 import { adminProcedure, organizationProcedure, router } from "../trpc";
 import { members, projects, users } from "@zentro/db/schema";
@@ -114,5 +115,80 @@ export const projectRouter = router({
         totalDocs: 0,
         totalMembers: memberCount?.count ?? 0,
       };
+    }),
+  updateProjectBySlug: adminProcedure
+    .input(updateProjectBySlugSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const { currentSlug, name, slug, description } = input;
+
+      const [existingProject] = await db
+        .select({
+          id: projects.id,
+          slug: projects.slug,
+          organizationId: projects.organizationId,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.slug, currentSlug),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .limit(1);
+
+      if (!existingProject) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      if (slug !== currentSlug) {
+        const [slugConflict] = await db
+          .select({
+            id: projects.id,
+          })
+          .from(projects)
+          .where(
+            and(
+              eq(projects.slug, slug),
+              eq(projects.organizationId, activeOrganization.id),
+            ),
+          )
+          .limit(1);
+
+        if (slugConflict) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Project slug is already taken",
+          });
+        }
+      }
+
+      const [updatedProject] = await db
+        .update(projects)
+        .set({
+          name,
+          slug,
+          description: description || null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(projects.id, existingProject.id),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .returning();
+
+      if (!updatedProject) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update project",
+        });
+      }
+
+      return updatedProject;
     }),
 });
