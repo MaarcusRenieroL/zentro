@@ -1,55 +1,65 @@
-"use client";
+import { JSX } from "react";
+import { db } from "@zentro/db";
+import { and, eq } from "@zentro/db/drizzle";
+import { projects } from "@zentro/db/schema";
+import { redirect } from "next/navigation";
 
-import { useTrpcClient } from "@zentro/api/react";
-import { toastError } from "@zentro/ui/index";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { DangerSection } from "~/src/components/project-detail/settings/danger-section";
-import { ProjectDetail } from "~/src/lib/types";
-import { ProjectSettingsContentLoading } from "~/src/components/project-detail/project-loading";
+import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
+import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
 
-export default function DangerSettingsPage() {
-  const [project, setProject] = useState<ProjectDetail | null>(null);
-  const trpc = useTrpcClient();
-  const params = useParams<{ slug: string }>();
-  const router = useRouter();
+type ProjectStatus = "active" | "archived";
 
-  useEffect(() => {
-    let isMounted = true;
+type Props = {
+  params: Promise<{
+    slug: string;
+  }>;
+};
 
-    async function loadProject() {
-      try {
-        const data = await trpc.project.getProjectBySlug.query({
-          slug: params.slug,
-        });
+const getProjectStatus = (status: string): ProjectStatus => {
+  return status === "archived" ? "archived" : "active";
+};
 
-        if (isMounted) {
-          setProject(data as ProjectDetail);
-        }
-      } catch {
-        toastError("Error", "Project not found");
-        router.replace("/projects");
-      }
-    }
+export default async function DangerSettingsPage({
+  params,
+}: Props): Promise<JSX.Element> {
+  const { slug } = await params;
+  const { authorization, organization } = await getAuthorizedDashboardContext({
+    project: ["archive", "delete"],
+  });
 
-    void loadProject();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [params.slug, router, trpc]);
+  const [project] = await db
+    .select({
+      name: projects.name,
+      slug: projects.slug,
+      status: projects.status,
+    })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.slug, slug),
+        eq(projects.organizationId, organization.id),
+      ),
+    )
+    .limit(1);
 
   if (!project) {
-    return <ProjectSettingsContentLoading />;
+    redirect("/projects");
   }
 
   return (
-    <DangerSection
-      project={{
-        name: project.name,
-        slug: project.slug,
-        status: project.status,
-      }}
-    />
+    <AuthorizationBoundary
+      isAllowed={authorization.isAllowed}
+      title="Project management restricted"
+      description="Only organization admins and owners can archive, restore, or delete projects."
+    >
+      <DangerSection
+        project={{
+          name: project.name,
+          slug: project.slug,
+          status: getProjectStatus(project.status),
+        }}
+      />
+    </AuthorizationBoundary>
   );
 }

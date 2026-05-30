@@ -1,16 +1,18 @@
 import { TRPCError } from "@trpc/server";
 import {
+  archiveProjectBySlugSchema,
   checkSlugSchema,
   createProjectSchema,
+  deleteProjectBySlugSchema,
   getProjectBySlugSchema,
   updateProjectBySlugSchema,
 } from "../../types/zod-schema";
-import { adminProcedure, organizationProcedure, router } from "../trpc";
+import { authorizedProcedure, organizationProcedure, router } from "../trpc";
 import { members, projects, users } from "@zentro/db/schema";
 import { and, count, eq } from "@zentro/db/drizzle";
 
 export const projectRouter = router({
-  createProject: adminProcedure
+  createProject: authorizedProcedure({ project: ["create"] })
     .input(createProjectSchema)
     .mutation(async ({ ctx, input }) => {
       const { name, slug, description } = input;
@@ -37,7 +39,7 @@ export const projectRouter = router({
 
       return project;
     }),
-  checkSlug: adminProcedure
+  checkSlug: authorizedProcedure({ project: ["create"] })
     .input(checkSlugSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -116,7 +118,7 @@ export const projectRouter = router({
         totalMembers: memberCount?.count ?? 0,
       };
     }),
-  updateProjectBySlug: adminProcedure
+  updateProjectBySlug: authorizedProcedure({ project: ["update"] })
     .input(updateProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -190,5 +192,106 @@ export const projectRouter = router({
       }
 
       return updatedProject;
+    }),
+  archiveProject: authorizedProcedure({ project: ["archive"] })
+    .input(archiveProjectBySlugSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const { slug } = input;
+
+      const [existingProject] = await db
+        .select({
+          id: projects.id,
+          slug: projects.slug,
+          organizationId: projects.organizationId,
+          status: projects.status,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.slug, slug),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .limit(1);
+
+      if (!existingProject) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      const nextStatus =
+        existingProject.status === "archived" ? "active" : "archived";
+
+      const [updatedProject] = await db
+        .update(projects)
+        .set({
+          status: nextStatus,
+          archivedAt: nextStatus === "archived" ? new Date() : null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(projects.id, existingProject.id),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .returning();
+
+      if (!updatedProject) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            nextStatus === "archived"
+              ? "Failed to archive project"
+              : "Failed to restore project",
+        });
+      }
+
+      return updatedProject;
+    }),
+  deleteProject: authorizedProcedure({ project: ["delete"] })
+    .input(deleteProjectBySlugSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const { slug } = input;
+
+      const [existingProject] = await db
+        .select()
+        .from(projects)
+        .where(
+          and(
+            eq(projects.slug, slug),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        );
+
+      if (!existingProject) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project with given slug not found",
+        });
+      }
+
+      const [deletedProject] = await db
+        .delete(projects)
+        .where(
+          and(
+            eq(projects.slug, slug),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .returning();
+
+      if (!deletedProject) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update project",
+        });
+      }
+
+      return deletedProject;
     }),
 });

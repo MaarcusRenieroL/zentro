@@ -1,4 +1,9 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import {
+  hasOrganizationPermission,
+  type OrganizationRole,
+  type PermissionRequest,
+} from "@zentro/auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
@@ -71,9 +76,13 @@ export const adminProcedure = organizationProcedure.use(({ ctx, next }) => {
   const activeOrganization =
     ctx.activeOrganization as ActiveOrganizationWithMembers;
 
-  const role = activeOrganization.members?.[0]?.role;
+  const role = activeOrganization.members?.[0]?.role ?? "member";
 
-  if (role !== "admin" && role !== "owner") {
+  if (
+    !hasOrganizationPermission(role as OrganizationRole, {
+      organization: ["update"],
+    })
+  ) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "You must be an organization admin to perform this action",
@@ -84,3 +93,22 @@ export const adminProcedure = organizationProcedure.use(({ ctx, next }) => {
     ctx,
   });
 });
+
+export const authorizedProcedure = (permission: PermissionRequest) =>
+  organizationProcedure.use(({ ctx, next }) => {
+    const activeOrganization =
+      ctx.activeOrganization as ActiveOrganizationWithMembers;
+
+    const role = activeOrganization.members?.[0]?.role ?? "member";
+
+    if (!hasOrganizationPermission(role as OrganizationRole, permission)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You do not have permission to perform this action",
+      });
+    }
+
+    return next({
+      ctx,
+    });
+  });

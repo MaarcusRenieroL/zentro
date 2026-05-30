@@ -71,10 +71,18 @@ export const updateProjectBySlugSchema = z.object({
     .or(z.literal("")),
 });
 
+export const archiveProjectBySlugSchema = z.object({
+  slug: z.string().trim().min(2),
+});
+
+export const deleteProjectBySlugSchema = z.object({
+  slug: z.string().trim().min(2),
+});
+
 export type OrgInviteDetailsFormValues = z.infer<typeof orgInviteDetailsSchema>;
 export type JoinOrganizationListSchema = z.infer<
   typeof joinOrganizationListSchema
 >;
 
 export type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
-export type UpdateProjectFormValues = z.infer<typeof updateProjectBySlug>;
+export type UpdateProjectFormValues = z.infer<typeof updateProjectBySlugSchema>;

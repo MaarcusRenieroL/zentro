@@ -11,6 +11,7 @@ export const statement = {
   organization: ["update", "delete"],
   billing: ["manage"],
   members: ["invite", "remove", "update-role"],
+  project: ["create", "update", "archive", "delete"],
 } as const;
 
 export const ac = createAccessControl(statement);
@@ -20,12 +21,14 @@ export const owner = ac.newRole({
   organization: ["update", "delete"],
   billing: ["manage"],
   members: ["invite", "remove", "update-role"],
+  project: ["create", "update", "archive", "delete"],
 });
 
 export const admin = ac.newRole({
   ...adminAc.statements,
   organization: ["update"],
   members: ["invite", "remove", "update-role"],
+  project: ["create", "update", "archive", "delete"],
 });
 
 export const member = ac.newRole({

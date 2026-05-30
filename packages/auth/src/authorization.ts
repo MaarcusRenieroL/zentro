@@ -41,5 +41,17 @@ export function getOrganizationPermissions(role: OrganizationRole) {
     canManageBilling: hasOrganizationPermission(role, {
       billing: ["manage"],
     }),
+    canCreateProjects: hasOrganizationPermission(role, {
+      project: ["create"],
+    }),
+    canUpdateProjects: hasOrganizationPermission(role, {
+      project: ["update"],
+    }),
+    canArchiveProjects: hasOrganizationPermission(role, {
+      project: ["archive"],
+    }),
+    canDeleteProjects: hasOrganizationPermission(role, {
+      project: ["delete"],
+    }),
   };
 }
