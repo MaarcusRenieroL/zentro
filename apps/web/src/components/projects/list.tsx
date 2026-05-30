@@ -27,6 +27,7 @@ import type { Project as DbProject } from "@zentro/db/schema";
 type ProjectListProps = {
   isLoading: boolean;
   projects: DbProject[];
+  searchQuery: string;
 };
 
 function formatProjectStatus(status: string) {
@@ -44,20 +45,37 @@ function formatUpdatedAt(updatedAt: Date) {
   })}`;
 }
 
-export const ProjectList = ({ isLoading, projects }: ProjectListProps) => {
+export const ProjectList = ({
+  isLoading,
+  projects,
+  searchQuery,
+}: ProjectListProps) => {
   const [status, setStatus] = useState("all");
 
   const filteredProjects = useMemo(() => {
-    if (status === "active") {
-      return projects.filter((project) => project.status === "active");
-    }
+    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
-    if (status === "archived") {
-      return projects.filter((project) => project.status === "archived");
-    }
+    return projects.filter((project) => {
+      const matchesStatus = status === "all" || project.status === status;
+      const matchesSearch =
+        normalizedSearchQuery.length === 0 ||
+        project.name.toLowerCase().includes(normalizedSearchQuery) ||
+        project.slug.toLowerCase().includes(normalizedSearchQuery) ||
+        (project.description ?? "")
+          .toLowerCase()
+          .includes(normalizedSearchQuery);
 
-    return projects;
-  }, [projects, status]);
+      return matchesStatus && matchesSearch;
+    });
+  }, [projects, searchQuery, status]);
+
+  const emptyTitle = searchQuery.trim()
+    ? "No matching projects"
+    : "No projects yet";
+
+  const emptyDescription = searchQuery.trim()
+    ? "Try a different project name, slug, or description."
+    : "Create a project to start organizing and tracking work across your team.";
 
   return (
     <div className="flex flex-col gap-5">
@@ -82,12 +100,11 @@ export const ProjectList = ({ isLoading, projects }: ProjectListProps) => {
           </div>
 
           <h3 className="text-lg font-semibold text-foreground">
-            No projects yet
+            {emptyTitle}
           </h3>
 
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Create a project to start organizing and tracking work across your
-            team.
+            {emptyDescription}
           </p>
         </div>
       ) : (

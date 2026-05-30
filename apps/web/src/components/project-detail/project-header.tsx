@@ -1,6 +1,6 @@
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
-import { PlusIcon, RocketIcon, SettingsIcon } from "lucide-react";
+import { ArchiveIcon, PlusIcon, RocketIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { FC } from "react";
 
@@ -17,6 +17,8 @@ export const ProjectHeader: FC<Props> = ({
   description,
   status = "active",
 }) => {
+  const isArchived = status === "archived";
+
   return (
     <div className="flex w-full flex-col gap-5 rounded-md border bg-card/50 p-5 shadow-sm sm:flex-row sm:items-start sm:justify-between">
       <div className="flex min-w-0 items-start gap-4">
@@ -57,9 +59,13 @@ export const ProjectHeader: FC<Props> = ({
           </Button>
         </Link>
 
-        <Button size="sm" className="gap-2">
-          <PlusIcon className="size-4" />
-          <span>New task</span>
+        <Button size="sm" className="gap-2" disabled={isArchived}>
+          {isArchived ? (
+            <ArchiveIcon className="size-4" />
+          ) : (
+            <PlusIcon className="size-4" />
+          )}
+          <span>{isArchived ? "Archived" : "New task"}</span>
         </Button>
       </div>
     </div>

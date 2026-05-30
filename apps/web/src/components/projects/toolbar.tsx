@@ -17,9 +17,15 @@ import { CreateProjectModal } from "./create-project-modal";
 
 type ProjectToolbarProps = {
   onProjectCreated: () => void | Promise<void>;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
 };
 
-export const ProjectToolbar = ({ onProjectCreated }: ProjectToolbarProps) => {
+export const ProjectToolbar = ({
+  onProjectCreated,
+  searchQuery,
+  onSearchQueryChange,
+}: ProjectToolbarProps) => {
   return (
     <div className="flex flex-col gap-5">
       <div className="w-full flex items-center justify-between">
@@ -40,6 +46,8 @@ export const ProjectToolbar = ({ onProjectCreated }: ProjectToolbarProps) => {
             aria-label="Search"
             placeholder="Search"
             type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
           />
         </InputGroup>
 
