@@ -1,6 +1,7 @@
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
-import { PencilIcon, PlusIcon, RocketIcon } from "lucide-react";
+import { PlusIcon, RocketIcon, SettingsIcon } from "lucide-react";
+import Link from "next/link";
 import { FC } from "react";
 
 type Props = {
@@ -49,10 +50,12 @@ export const ProjectHeader: FC<Props> = ({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <Button size="sm" variant="secondary" className="gap-2">
-          <PencilIcon className="size-4" />
-          Edit Project
-        </Button>
+        <Link href={`/projects/${slug}/settings`}>
+          <Button size="sm" variant="secondary" className="gap-2">
+            <SettingsIcon className="size-4" />
+            Settings
+          </Button>
+        </Link>
 
         <Button size="sm" className="gap-2">
           <PlusIcon className="size-4" />
