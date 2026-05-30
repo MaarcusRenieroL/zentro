@@ -39,6 +39,14 @@ export const checkSlugSchema = z.object({
   slug: z.string().trim().min(2),
 });
 
+export const getProjectBySlugSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(2, "Project slug is required.")
+    .max(80, "Project slug must be 80 characters or less."),
+});
+
 export type OrgInviteDetailsFormValues = z.infer<typeof orgInviteDetailsSchema>;
 export type JoinOrganizationListSchema = z.infer<
   typeof joinOrganizationListSchema

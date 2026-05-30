@@ -14,7 +14,7 @@ export const projects = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
 
-    organizationId: text("organizationId")
+    organizationId: uuid("organizationId")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
 
@@ -24,7 +24,7 @@ export const projects = pgTable(
 
     status: text("status").notNull().default("active"),
 
-    createdById: text("createdById").references(() => users.id, {
+    createdById: uuid("createdById").references(() => users.id, {
       onDelete: "set null",
     }),
 

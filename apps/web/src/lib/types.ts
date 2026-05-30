@@ -11,3 +11,17 @@ export type Member = {
     image: string | undefined;
   };
 };
+
+export type ProjectDetail = {
+  name: string;
+  slug: string;
+  description: string | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  owner: string;
+  openTasks: number;
+  totalTasks: number;
+  totalDocs: number;
+  totalMembers: number;
+};
