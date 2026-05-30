@@ -23,6 +23,7 @@ import {
 } from "@zentro/ui/shadcn/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@zentro/ui/shadcn/tabs";
 import type { Project as DbProject } from "@zentro/db/schema";
+import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
 
 type ProjectListProps = {
   isLoading: boolean;
@@ -88,8 +89,32 @@ export const ProjectList = ({
       </Tabs>
 
       {isLoading ? (
-        <div className="rounded-md border bg-card p-8 text-center text-sm text-muted-foreground sm:p-12">
-          Loading projects...
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex flex-col gap-4 rounded-md border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="size-8 shrink-0 rounded-md" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-5 w-44 max-w-full" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                </div>
+                <Skeleton className="mt-3 h-4 w-full max-w-lg" />
+                <div className="mt-3 flex items-center gap-2">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="size-8 rounded-md" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="rounded-md border bg-card p-8 text-center sm:p-12">

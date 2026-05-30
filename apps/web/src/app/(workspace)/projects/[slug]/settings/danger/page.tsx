@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DangerSection } from "~/src/components/project-detail/settings/danger-section";
 import { ProjectDetail } from "~/src/lib/types";
+import { ProjectSettingsContentLoading } from "~/src/components/project-detail/project-loading";
 
 export default function DangerSettingsPage() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -39,7 +40,7 @@ export default function DangerSettingsPage() {
   }, [params.slug, router, trpc]);
 
   if (!project) {
-    return <div className="h-96 rounded-md border bg-card/50" />;
+    return <ProjectSettingsContentLoading />;
   }
 
   return (

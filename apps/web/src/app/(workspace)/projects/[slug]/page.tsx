@@ -11,6 +11,7 @@ import { ProjectContributors } from "~/src/components/project-detail/project-con
 import { ProjectSummary } from "~/src/components/project-detail/project-summary";
 import { ProjectTabs } from "~/src/components/project-detail/project-tabs";
 import { ProjectActivity } from "~/src/components/project-detail/project-activity";
+import { ProjectPageLoading } from "~/src/components/project-detail/project-loading";
 
 export default function ProjectPage() {
   const params = useParams<{ slug: string }>();
@@ -45,21 +46,7 @@ export default function ProjectPage() {
   }, [params.slug, router, trpc]);
 
   if (project == null) {
-    return (
-      <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:gap-8 xl:px-10">
-        <div className="h-32 rounded-md border bg-card/50" />
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="h-32 rounded-md border bg-card/50" />
-          <div className="h-32 rounded-md border bg-card/50" />
-          <div className="h-32 rounded-md border bg-card/50" />
-          <div className="h-32 rounded-md border bg-card/50" />
-        </div>
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="h-96 rounded-md border bg-card/50" />
-          <div className="h-96 rounded-md border bg-card/50" />
-        </div>
-      </section>
-    );
+    return <ProjectPageLoading />;
   }
 
   return (

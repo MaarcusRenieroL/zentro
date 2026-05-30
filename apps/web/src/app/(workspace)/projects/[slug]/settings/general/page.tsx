@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GeneralSection } from "~/src/components/project-detail/settings/general-section";
 import { ProjectDetail } from "~/src/lib/types";
+import { ProjectSettingsContentLoading } from "~/src/components/project-detail/project-loading";
 
 export default function GeneralSettingsPage() {
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -39,7 +40,7 @@ export default function GeneralSettingsPage() {
   }, [params.slug, router, trpc]);
 
   if (!project) {
-    return <div className="h-96 rounded-md border bg-card/50" />;
+    return <ProjectSettingsContentLoading />;
   }
 
   return (

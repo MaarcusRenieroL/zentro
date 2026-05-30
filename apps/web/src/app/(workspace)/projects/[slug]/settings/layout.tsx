@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { SettingsShell } from "~/src/components/project-detail/settings/settings-shell";
 import { ProjectDetail } from "~/src/lib/types";
+import { ProjectSettingsLoading } from "~/src/components/project-detail/project-loading";
 
 export default function ProjectSettingsLayout({
   children,
@@ -46,7 +47,7 @@ export default function ProjectSettingsLayout({
   }, [slug, router, trpc]);
 
   if (!project) {
-    return null;
+    return <ProjectSettingsLoading />;
   }
 
   return (
