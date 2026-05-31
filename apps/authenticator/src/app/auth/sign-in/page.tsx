@@ -56,7 +56,19 @@ export default function LoginPage() {
 
     toastSuccess("Success", "Logged in successfully");
 
-    const response = await fetch("/api/auth/onboarding-redirect", {
+    const onboardingRedirectUrl = new URL(
+      "/api/auth/onboarding-redirect",
+      window.location.origin,
+    );
+    const redirectTo = new URLSearchParams(window.location.search).get(
+      "redirectTo",
+    );
+
+    if (redirectTo) {
+      onboardingRedirectUrl.searchParams.set("redirectTo", redirectTo);
+    }
+
+    const response = await fetch(onboardingRedirectUrl, {
       credentials: "include",
     });
 

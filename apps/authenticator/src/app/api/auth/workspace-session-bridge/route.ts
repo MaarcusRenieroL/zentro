@@ -4,6 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@zentro/auth";
 import { getAuthAppUrl, resolveOrgAppFromHost } from "@zentro/utils";
 
+function isLocalTasksRedirect(url: URL) {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    ["localhost", "127.0.0.1"].includes(url.hostname) &&
+    url.port === "3002" &&
+    (url.pathname === "/" ||
+      url.pathname === "/tasks" ||
+      url.pathname.startsWith("/tasks/") ||
+      url.pathname.startsWith("/projects/"))
+  );
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -16,7 +28,15 @@ function getRedirectPath(url: URL): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
-function getSafeWorkspaceRedirect(value: string | null): URL | null {
+function normalizeLocalTasksRedirect(url: URL) {
+  if (isLocalTasksRedirect(url) && url.pathname === "/") {
+    url.pathname = "/tasks";
+  }
+
+  return url;
+}
+
+function getSafeOrgAppRedirect(value: string | null): URL | null {
   if (!value) {
     return null;
   }
@@ -25,11 +45,11 @@ function getSafeWorkspaceRedirect(value: string | null): URL | null {
     const destination = new URL(value);
     const resolvedApp = resolveOrgAppFromHost(destination.host);
 
-    if (!resolvedApp || resolvedApp.app !== "workspace") {
+    if (!resolvedApp && !isLocalTasksRedirect(destination)) {
       return null;
     }
 
-    return destination;
+    return normalizeLocalTasksRedirect(destination);
   } catch {
     return null;
   }
@@ -75,7 +95,7 @@ function renderBridgeForm({
 
 export async function GET(request: NextRequest) {
   const requestHeaders = await headers();
-  const redirectTo = getSafeWorkspaceRedirect(
+  const redirectTo = getSafeOrgAppRedirect(
     request.nextUrl.searchParams.get("redirectTo"),
   );
 
@@ -89,9 +109,10 @@ export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: requestHeaders });
 
   if (!session) {
-    return NextResponse.redirect(
-      new URL(getAuthAppUrl({ path: "/auth/sign-in" })),
-    );
+    const signInUrl = new URL(getAuthAppUrl({ path: "/auth/sign-in" }));
+    signInUrl.searchParams.set("redirectTo", redirectTo.toString());
+
+    return NextResponse.redirect(signInUrl);
   }
 
   if (!session.user.emailVerified) {
@@ -107,9 +128,11 @@ export async function GET(request: NextRequest) {
   const organizations = await auth.api.listOrganizations({
     headers: requestHeaders,
   });
-  const organization = organizations.find(
-    (org) => org.slug === resolvedApp?.orgSlug,
-  );
+  const organization = resolvedApp
+    ? organizations.find((org) => org.slug === resolvedApp.orgSlug)
+    : (organizations.find(
+        (org) => org.id === session.session.activeOrganizationId,
+      ) ?? organizations[0]);
 
   if (!organization) {
     return NextResponse.redirect(

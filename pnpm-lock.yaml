@@ -61,6 +61,18 @@ importers:
 
   .:
     devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.1.18
+        version: 4.2.4
+      '@types/node':
+        specifier: ^20.19.26
+        version: 20.19.39
+      '@types/react':
+        specifier: 19.2.4
+        version: 19.2.4
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.4)
       eslint:
         specifier: ^9.39.1
         version: 9.39.1(jiti@2.6.1)
@@ -73,6 +85,9 @@ importers:
       prettier:
         specifier: ^3.7.4
         version: 3.7.4
+      tailwindcss:
+        specifier: ^4.1.18
+        version: 4.2.4
       turbo:
         specifier: ^2.9.6
         version: 2.9.6
@@ -140,33 +155,67 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4.1.18
-        version: 4.2.4
-      '@types/node':
-        specifier: ^20.19.26
-        version: 20.19.39
-      '@types/react':
-        specifier: 19.2.4
-        version: 19.2.4
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.4)
       '@zentro/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
       '@zentro/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.1(jiti@2.6.1)
-      tailwindcss:
-        specifier: ^4.1.18
-        version: 4.2.4
-      typescript:
-        specifier: 5.9.2
-        version: 5.9.2
+
+  apps/tasks:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.100.11
+        version: 5.100.11(react@19.2.4)
+      '@trpc/client':
+        specifier: ^11.17.0
+        version: 11.17.0(@trpc/server@11.17.0(typescript@5.9.2))(typescript@5.9.2)
+      '@trpc/server':
+        specifier: ^11.17.0
+        version: 11.17.0(typescript@5.9.2)
+      '@trpc/tanstack-react-query':
+        specifier: ^11.17.0
+        version: 11.17.0(@tanstack/react-query@5.100.11(react@19.2.4))(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.2))(typescript@5.9.2))(@trpc/server@11.17.0(typescript@5.9.2))(react@19.2.4)(typescript@5.9.2)
+      '@zentro/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@zentro/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@zentro/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@zentro/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@zentro/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
+      lucide-react:
+        specifier: ^1.8.0
+        version: 1.8.0(react@19.2.4)
+      next:
+        specifier: 16.2.4
+        version: 16.2.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
+      superjson:
+        specifier: ^2.2.6
+        version: 2.2.6
+    devDependencies:
+      '@zentro/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@zentro/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
 
   apps/web:
     dependencies:
@@ -225,33 +274,12 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4.1.18
-        version: 4.2.4
-      '@types/node':
-        specifier: ^20.19.26
-        version: 20.19.39
-      '@types/react':
-        specifier: 19.2.4
-        version: 19.2.4
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.4)
       '@zentro/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
       '@zentro/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.1(jiti@2.6.1)
-      tailwindcss:
-        specifier: ^4.1.18
-        version: 4.2.4
-      typescript:
-        specifier: 5.9.2
-        version: 5.9.2
 
   packages/api:
     dependencies:
@@ -280,21 +308,12 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
     devDependencies:
-      '@types/node':
-        specifier: ^20.19.26
-        version: 20.19.39
-      '@types/react':
-        specifier: 19.2.4
-        version: 19.2.4
       '@zentro/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       react:
         specifier: 19.2.4
         version: 19.2.4
-      typescript:
-        specifier: 5.9.2
-        version: 5.9.2
 
   packages/auth:
     dependencies:
@@ -311,9 +330,6 @@ importers:
         specifier: ^6.12.2
         version: 6.12.2
     devDependencies:
-      '@types/node':
-        specifier: ^20.19.26
-        version: 20.19.39
       '@zentro/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -327,9 +343,6 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
     devDependencies:
-      '@types/node':
-        specifier: ^20.19.26
-        version: 20.19.39
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0
@@ -420,15 +433,6 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
     devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4.1.18
-        version: 4.2.4
-      '@types/react':
-        specifier: 19.2.4
-        version: 19.2.4
-      '@types/react-dom':
-        specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.4)
       '@zentro/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -441,24 +445,12 @@ importers:
       react-dom:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
-      tailwindcss:
-        specifier: ^4.1.18
-        version: 4.2.4
-      typescript:
-        specifier: 5.9.2
-        version: 5.9.2
 
   packages/utils:
     devDependencies:
-      '@types/node':
-        specifier: ^20.19.26
-        version: 20.19.39
       '@zentro/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
-      typescript:
-        specifier: 5.9.2
-        version: 5.9.2
 
 packages:
 

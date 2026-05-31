@@ -9,8 +9,6 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^20.19.26",
-    "@zentro/typescript-config": "workspace:*",
-    "typescript": "5.9.2"
+    "@zentro/typescript-config": "workspace:*"
   }
 }
