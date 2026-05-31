@@ -18,10 +18,6 @@ function getRedirectPath(request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname === "/") {
-    return NextResponse.redirect(new URL("/tasks", request.url));
-  }
-
   const host = request.headers.get("host") ?? "";
   const resolvedApp = resolveOrgAppFromHost(host);
   const bridgeUrl = getAuthAppUrl({
