@@ -18,8 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@zentro/ui/shadcn/dialog";
-
-import type { ActivityEvent } from "./data";
+import { ActivityEvent } from "~/src/lib/types";
 
 type Props = {
   events: ActivityEvent[];
