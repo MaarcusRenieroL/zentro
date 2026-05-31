@@ -28,13 +28,15 @@ const handler = (request: Request) => {
         request.headers.get("host") ?? "",
       );
 
+      const organizationQuery = resolvedApp
+        ? {
+            organizationSlug: resolvedApp.orgSlug,
+          }
+        : undefined;
+
       const activeOrganization = await auth.api.getFullOrganization({
         headers: request.headers,
-        query: resolvedApp
-          ? {
-              organizationSlug: resolvedApp.orgSlug,
-            }
-          : undefined,
+        query: organizationQuery,
       });
 
       return {

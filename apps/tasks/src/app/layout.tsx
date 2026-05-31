@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { JSX } from "react";
 
 import { Toaster } from "@zentro/ui/shadcn/sonner";
 
+import { getDashboardContext } from "~/src/lib/dashboard-context";
 import { AppTRPCProvider } from "../components/providers/trpc-provider";
 import { ThemeProvider } from "../components/providers/theme-provider";
 import "./globals.css";
+import { TasksNavbar } from "../components/layout/tasks-navbar";
+import { getAuthAppUrl, getOrgAppUrl } from "@zentro/utils";
+import { TooltipProvider } from "@zentro/ui/components/shadcn/tooltip";
+import {
+  SidebarInset,
+  SidebarProvider,
+} from "@zentro/ui/components/shadcn/sidebar";
 
 export const metadata: Metadata = {
   title: "Zentro Tasks",
@@ -16,11 +23,12 @@ export const viewport: Viewport = {
   themeColor: "#0a0a0a",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>): JSX.Element {
+}>) {
+  const { organization, organizations, session } = await getDashboardContext();
   return (
     <html lang="en" suppressHydrationWarning className="h-full antialiased">
       <body className="font-sans antialiased">
@@ -30,7 +38,38 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppTRPCProvider>{children}</AppTRPCProvider>
+          <AppTRPCProvider>
+            <TooltipProvider>
+              <SidebarProvider defaultOpen={false}>
+                <SidebarInset>
+                  <main>
+                    <TasksNavbar
+                      orgSlug={organization.slug}
+                      organizations={organizations.map((org) => ({
+                        id: org.id,
+                        name: org.name,
+                        slug: org.slug,
+                        href: getAuthAppUrl({
+                          path: `/api/auth/workspace-session-bridge?redirectTo=${encodeURIComponent(
+                            getOrgAppUrl({
+                              orgSlug: org.slug,
+                              app: "tasks",
+                              path: "/tasks",
+                            }),
+                          )}`,
+                        }),
+                      }))}
+                      createOrganizationHref={getAuthAppUrl({
+                        path: "/auth/create-organization",
+                      })}
+                      user={session.user}
+                    />
+                    {children}
+                  </main>
+                </SidebarInset>
+              </SidebarProvider>
+            </TooltipProvider>
+          </AppTRPCProvider>
           <Toaster />
         </ThemeProvider>
       </body>

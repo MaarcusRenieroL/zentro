@@ -13,6 +13,10 @@ function isLocalhost(host: string) {
   return hostname === "localhost" || hostname === "127.0.0.1";
 }
 
+function getRedirectPath(request: NextRequest) {
+  return `${request.nextUrl.pathname}${request.nextUrl.search}`;
+}
+
 export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL("/tasks", request.url));
@@ -61,7 +65,15 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!resolvedApp && isLocalhost(host)) {
-    return NextResponse.next();
+    return NextResponse.redirect(
+      new URL(
+        getOrgAppUrl({
+          orgSlug: activeOrganization.slug,
+          app: "tasks",
+          path: getRedirectPath(request),
+        }),
+      ),
+    );
   }
 
   if (!resolvedApp || resolvedApp.app !== "tasks") {

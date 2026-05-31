@@ -8,9 +8,12 @@ import {
 } from "@zentro/utils";
 
 function isLocalTasksRedirect(url: URL) {
+  const resolvedApp = resolveOrgAppFromHost(url.host);
+
   return (
     process.env.NODE_ENV !== "production" &&
-    ["localhost", "127.0.0.1"].includes(url.hostname) &&
+    (resolvedApp?.app === "tasks" ||
+      ["localhost", "127.0.0.1"].includes(url.hostname)) &&
     url.port === "3002" &&
     (url.pathname === "/" ||
       url.pathname === "/tasks" ||
@@ -25,6 +28,30 @@ function normalizeLocalTasksRedirect(url: URL) {
   }
 
   return url;
+}
+
+function getRedirectPath(url: URL): string {
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function canonicalizeTasksRedirect(url: URL, orgSlug: string) {
+  if (!isLocalTasksRedirect(url)) {
+    return url;
+  }
+
+  const resolvedApp = resolveOrgAppFromHost(url.host);
+
+  if (resolvedApp?.orgSlug) {
+    return url;
+  }
+
+  return new URL(
+    getOrgAppUrl({
+      orgSlug,
+      app: "tasks",
+      path: getRedirectPath(url),
+    }),
+  );
 }
 
 function getSafeOrgAppRedirect(value: string | null): URL | null {
@@ -100,7 +127,10 @@ export async function GET(request: NextRequest) {
       });
 
       return NextResponse.json({
-        redirectTo: requestedRedirect.toString(),
+        redirectTo: canonicalizeTasksRedirect(
+          requestedRedirect,
+          requestedOrganization.slug,
+        ).toString(),
         sessionToken: session.session.token,
       });
     }

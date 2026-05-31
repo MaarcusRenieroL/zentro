@@ -38,7 +38,7 @@ type AccountLinks = {
 type Props = {
   activeOrgSlug: string;
   organizations: Organization[];
-  createOrganizationHref: string;
+  createOrganizationHref?: string;
   user: User;
   pathname: string;
   LinkComponent: ComponentType<LinkComponentProps>;

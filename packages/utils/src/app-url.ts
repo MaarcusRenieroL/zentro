@@ -41,6 +41,14 @@ function isLocalDomain(domain: string) {
   return domain === "localhost" || domain === "127.0.0.1";
 }
 
+function getLocalAppFromPort(port?: string): ZentroApp {
+  const app = Object.entries(localAppPorts).find(([, appPort]) => {
+    return appPort === port;
+  })?.[0];
+
+  return (app as ZentroApp | undefined) ?? "workspace";
+}
+
 function getAppPort(app: ZentroApp) {
   if (isLocalDomain(rootDomain)) {
     return localAppPorts[app] ?? appUrl.port;
@@ -50,6 +58,14 @@ function getAppPort(app: ZentroApp) {
 }
 
 function getOrgAppHost(orgSlug: string, app: ZentroApp) {
+  if (isLocalDomain(rootDomain)) {
+    const port = getAppPort(app);
+
+    return port
+      ? `${orgSlug}.${rootDomain}:${port}`
+      : `${orgSlug}.${rootDomain}`;
+  }
+
   const host =
     app === "workspace"
       ? `${orgSlug}.${rootDomain}`
@@ -78,7 +94,8 @@ function isOrgApp(value: string): value is Exclude<ZentroApp, "workspace"> {
 }
 
 export function resolveOrgAppFromHost(host: string): ResolvedOrgApp | null {
-  const hostname = host.split(",")[0]?.trim().toLowerCase().split(":")[0];
+  const normalizedHost = host.split(",")[0]?.trim().toLowerCase();
+  const [hostname, port] = normalizedHost?.split(":") ?? [];
   const domain = rootDomain.toLowerCase();
 
   if (!hostname?.endsWith(`.${domain}`)) {
@@ -102,7 +119,7 @@ export function resolveOrgAppFromHost(host: string): ResolvedOrgApp | null {
 
     return {
       orgSlug,
-      app: "workspace",
+      app: isLocalDomain(domain) ? getLocalAppFromPort(port) : "workspace",
     };
   }
 
