@@ -1,4 +1,5 @@
 export * from "./components/empty-state";
+export * from "./components/dashboard-navbar";
 export * from "./components/loading-state";
 export * from "./components/toast";
 export * from "./lib/errors";

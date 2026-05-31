@@ -18,18 +18,28 @@ type Props = {
   };
   onSignOut: () => void | Promise<void>;
   isSigningOut?: boolean;
+  links?: {
+    membersHref?: string;
+    organizationSettingsHref?: string;
+    accountHref?: string;
+  };
 };
 
 export const AccountNav: FC<Props> = ({
   user,
   onSignOut,
   isSigningOut = false,
+  links,
 }) => {
   const initials = user.name
     .split(" ")
     .slice(0, 2)
     .map((part) => part.charAt(0))
     .join("");
+  const membersHref = links?.membersHref ?? "/settings/organization/members";
+  const organizationSettingsHref =
+    links?.organizationSettingsHref ?? "/settings/organization/general";
+  const accountHref = links?.accountHref ?? "/account";
 
   return (
     <DropdownMenu>
@@ -47,17 +57,14 @@ export const AccountNav: FC<Props> = ({
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <a
-            href="/settings/organization/members"
-            className="flex items-center gap-2"
-          >
+          <a href={membersHref} className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Manage members
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <a
-            href="/settings/organization/general"
+            href={organizationSettingsHref}
             className="flex items-center gap-2"
           >
             <Building2 className="h-4 w-4" />
@@ -65,7 +72,7 @@ export const AccountNav: FC<Props> = ({
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href="/account" className="flex items-center gap-2">
+          <a href={accountHref} className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Account settings
           </a>

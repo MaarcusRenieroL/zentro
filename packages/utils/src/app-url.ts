@@ -21,13 +21,42 @@ const appBaseUrl =
   "http://localhost:3000";
 const authBaseUrl =
   process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? "http://localhost:3001";
-const rootDomain = new URL(appBaseUrl).host;
-const protocol = new URL(appBaseUrl).protocol.replace(":", "");
+const appUrl = new URL(appBaseUrl);
+const rootDomain =
+  process.env.NEXT_PUBLIC_ZENTRO_ROOT_DOMAIN ?? appUrl.hostname;
+const protocol = appUrl.protocol.replace(":", "");
+
+const localAppPorts: Partial<Record<ZentroApp, string>> = {
+  workspace: "3000",
+  tasks: "3002",
+};
 
 function normalizePath(path?: string) {
   if (!path) return "";
 
   return path.startsWith("/") ? path : `/${path}`;
+}
+
+function isLocalDomain(domain: string) {
+  return domain === "localhost" || domain === "127.0.0.1";
+}
+
+function getAppPort(app: ZentroApp) {
+  if (isLocalDomain(rootDomain)) {
+    return localAppPorts[app] ?? appUrl.port;
+  }
+
+  return appUrl.port;
+}
+
+function getOrgAppHost(orgSlug: string, app: ZentroApp) {
+  const host =
+    app === "workspace"
+      ? `${orgSlug}.${rootDomain}`
+      : `${orgSlug}.${app}.${rootDomain}`;
+  const port = getAppPort(app);
+
+  return port ? `${host}:${port}` : host;
 }
 
 export function getOrgAppUrl({
@@ -37,11 +66,7 @@ export function getOrgAppUrl({
 }: GetOrgAppUrlInput): string {
   const normalizedPath = normalizePath(path);
 
-  if (app === "workspace") {
-    return `${protocol}://${orgSlug}.${rootDomain}${normalizedPath}`;
-  }
-
-  return `${protocol}://${orgSlug}.${app}.${rootDomain}${normalizedPath}`;
+  return `${protocol}://${getOrgAppHost(orgSlug, app)}${normalizedPath}`;
 }
 
 export function getAuthAppUrl({ path }: GetAuthAppUrlInput = {}): string {
@@ -53,7 +78,7 @@ function isOrgApp(value: string): value is Exclude<ZentroApp, "workspace"> {
 }
 
 export function resolveOrgAppFromHost(host: string): ResolvedOrgApp | null {
-  const hostname = host.split(",")[0]?.trim().toLowerCase();
+  const hostname = host.split(",")[0]?.trim().toLowerCase().split(":")[0];
   const domain = rootDomain.toLowerCase();
 
   if (!hostname?.endsWith(`.${domain}`)) {

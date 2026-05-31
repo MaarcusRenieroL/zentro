@@ -27,6 +27,8 @@ const trustedOrigins = Array.from(
     process.env.NEXT_PUBLIC_BASE_URL,
     "http://localhost:3001",
     "http://*.localhost:3000",
+    "http://*.localhost:3002",
+    "http://*.tasks.localhost:3002",
   ]),
 ).filter((origin): origin is string => Boolean(origin));
 
