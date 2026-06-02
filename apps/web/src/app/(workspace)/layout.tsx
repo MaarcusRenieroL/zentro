@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={false}>
-        <WorkspaceSidebar />
+        <WorkspaceSidebar orgSlug={organization.slug} />
 
         <SidebarInset>
           <div className="min-h-screen bg-background text-foreground">

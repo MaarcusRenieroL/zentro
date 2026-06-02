@@ -1,0 +1,387 @@
+"use client";
+
+import { ComponentType, FC, ReactNode } from "react";
+import {
+  ArchiveIcon,
+  BellIcon,
+  BookOpenIcon,
+  CalendarIcon,
+  CheckCircle2Icon,
+  ChevronRightIcon,
+  CreditCardIcon,
+  FileTextIcon,
+  FolderIcon,
+  GaugeIcon,
+  InboxIcon,
+  LayoutDashboardIcon,
+  ListChecksIcon,
+  SettingsIcon,
+  ShieldIcon,
+  Trash2Icon,
+  UserPlusIcon,
+  UsersIcon,
+} from "lucide-react";
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "./shadcn/collapsible";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarRail,
+} from "./shadcn/sidebar";
+
+import type { LucideIcon } from "lucide-react";
+
+export type WorkspaceSidebarLinkComponentProps = {
+  href: string;
+  children: ReactNode;
+  className?: string;
+  "aria-disabled"?: boolean;
+  tabIndex?: number;
+};
+
+export type WorkspaceSidebarItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  disabled?: boolean;
+  children?: WorkspaceSidebarItem[];
+};
+
+export type WorkspaceSidebarSection = {
+  label: string;
+  items: WorkspaceSidebarItem[];
+};
+
+export type WorkspaceSidebarBrand = {
+  label?: string;
+  subtitle?: string;
+  href?: string;
+  mark?: ReactNode;
+};
+
+export type WorkspaceSidebarProps = {
+  pathname: string;
+  LinkComponent: ComponentType<WorkspaceSidebarLinkComponentProps>;
+  sections?: WorkspaceSidebarSection[];
+  brand?: WorkspaceSidebarBrand;
+  soonLabel?: string;
+  isActivePath?: (pathname: string, href: string) => boolean;
+};
+
+export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
+  {
+    label: "Workspace",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboardIcon,
+      },
+      {
+        label: "Inbox",
+        href: "/inbox",
+        icon: InboxIcon,
+        disabled: true,
+      },
+      {
+        label: "Notifications",
+        href: "/notifications",
+        icon: BellIcon,
+        disabled: true,
+      },
+    ],
+  },
+  {
+    label: "Work",
+    items: [
+      {
+        label: "Projects",
+        href: "/projects",
+        icon: FolderIcon,
+        children: [
+          {
+            label: "All projects",
+            href: "/projects",
+            icon: GaugeIcon,
+            disabled: true,
+          },
+          {
+            label: "Active projects",
+            href: "/projects?status=active",
+            icon: CheckCircle2Icon,
+            disabled: true,
+          },
+          {
+            label: "Archived projects",
+            href: "/projects?status=archived",
+            icon: ArchiveIcon,
+            disabled: true,
+          },
+        ],
+      },
+      {
+        label: "Tasks",
+        href: "/tasks",
+        icon: ListChecksIcon,
+        children: [
+          {
+            label: "My tasks",
+            href: "/tasks",
+            icon: UsersIcon,
+          },
+          {
+            label: "Due today",
+            href: "/tasks?due=today",
+            icon: CalendarIcon,
+            disabled: true,
+          },
+          {
+            label: "Upcoming",
+            href: "/tasks?due=upcoming",
+            icon: CalendarIcon,
+            disabled: true,
+          },
+          {
+            label: "Completed",
+            href: "/tasks?status=completed",
+            icon: CheckCircle2Icon,
+            disabled: true,
+          },
+        ],
+      },
+      {
+        label: "Calendar",
+        href: "/calendar",
+        icon: CalendarIcon,
+        disabled: true,
+      },
+      {
+        label: "Docs",
+        href: "/docs",
+        icon: BookOpenIcon,
+        disabled: true,
+        children: [
+          {
+            label: "All docs",
+            href: "/docs",
+            icon: FileTextIcon,
+            disabled: true,
+          },
+          {
+            label: "Shared with me",
+            href: "/docs/shared",
+            icon: UsersIcon,
+            disabled: true,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: "Organization",
+    items: [
+      {
+        label: "Members",
+        href: "/settings/organization/members",
+        icon: UsersIcon,
+      },
+      {
+        label: "Invitations",
+        href: "/settings/organization/invitations",
+        icon: UserPlusIcon,
+      },
+      {
+        label: "Roles & permissions",
+        href: "/settings/organization/roles",
+        icon: ShieldIcon,
+        disabled: true,
+      },
+    ],
+  },
+  {
+    label: "Settings",
+    items: [
+      {
+        label: "General",
+        href: "/settings/organization/general",
+        icon: SettingsIcon,
+      },
+      {
+        label: "Billing",
+        href: "/settings/billing",
+        icon: CreditCardIcon,
+        disabled: true,
+      },
+      {
+        label: "Danger zone",
+        href: "/settings/organization/danger",
+        icon: Trash2Icon,
+      },
+    ],
+  },
+];
+
+function getHrefPathname(href: string) {
+  return new URL(href, "http://zentro.local").pathname;
+}
+
+function defaultIsActivePath(pathname: string, href: string) {
+  const basePath = getHrefPathname(href);
+
+  return pathname === basePath || pathname.startsWith(`${basePath}/`);
+}
+
+export const WorkspaceSidebar: FC<WorkspaceSidebarProps> = ({
+  pathname,
+  LinkComponent,
+  sections = zentroWorkspaceSidebarSections,
+  brand = {},
+  soonLabel = "Soon",
+  isActivePath = defaultIsActivePath,
+}) => {
+  const {
+    label = "Zentro",
+    subtitle = "Workspace",
+    href = "/dashboard",
+    mark = "Z",
+  } = brand;
+
+  return (
+    <Sidebar>
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-3">
+        <LinkComponent
+          href={href}
+          className="flex min-w-0 items-center gap-3 rounded-md px-1 py-1.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+            {mark}
+          </span>
+          <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <span className="block truncate text-sm font-semibold text-sidebar-foreground">
+              {label}
+            </span>
+            <span className="block truncate text-xs text-sidebar-foreground/60">
+              {subtitle}
+            </span>
+          </span>
+        </LinkComponent>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2 py-3">
+        {sections.map((section) => (
+          <Collapsible
+            key={section.label}
+            defaultOpen
+            className="group/collapsible"
+          >
+            <SidebarGroup className="px-0 py-1">
+              <SidebarGroupLabel
+                asChild
+                className="h-7 px-2 text-[0.68rem] font-semibold uppercase tracking-wide text-sidebar-foreground/55 hover:bg-transparent hover:text-sidebar-foreground/80"
+              >
+                <CollapsibleTrigger className="flex w-full items-center">
+                  <span className="truncate">{section.label}</span>
+                  <ChevronRightIcon className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => {
+                      const hasActiveChild = item.children?.some((child) =>
+                        isActivePath(pathname, child.href),
+                      );
+                      const isActive =
+                        isActivePath(pathname, item.href) ||
+                        Boolean(hasActiveChild);
+                      const ItemIcon = item.icon;
+
+                      return (
+                        <SidebarMenuItem key={item.label}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            disabled={item.disabled}
+                            tooltip={item.label}
+                            className={
+                              item.disabled
+                                ? "h-8 text-sidebar-foreground/45 hover:bg-transparent hover:text-sidebar-foreground/45"
+                                : "h-8"
+                            }
+                          >
+                            <LinkComponent
+                              href={item.disabled ? "#" : item.href}
+                              aria-disabled={item.disabled}
+                              tabIndex={item.disabled ? -1 : undefined}
+                            >
+                              <ItemIcon />
+                              <span>{item.label}</span>
+                              {item.disabled ? (
+                                <span className="ml-auto text-[0.62rem] font-medium text-sidebar-foreground/35 group-data-[collapsible=icon]:hidden">
+                                  {soonLabel}
+                                </span>
+                              ) : null}
+                            </LinkComponent>
+                          </SidebarMenuButton>
+
+                          {item.children && !item.disabled ? (
+                            <SidebarMenuSub>
+                              {item.children.map((child) => {
+                                const ChildIcon = child.icon;
+
+                                return (
+                                  <SidebarMenuSubItem key={child.label}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={isActivePath(
+                                        pathname,
+                                        child.href,
+                                      )}
+                                      className="h-8"
+                                    >
+                                      <LinkComponent
+                                        href={child.disabled ? "#" : child.href}
+                                        aria-disabled={child.disabled}
+                                        tabIndex={
+                                          child.disabled ? -1 : undefined
+                                        }
+                                      >
+                                        <ChildIcon />
+                                        <span>{child.label}</span>
+                                      </LinkComponent>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                );
+                              })}
+                            </SidebarMenuSub>
+                          ) : null}
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        ))}
+      </SidebarContent>
+
+      <SidebarRail />
+    </Sidebar>
+  );
+};

@@ -13,6 +13,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@zentro/ui/components/shadcn/sidebar";
+import { WorkspaceSidebar } from "../components/layout/workspace-sidebar";
 
 export const metadata: Metadata = {
   title: "Zentro Tasks",
@@ -41,6 +42,8 @@ export default async function RootLayout({
           <AppTRPCProvider>
             <TooltipProvider>
               <SidebarProvider defaultOpen={false}>
+                <WorkspaceSidebar orgSlug={organization.slug} />
+
                 <SidebarInset>
                   <main>
                     <TasksNavbar
