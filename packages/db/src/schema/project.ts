@@ -20,6 +20,7 @@ export const projects = pgTable(
 
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    taskKeyPrefix: text("taskKeyPrefix").notNull(),
     description: text("description"),
 
     status: text("status").notNull().default("active"),
@@ -38,6 +39,10 @@ export const projects = pgTable(
     uniqueIndex("project_organization_slug_unique").on(
       table.organizationId,
       table.slug,
+    ),
+    uniqueIndex("project_organization_task_key_prefix_unique").on(
+      table.organizationId,
+      table.taskKeyPrefix,
     ),
     index("project_organization_status_idx").on(
       table.organizationId,

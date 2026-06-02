@@ -36,6 +36,13 @@
       "when": 1780115246635,
       "tag": "0004_nifty_wallow",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780410695539,
+      "tag": "0005_thick_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

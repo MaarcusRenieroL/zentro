@@ -79,6 +79,26 @@ export const deleteProjectBySlugSchema = z.object({
   slug: z.string().trim().min(2),
 });
 
+export const taskStatusSchema = z.enum([
+  "backlog",
+  "todo",
+  "in-progress",
+  "review",
+  "done",
+]);
+
+export const taskPrioritySchema = z.enum(["low", "medium", "high"]);
+
+export const createTaskSchema = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().trim().min(1, "Task name is required.").max(120),
+  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  status: taskStatusSchema.default("todo"),
+  priority: taskPrioritySchema.default("medium"),
+  assignedToMemberId: z.string().uuid().optional().nullable(),
+  dueAt: z.coerce.date().optional().nullable(),
+});
+
 export type OrgInviteDetailsFormValues = z.infer<typeof orgInviteDetailsSchema>;
 export type JoinOrganizationListSchema = z.infer<
   typeof joinOrganizationListSchema
