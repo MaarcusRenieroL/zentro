@@ -26,12 +26,12 @@ const listColumns: DataTableColumnDef<WorkspaceTask>[] = [
       return (
         <div className="min-w-0">
           <Link
-            href={`/tasks/${task.id}`}
+            href={`/tasks/${task.key}`}
             className="font-medium hover:underline"
           >
             {task.title}
           </Link>
-          <p className="mt-1 text-xs text-muted-foreground">{task.id}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{task.key}</p>
         </div>
       );
     },

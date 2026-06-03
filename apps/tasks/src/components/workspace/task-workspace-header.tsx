@@ -4,6 +4,7 @@ import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
 import { FC } from "react";
 import { CreateTaskModal } from "../create-task-modal";
+import { useRouter } from "next/navigation";
 
 type Props = {
   title: string;
@@ -18,6 +19,8 @@ export const TaskWorkspaceHeader: FC<Props> = ({
   taskCount,
   projectScoped = false,
 }) => {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col gap-5 border-b pb-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -35,7 +38,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
           </p>
         </div>
 
-        <CreateTaskModal />
+        <CreateTaskModal onTaskCreated={() => router.refresh()} />
       </div>
 
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">

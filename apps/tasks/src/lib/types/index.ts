@@ -11,6 +11,7 @@ export type Project = {
 
 export type WorkspaceTask = {
   id: string;
+  key: string;
   title: string;
   description: string;
   projectSlug: string;

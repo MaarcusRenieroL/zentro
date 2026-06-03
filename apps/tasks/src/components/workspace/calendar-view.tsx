@@ -73,14 +73,14 @@ export const CalendarView: FC<Props> = ({ tasks }) => {
                     .map((task) => (
                       <Link
                         key={task.id}
-                        href={`/tasks/${task.id}`}
+                        href={`/tasks/${task.key}`}
                         className="block rounded-md border bg-muted/40 p-2 transition-colors hover:bg-muted"
                       >
                         <p className="line-clamp-2 text-xs font-medium">
                           {task.title}
                         </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {task.id}
+                          {task.key}
                         </p>
                       </Link>
                     ))}

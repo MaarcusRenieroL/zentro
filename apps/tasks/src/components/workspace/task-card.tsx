@@ -14,7 +14,7 @@ type Props = {
 export const TaskCard: FC<Props> = ({ task }) => {
   return (
     <Link
-      href={`/tasks/${task.id}`}
+      href={`/tasks/${task.key}`}
       className="group block rounded-lg border bg-card p-3 shadow-xs transition-colors hover:bg-muted/50"
     >
       <div className="flex items-start justify-between gap-2">
@@ -23,7 +23,7 @@ export const TaskCard: FC<Props> = ({ task }) => {
         </p>
 
         <Badge variant="outline" className="shrink-0">
-          {task.id}
+          {task.key}
         </Badge>
       </div>
 

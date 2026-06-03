@@ -171,7 +171,7 @@ export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
                   className="rounded-md border bg-muted/35 p-2 text-xs"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate font-medium">{task.id}</span>
+                    <span className="truncate font-medium">{task.key}</span>
                     <Badge variant="outline">{task.logged}</Badge>
                   </div>
 

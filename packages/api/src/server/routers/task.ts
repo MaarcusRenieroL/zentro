@@ -1,9 +1,9 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq } from "@zentro/db/drizzle";
-import { members, projects, tasks } from "@zentro/db/schema";
+import { members, projects, tasks, users } from "@zentro/db/schema";
 
 import { createTaskSchema } from "../../types/zod-schema";
-import { organizationProcedure, router } from "../trpc";
+import { organizationProcedure, protectedProcedure, router } from "../trpc";
 
 export const taskRouter = router({
   createTask: organizationProcedure
@@ -111,4 +111,28 @@ export const taskRouter = router({
         return task;
       });
     }),
+  getTasksByOrgId: protectedProcedure.query(async ({ ctx }) => {
+    const { db, activeOrganization } = ctx;
+
+    const allTasks = await db
+      .select({
+        id: tasks.id,
+        key: tasks.key,
+        name: tasks.name,
+        project: projects.name,
+        status: tasks.status,
+        priority: tasks.priority,
+        assignee: users.name,
+        due: tasks.dueAt,
+        createdAt: tasks.createdAt,
+      })
+      .from(tasks)
+      .innerJoin(projects, eq(projects.id, tasks.projectId))
+      .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
+      .leftJoin(users, eq(users.id, members.userId))
+      .where(eq(tasks.organizationId, activeOrganization.id))
+      .orderBy(desc(tasks.createdAt));
+
+    return allTasks;
+  }),
 });
