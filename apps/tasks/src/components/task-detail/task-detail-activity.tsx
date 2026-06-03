@@ -46,13 +46,10 @@ export function TaskDetailActivity({
   );
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Activity</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Comments and task changes in one place.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -65,8 +62,8 @@ export function TaskDetailActivity({
         </div>
       </div>
 
-      <Tabs defaultValue="comments" className="space-y-4">
-        <TabsList className="h-9 w-full justify-start overflow-x-auto rounded-md bg-muted/60 p-1 sm:w-fit">
+      <Tabs defaultValue="comments" className="flex-col gap-3">
+        <TabsList className="h-8 w-full justify-start overflow-x-auto rounded-md bg-muted/60 p-1 sm:w-fit">
           <TabsTrigger value="all" className="gap-2">
             <CircleDotIcon className="size-3.5" />
             All
@@ -82,7 +79,7 @@ export function TaskDetailActivity({
           <TabsTrigger value="work-log">Work log</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="comments" className="m-0 space-y-5">
+        <TabsContent value="comments" className="m-0 min-w-0 space-y-4">
           <CommentComposer
             disabled={commentDisabled}
             onAddComment={onAddComment}
@@ -90,7 +87,7 @@ export function TaskDetailActivity({
           <CommentList comments={comments} />
         </TabsContent>
 
-        <TabsContent value="all" className="m-0">
+        <TabsContent value="all" className="m-0 min-w-0">
           <ActivityList
             events={activityEvents}
             members={members}
@@ -98,11 +95,11 @@ export function TaskDetailActivity({
           />
         </TabsContent>
 
-        <TabsContent value="history" className="m-0">
+        <TabsContent value="history" className="m-0 min-w-0">
           <ActivityList members={members} events={historyEvents} />
         </TabsContent>
 
-        <TabsContent value="work-log" className="m-0">
+        <TabsContent value="work-log" className="m-0 min-w-0">
           <ActivityEmptyState
             icon={<HistoryIcon className="size-4" />}
             title="No work logged"
@@ -240,22 +237,25 @@ function ActivityList({
   }
 
   return (
-    <div className="relative space-y-1 before:absolute before:left-3 before:top-4 before:h-[calc(100%-2rem)] before:w-px before:bg-border">
+    <div className="relative before:absolute before:left-[11px] before:top-3 before:h-[calc(100%-1.5rem)] before:w-px before:bg-border">
       {visibleEvents.map((event) => {
         const actor = event.actorName ?? event.actorEmail ?? "Unknown";
         const label = getActivityLabel(event, members);
 
         return (
-          <div key={event.id} className="relative flex gap-3 px-1 py-3">
-            <span className="relative z-10 mt-1 flex size-6 items-center justify-center rounded-full border bg-background">
+          <div
+            key={event.id}
+            className="relative flex gap-3 rounded-md px-1 py-2 hover:bg-muted/30"
+          >
+            <span className="relative z-10 mt-0.5 flex size-5 items-center justify-center rounded-full border bg-background">
               {event.type === "comment.created" ? (
                 <MessageSquareIcon className="size-3 text-primary" />
               ) : (
                 <CircleDotIcon className="size-3 text-muted-foreground" />
               )}
             </span>
-            <div className="min-w-0 flex-1 rounded-md px-2 text-sm transition hover:bg-muted/30">
-              <div className="flex flex-wrap items-baseline gap-2">
+            <div className="min-w-0 flex-1 text-sm">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span className="font-semibold">{actor}</span>
                 <span className="text-muted-foreground">{label}</span>
                 <span className="text-xs text-muted-foreground">
