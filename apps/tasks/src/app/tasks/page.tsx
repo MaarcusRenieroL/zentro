@@ -1,7 +1,7 @@
 "use client";
 
 import { useTrpcClient } from "@zentro/api/react";
-import { toastError } from "@zentro/ui/index";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import { useEffect, useState } from "react";
 
 import { TaskWorkspace } from "~/src/components/workspace/task-workspace";
@@ -33,6 +33,45 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<WorkspaceTask[] | null>(null);
   const trpc = useTrpcClient();
 
+  async function updateTaskStatus(task: WorkspaceTask, status: TaskStatus) {
+    if (task.status === status) {
+      return;
+    }
+
+    setTasks(
+      (currentTasks) =>
+        currentTasks?.map((currentTask) =>
+          currentTask.id === task.id
+            ? {
+                ...currentTask,
+                status,
+              }
+            : currentTask,
+        ) ?? null,
+    );
+
+    try {
+      await trpc.task.updateTaskByKey.mutate({
+        key: task.key,
+        status,
+      });
+      toastSuccess("Task moved");
+    } catch {
+      setTasks(
+        (currentTasks) =>
+          currentTasks?.map((currentTask) =>
+            currentTask.id === task.id
+              ? {
+                  ...currentTask,
+                  status: task.status,
+                }
+              : currentTask,
+          ) ?? null,
+      );
+      toastError("Error", "Failed to update task status");
+    }
+  }
+
   useEffect(() => {
     let isMounted = true;
 
@@ -45,9 +84,9 @@ export default function TasksPage() {
           key: task.key,
 
           title: task.name,
-          description: "",
+          description: task.description ?? "",
 
-          projectSlug: "",
+          projectSlug: task.projectSlug,
           projectName: task.project,
 
           status: toTaskStatus(task.status),
@@ -89,6 +128,7 @@ export default function TasksPage() {
       description="Plan, sort, and track every task across your projects."
       tasks={tasks}
       logs={workLogEvents}
+      onTaskStatusChange={updateTaskStatus}
     />
   );
 }

@@ -35,6 +35,7 @@ export const projects: Project[] = [
 export const workspaceTasks: WorkspaceTask[] = [
   {
     id: "TSK-24",
+    key: "TSK-24",
     title: "Finalize task board interactions",
     description: "Polish drag states, card density, and status transitions.",
     projectSlug: "launch-os",
@@ -47,6 +48,7 @@ export const workspaceTasks: WorkspaceTask[] = [
   },
   {
     id: "TSK-18",
+    key: "TSK-18",
     title: "Write empty states for project tasks",
     description: "Create clear empty, filtered empty, and first-task states.",
     projectSlug: "design-system",
@@ -59,6 +61,7 @@ export const workspaceTasks: WorkspaceTask[] = [
   },
   {
     id: "TSK-12",
+    key: "TSK-12",
     title: "Review calendar view spacing",
     description: "Ensure task cards fit cleanly across week and month layouts.",
     projectSlug: "planning",
@@ -71,6 +74,7 @@ export const workspaceTasks: WorkspaceTask[] = [
   },
   {
     id: "TSK-09",
+    key: "TSK-09",
     title: "Connect task filters to mock state",
     description: "Wire owner, project, status, and due date filter controls.",
     projectSlug: "launch-os",
@@ -83,6 +87,7 @@ export const workspaceTasks: WorkspaceTask[] = [
   },
   {
     id: "TSK-31",
+    key: "TSK-31",
     title: "Confirm assignment menu states",
     description: "Check assign, unassign, and assign-to-me menu behavior.",
     projectSlug: "design-system",
@@ -95,6 +100,7 @@ export const workspaceTasks: WorkspaceTask[] = [
   },
   {
     id: "TSK-27",
+    key: "TSK-27",
     title: "Polish project task summary",
     description: "Make project-scoped metrics match the all-tasks workspace.",
     projectSlug: "launch-os",

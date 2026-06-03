@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -19,7 +20,12 @@ import { ListView } from "./list-view";
 import { TaskBoard } from "./task-board";
 import { TaskWorkspaceHeader } from "./task-workspace-header";
 import { WorklogPlanner } from "./worklog-planner";
-import { WorkLogEvent, WorkspaceTask } from "~/src/lib/types";
+import type {
+  TaskPriority,
+  TaskStatus,
+  WorkLogEvent,
+  WorkspaceTask,
+} from "~/src/lib/types";
 import { FC } from "react";
 
 type Props = {
@@ -28,6 +34,7 @@ type Props = {
   tasks: WorkspaceTask[];
   logs: WorkLogEvent[];
   projectScoped?: boolean;
+  onTaskStatusChange?: (task: WorkspaceTask, status: TaskStatus) => void;
 };
 
 export const TaskWorkspace: FC<Props> = ({
@@ -36,14 +43,79 @@ export const TaskWorkspace: FC<Props> = ({
   tasks,
   logs,
   projectScoped = false,
+  onTaskStatusChange,
 }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">(
+    "all",
+  );
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
+
+  const assigneeOptions = useMemo(() => {
+    return Array.from(new Set(tasks.map((task) => task.assignee))).sort(
+      (a, b) => a.localeCompare(b),
+    );
+  }, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return tasks.filter((task) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        [
+          task.key,
+          task.title,
+          task.description,
+          task.projectName,
+          task.assignee,
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch);
+      const matchesStatus =
+        statusFilter === "all" || task.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "all" || task.priority === priorityFilter;
+      const matchesAssignee =
+        assigneeFilter === "all" || task.assignee === assigneeFilter;
+
+      return (
+        matchesSearch && matchesStatus && matchesPriority && matchesAssignee
+      );
+    });
+  }, [assigneeFilter, priorityFilter, searchQuery, statusFilter, tasks]);
+
+  const filtersActive =
+    Boolean(searchQuery.trim()) ||
+    statusFilter !== "all" ||
+    priorityFilter !== "all" ||
+    assigneeFilter !== "all";
+
   return (
     <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
       <TaskWorkspaceHeader
         title={title}
         description={description}
-        taskCount={tasks.length}
+        taskCount={filteredTasks.length}
         projectScoped={projectScoped}
+        assigneeOptions={assigneeOptions}
+        filtersActive={filtersActive}
+        searchQuery={searchQuery}
+        statusFilter={statusFilter}
+        priorityFilter={priorityFilter}
+        assigneeFilter={assigneeFilter}
+        onSearchQueryChange={setSearchQuery}
+        onStatusFilterChange={setStatusFilter}
+        onPriorityFilterChange={setPriorityFilter}
+        onAssigneeFilterChange={setAssigneeFilter}
+        onClearFilters={() => {
+          setSearchQuery("");
+          setStatusFilter("all");
+          setPriorityFilter("all");
+          setAssigneeFilter("all");
+        }}
       />
 
       <Tabs defaultValue="board" className="flex flex-col gap-4">
@@ -71,19 +143,22 @@ export const TaskWorkspace: FC<Props> = ({
 
         <div className="min-w-0">
           <TabsContent value="board" className="mt-0">
-            <TaskBoard tasks={tasks} />
+            <TaskBoard
+              tasks={filteredTasks}
+              onTaskStatusChange={onTaskStatusChange}
+            />
           </TabsContent>
 
           <TabsContent value="list" className="mt-0">
-            <ListView tasks={tasks} />
+            <ListView tasks={filteredTasks} />
           </TabsContent>
 
           <TabsContent value="calendar" className="mt-0">
-            <CalendarView tasks={tasks} />
+            <CalendarView tasks={filteredTasks} />
           </TabsContent>
 
           <TabsContent value="timeline" className="mt-0">
-            <WorklogPlanner tasks={tasks} logs={logs} />
+            <WorklogPlanner tasks={filteredTasks} logs={logs} />
           </TabsContent>
         </div>
       </Tabs>

@@ -1,16 +1,37 @@
-import { FilterIcon, SearchIcon } from "lucide-react";
+import { RotateCcwIcon, SearchIcon } from "lucide-react";
 
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@zentro/ui/shadcn/select";
 import { FC } from "react";
 import { CreateTaskModal } from "../create-task-modal";
 import { useRouter } from "next/navigation";
+import type { TaskPriority, TaskStatus } from "~/src/lib/types";
+
+const allValue = "__all__";
 
 type Props = {
   title: string;
   description: string;
   taskCount: number;
   projectScoped?: boolean;
+  assigneeOptions: string[];
+  filtersActive: boolean;
+  searchQuery: string;
+  statusFilter: TaskStatus | "all";
+  priorityFilter: TaskPriority | "all";
+  assigneeFilter: string;
+  onSearchQueryChange: (value: string) => void;
+  onStatusFilterChange: (value: TaskStatus | "all") => void;
+  onPriorityFilterChange: (value: TaskPriority | "all") => void;
+  onAssigneeFilterChange: (value: string) => void;
+  onClearFilters: () => void;
 };
 
 export const TaskWorkspaceHeader: FC<Props> = ({
@@ -18,6 +39,17 @@ export const TaskWorkspaceHeader: FC<Props> = ({
   description,
   taskCount,
   projectScoped = false,
+  assigneeOptions,
+  filtersActive,
+  searchQuery,
+  statusFilter,
+  priorityFilter,
+  assigneeFilter,
+  onSearchQueryChange,
+  onStatusFilterChange,
+  onPriorityFilterChange,
+  onAssigneeFilterChange,
+  onClearFilters,
 }) => {
   const router = useRouter();
 
@@ -45,12 +77,76 @@ export const TaskWorkspaceHeader: FC<Props> = ({
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <div className="relative w-full sm:max-w-sm">
             <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search tasks" className="pl-8" />
+            <Input
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+              placeholder="Search tasks"
+              className="pl-8"
+            />
           </div>
 
-          <Button variant="outline">
-            <FilterIcon className="size-4" />
-            Filter
+          <Select
+            value={statusFilter}
+            onValueChange={(value) =>
+              onStatusFilterChange(value as TaskStatus | "all")
+            }
+          >
+            <SelectTrigger className="w-full sm:w-36">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="backlog">Backlog</SelectItem>
+              <SelectItem value="todo">To do</SelectItem>
+              <SelectItem value="in-progress">In progress</SelectItem>
+              <SelectItem value="review">Review</SelectItem>
+              <SelectItem value="done">Done</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={priorityFilter}
+            onValueChange={(value) =>
+              onPriorityFilterChange(value as TaskPriority | "all")
+            }
+          >
+            <SelectTrigger className="w-full sm:w-36">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All priorities</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={assigneeFilter === "all" ? allValue : assigneeFilter}
+            onValueChange={(value) =>
+              onAssigneeFilterChange(value === allValue ? "all" : value)
+            }
+          >
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={allValue}>All assignees</SelectItem>
+              {assigneeOptions.map((assignee) => (
+                <SelectItem key={assignee} value={assignee}>
+                  {assignee}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            disabled={!filtersActive}
+            onClick={onClearFilters}
+          >
+            <RotateCcwIcon className="size-4" />
+            Clear
           </Button>
         </div>
 
