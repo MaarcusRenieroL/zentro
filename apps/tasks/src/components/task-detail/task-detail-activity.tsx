@@ -2,12 +2,19 @@
 
 import { useState } from "react";
 
-import { MessageSquareIcon } from "lucide-react";
+import {
+  CircleDotIcon,
+  HistoryIcon,
+  MessageSquareIcon,
+  SendIcon,
+} from "lucide-react";
 
 import {
   RichTextEditor,
   RichTextPreview,
 } from "@zentro/ui/components/rich-text-editor";
+import { Badge } from "@zentro/ui/shadcn/badge";
+import { Button } from "@zentro/ui/shadcn/button";
 import {
   Tabs,
   TabsContent,
@@ -34,40 +41,73 @@ export function TaskDetailActivity({
   commentDisabled,
   onAddComment,
 }: Props) {
+  const historyEvents = activityEvents.filter(
+    (event) => event.type !== "comment.created",
+  );
+
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold">Activity</h2>
-      <Tabs defaultValue="comments">
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="comments">Comments</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold">Activity</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Comments and task changes in one place.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="secondary" className="rounded-md">
+            {comments.length} comments
+          </Badge>
+          <Badge variant="outline" className="rounded-md">
+            {historyEvents.length} updates
+          </Badge>
+        </div>
+      </div>
+
+      <Tabs defaultValue="comments" className="space-y-4">
+        <TabsList className="h-9 w-full justify-start overflow-x-auto rounded-md bg-muted/60 p-1 sm:w-fit">
+          <TabsTrigger value="all" className="gap-2">
+            <CircleDotIcon className="size-3.5" />
+            All
+          </TabsTrigger>
+          <TabsTrigger value="comments" className="gap-2">
+            <MessageSquareIcon className="size-3.5" />
+            Comments
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2">
+            <HistoryIcon className="size-3.5" />
+            History
+          </TabsTrigger>
           <TabsTrigger value="work-log">Work log</TabsTrigger>
         </TabsList>
-        <TabsContent value="comments" className="mt-4 space-y-5">
+
+        <TabsContent value="comments" className="m-0 space-y-5">
           <CommentComposer
             disabled={commentDisabled}
             onAddComment={onAddComment}
           />
           <CommentList comments={comments} />
         </TabsContent>
-        <TabsContent value="all" className="mt-4">
+
+        <TabsContent value="all" className="m-0">
           <ActivityList
             events={activityEvents}
             members={members}
             includeComments
           />
         </TabsContent>
-        <TabsContent value="history" className="mt-4">
-          <ActivityList
-            members={members}
-            events={activityEvents.filter(
-              (event) => event.type !== "comment.created",
-            )}
-          />
+
+        <TabsContent value="history" className="m-0">
+          <ActivityList members={members} events={historyEvents} />
         </TabsContent>
-        <TabsContent value="work-log" className="mt-4">
-          <ActivityEmptyState message="No work has been logged for this task yet." />
+
+        <TabsContent value="work-log" className="m-0">
+          <ActivityEmptyState
+            icon={<HistoryIcon className="size-4" />}
+            title="No work logged"
+            message="Work log entries will show up here once time tracking is added."
+          />
         </TabsContent>
       </Tabs>
     </section>
@@ -85,21 +125,33 @@ function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
 
   if (!isComposing) {
     return (
-      <div className="flex gap-3">
-        <AvatarInitials value="Maarcus" />
+      <div className="flex items-start gap-3 rounded-md border bg-card p-3 shadow-xs">
+        <div className="pt-0.5">
+          <AvatarInitials value="Maarcus" />
+        </div>
         <button
-          className="min-h-14 min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted/40"
+          className="flex min-h-10 min-w-0 flex-1 items-center rounded-md border bg-background px-3 text-left text-sm text-muted-foreground transition hover:border-primary/30 hover:bg-muted/40 hover:text-foreground"
           onClick={() => setIsComposing(true)}
         >
           Add a comment...
         </button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          aria-label="Add comment"
+          onClick={() => setIsComposing(true)}
+        >
+          <SendIcon className="size-4" />
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex gap-3">
-      <AvatarInitials value="Maarcus" />
+    <div className="flex items-start gap-3 rounded-md border bg-card p-3 shadow-xs">
+      <div className="pt-1">
+        <AvatarInitials value="Maarcus" />
+      </div>
       <div className="min-w-0 flex-1">
         <RichTextEditor
           key={editorKey}
@@ -121,25 +173,39 @@ function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
 
 function CommentList({ comments }: { comments: TaskComment[] }) {
   if (!comments.length) {
-    return <ActivityEmptyState message="No comments yet." />;
+    return (
+      <ActivityEmptyState
+        icon={<MessageSquareIcon className="size-4" />}
+        title="No comments yet"
+        message="Start the conversation with context, decisions, or blockers."
+      />
+    );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1">
       {comments.map((comment) => {
         const author = comment.authorName ?? comment.authorEmail ?? "Unknown";
 
         return (
-          <article key={comment.id} className="flex gap-3">
-            <AvatarInitials value={author} />
-            <div className="min-w-0 flex-1 rounded-md border bg-card p-3">
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-medium">{author}</span>
+          <article
+            key={comment.id}
+            className="group flex gap-3 rounded-md px-1 py-3 transition hover:bg-muted/30"
+          >
+            <div className="pt-1">
+              <AvatarInitials value={author} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-2 text-sm">
+                <span className="font-semibold">{author}</span>
                 <span className="text-xs text-muted-foreground">
-                  {formatDate(comment.createdAt)}
+                  {formatActivityDate(comment.createdAt)}
                 </span>
               </div>
-              <RichTextPreview value={comment.body} className="p-0" />
+              <RichTextPreview
+                value={comment.body}
+                className="mt-1 min-h-0 rounded-none p-0 text-foreground"
+              />
             </div>
           </article>
         );
@@ -164,33 +230,44 @@ function ActivityList({
     : events.filter((event) => event.type !== "comment.created");
 
   if (!visibleEvents.length) {
-    return <ActivityEmptyState message="No activity has been recorded yet." />;
+    return (
+      <ActivityEmptyState
+        icon={<HistoryIcon className="size-4" />}
+        title="No activity yet"
+        message="Task updates, comments, and changes will appear here."
+      />
+    );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="relative space-y-1 before:absolute before:left-3 before:top-4 before:h-[calc(100%-2rem)] before:w-px before:bg-border">
       {visibleEvents.map((event) => {
         const actor = event.actorName ?? event.actorEmail ?? "Unknown";
+        const label = getActivityLabel(event, members);
 
         return (
-          <div key={event.id} className="flex gap-3 rounded-md border p-3">
-            <AvatarInitials value={actor} />
-            <div className="min-w-0 flex-1 text-sm">
-              <p>
-                <span className="font-medium">{actor}</span>{" "}
-                <span className="text-muted-foreground">
-                  {getActivityLabel(event, members)}
+          <div key={event.id} className="relative flex gap-3 px-1 py-3">
+            <span className="relative z-10 mt-1 flex size-6 items-center justify-center rounded-full border bg-background">
+              {event.type === "comment.created" ? (
+                <MessageSquareIcon className="size-3 text-primary" />
+              ) : (
+                <CircleDotIcon className="size-3 text-muted-foreground" />
+              )}
+            </span>
+            <div className="min-w-0 flex-1 rounded-md px-2 text-sm transition hover:bg-muted/30">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="font-semibold">{actor}</span>
+                <span className="text-muted-foreground">{label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatActivityDate(event.createdAt)}
                 </span>
-              </p>
+              </div>
               {event.commentBody ? (
                 <RichTextPreview
                   value={event.commentBody}
-                  className="mt-2 bg-muted/30 p-2"
+                  className="mt-2 min-h-0 rounded-md bg-muted/40 px-3 py-2"
                 />
               ) : null}
-              <p className="mt-1 text-xs text-muted-foreground">
-                {formatDate(event.createdAt)}
-              </p>
             </div>
           </div>
         );
@@ -259,11 +336,37 @@ function formatActivityValue(
   return value;
 }
 
-function ActivityEmptyState({ message }: { message: string }) {
+function formatActivityDate(value: Date | null) {
+  if (!value) {
+    return "just now";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    month: "short",
+  }).format(value);
+}
+
+function ActivityEmptyState({
+  icon,
+  title,
+  message,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  message: string;
+}) {
   return (
-    <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-      <MessageSquareIcon className="mb-2 size-4" />
-      {message}
+    <div className="flex items-start gap-3 rounded-md border border-dashed bg-muted/20 p-4">
+      <span className="flex size-8 items-center justify-center rounded-full bg-background text-muted-foreground">
+        {icon}
+      </span>
+      <div>
+        <p className="text-sm font-medium">{title}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+      </div>
     </div>
   );
 }
