@@ -1,8 +1,9 @@
-import { FilterIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { FilterIcon, SearchIcon } from "lucide-react";
 
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
 import { FC } from "react";
+import { CreateTaskModal } from "../create-task-modal";
 
 type Props = {
   title: string;
@@ -34,10 +35,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
           </p>
         </div>
 
-        <Button className="w-full sm:w-fit">
-          <PlusIcon className="size-4" />
-          Create task
-        </Button>
+        <CreateTaskModal />
       </div>
 
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">

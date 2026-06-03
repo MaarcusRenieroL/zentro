@@ -96,7 +96,10 @@ export const createTaskSchema = z.object({
   status: taskStatusSchema.default("todo"),
   priority: taskPrioritySchema.default("medium"),
   assignedToMemberId: z.string().uuid().optional().nullable(),
-  dueAt: z.coerce.date().optional().nullable(),
+  dueAt: z.preprocess(
+    (value) => (value === "" ? null : value),
+    z.coerce.date().optional().nullable(),
+  ),
 });
 
 export type OrgInviteDetailsFormValues = z.infer<typeof orgInviteDetailsSchema>;
@@ -106,3 +109,4 @@ export type JoinOrganizationListSchema = z.infer<
 
 export type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
 export type UpdateProjectFormValues = z.infer<typeof updateProjectBySlugSchema>;
+export type CreateTaskFormValues = z.input<typeof createTaskSchema>;

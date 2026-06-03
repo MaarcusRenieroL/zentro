@@ -173,7 +173,7 @@ export const MembersSection: FC<Props> = ({
         },
         cell: ({ row }) => {
           const member = row.original;
-          const isCurrentUser = member.id === userId;
+          const isCurrentUser = member.userId === userId;
 
           return (
             <div className="flex min-w-56 items-center gap-3 sm:min-w-70">

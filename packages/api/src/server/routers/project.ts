@@ -9,7 +9,7 @@ import {
 } from "../../types/zod-schema";
 import { authorizedProcedure, organizationProcedure, router } from "../trpc";
 import { members, projects, users } from "@zentro/db/schema";
-import { and, count, eq } from "@zentro/db/drizzle";
+import { and, asc, count, eq } from "@zentro/db/drizzle";
 
 const createTaskKeyPrefixBase = (slug: string) => {
   const parts = slug.split("-").filter(Boolean);
@@ -118,9 +118,23 @@ export const projectRouter = router({
     const { activeOrganization, db } = ctx;
 
     const projectList = await db
-      .select()
+      .select({
+        id: projects.id,
+        organizationId: projects.organizationId,
+        name: projects.name,
+        slug: projects.slug,
+        taskKeyPrefix: projects.taskKeyPrefix,
+        description: projects.description,
+        status: projects.status,
+        createdById: projects.createdById,
+        archivedAt: projects.archivedAt,
+        deletedAt: projects.deletedAt,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+      })
       .from(projects)
-      .where(eq(projects.organizationId, activeOrganization.id));
+      .where(eq(projects.organizationId, activeOrganization.id))
+      .orderBy(asc(projects.name));
 
     return projectList;
   }),

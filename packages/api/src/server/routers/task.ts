@@ -101,6 +101,13 @@ export const taskRouter = router({
           })
           .returning();
 
+        if (!task) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create task.",
+          });
+        }
+
         return task;
       });
     }),
