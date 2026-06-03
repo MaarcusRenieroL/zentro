@@ -14,6 +14,17 @@ import {
 } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@zentro/ui/components/shadcn/alert-dialog";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   Card,
@@ -231,19 +242,36 @@ export function TaskDetailSidebar({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Button
-            variant="destructive"
-            className="w-full justify-start"
-            disabled={savingField === "delete"}
-            onClick={() => {
-              if (window.confirm(`Delete ${task.key}?`)) {
-                onDelete();
-              }
-            }}
-          >
-            <Trash2Icon className="size-4" />
-            Delete task
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                className="w-full justify-start"
+                disabled={savingField === "delete"}
+              >
+                <Trash2Icon className="size-4" />
+                Delete task
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete {task.key}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This task will be removed from task lists and boards. Its
+                  activity history is kept for audit trails.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={onDelete}
+                >
+                  Delete task
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
 

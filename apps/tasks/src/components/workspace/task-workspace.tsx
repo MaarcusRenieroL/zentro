@@ -35,6 +35,7 @@ type Props = {
   logs: WorkLogEvent[];
   projectScoped?: boolean;
   onTaskStatusChange?: (task: WorkspaceTask, status: TaskStatus) => void;
+  onTaskCreated?: () => void | Promise<void>;
 };
 
 export const TaskWorkspace: FC<Props> = ({
@@ -44,6 +45,7 @@ export const TaskWorkspace: FC<Props> = ({
   logs,
   projectScoped = false,
   onTaskStatusChange,
+  onTaskCreated,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
@@ -110,6 +112,7 @@ export const TaskWorkspace: FC<Props> = ({
         onStatusFilterChange={setStatusFilter}
         onPriorityFilterChange={setPriorityFilter}
         onAssigneeFilterChange={setAssigneeFilter}
+        onTaskCreated={onTaskCreated}
         onClearFilters={() => {
           setSearchQuery("");
           setStatusFilter("all");
@@ -146,6 +149,7 @@ export const TaskWorkspace: FC<Props> = ({
             <TaskBoard
               tasks={filteredTasks}
               onTaskStatusChange={onTaskStatusChange}
+              onTaskCreated={onTaskCreated}
             />
           </TabsContent>
 

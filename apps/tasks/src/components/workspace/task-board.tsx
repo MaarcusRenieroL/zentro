@@ -5,6 +5,7 @@ import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Card, CardContent } from "@zentro/ui/shadcn/card";
 
+import { CreateTaskModal } from "../create-task-modal";
 import { TaskCard } from "./task-card";
 import type { TaskStatus, WorkspaceTask } from "~/src/lib/types";
 import { EmptyTasks } from "./empty-tasks";
@@ -14,9 +15,14 @@ import { FC } from "react";
 type Props = {
   tasks: WorkspaceTask[];
   onTaskStatusChange?: (task: WorkspaceTask, status: TaskStatus) => void;
+  onTaskCreated?: () => void | Promise<void>;
 };
 
-export const TaskBoard: FC<Props> = ({ tasks, onTaskStatusChange }) => {
+export const TaskBoard: FC<Props> = ({
+  tasks,
+  onTaskStatusChange,
+  onTaskCreated,
+}) => {
   if (!tasks.length) return <EmptyTasks />;
 
   function handleDrop(event: DragEvent<HTMLElement>, status: TaskStatus) {
@@ -74,14 +80,20 @@ export const TaskBoard: FC<Props> = ({ tasks, onTaskStatusChange }) => {
                     </div>
                   )}
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-auto w-full justify-start text-muted-foreground"
-                  >
-                    <PlusIcon className="size-4" />
-                    Create task
-                  </Button>
+                  <CreateTaskModal
+                    defaultStatus={status}
+                    onTaskCreated={onTaskCreated}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-auto w-full justify-start text-muted-foreground"
+                      >
+                        <PlusIcon className="size-4" />
+                        Create task
+                      </Button>
+                    }
+                  />
                 </div>
               </section>
             );

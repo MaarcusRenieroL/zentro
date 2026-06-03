@@ -7,6 +7,7 @@ import {
   type CreateTaskFormValues,
 } from "@zentro/api/types/zod-schema";
 import { Button } from "@zentro/ui/shadcn/button";
+import { RichTextEditor } from "@zentro/ui/components/rich-text-editor";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@zentro/ui/shadcn/select";
-import { Textarea } from "@zentro/ui/shadcn/textarea";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { ArrowRightIcon, PlusIcon } from "lucide-react";
 import { type FC, useEffect, useState } from "react";
@@ -207,7 +207,7 @@ export const CreateTaskModal: FC<Props> = ({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <DialogHeader>
@@ -285,14 +285,14 @@ export const CreateTaskModal: FC<Props> = ({
                 control={control}
                 render={({ field, fieldState }) => (
                   <Field>
-                    <FieldLabel htmlFor="task-description">
-                      Description
-                    </FieldLabel>
-                    <Textarea
-                      id="task-description"
+                    <FieldLabel>Description</FieldLabel>
+                    <RichTextEditor
+                      value={field.value ?? ""}
+                      showActions={false}
+                      onChange={field.onChange}
+                      onSave={field.onChange}
                       placeholder="Add context, acceptance notes, or links."
-                      className="min-h-24"
-                      {...field}
+                      minHeightClassName="[&_.ProseMirror]:min-h-28"
                     />
                     {fieldState.error && (
                       <p className="text-xs text-destructive">

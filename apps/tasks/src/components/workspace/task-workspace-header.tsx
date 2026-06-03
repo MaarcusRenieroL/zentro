@@ -11,7 +11,6 @@ import {
 } from "@zentro/ui/shadcn/select";
 import { FC } from "react";
 import { CreateTaskModal } from "../create-task-modal";
-import { useRouter } from "next/navigation";
 import type { TaskPriority, TaskStatus } from "~/src/lib/types";
 
 const allValue = "__all__";
@@ -32,6 +31,7 @@ type Props = {
   onPriorityFilterChange: (value: TaskPriority | "all") => void;
   onAssigneeFilterChange: (value: string) => void;
   onClearFilters: () => void;
+  onTaskCreated?: () => void | Promise<void>;
 };
 
 export const TaskWorkspaceHeader: FC<Props> = ({
@@ -50,9 +50,8 @@ export const TaskWorkspaceHeader: FC<Props> = ({
   onPriorityFilterChange,
   onAssigneeFilterChange,
   onClearFilters,
+  onTaskCreated,
 }) => {
-  const router = useRouter();
-
   return (
     <div className="flex flex-col gap-5 border-b pb-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -70,7 +69,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
           </p>
         </div>
 
-        <CreateTaskModal onTaskCreated={() => router.refresh()} />
+        <CreateTaskModal onTaskCreated={onTaskCreated} />
       </div>
 
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">

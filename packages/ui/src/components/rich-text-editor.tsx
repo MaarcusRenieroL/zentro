@@ -44,6 +44,8 @@ type RichTextEditorProps = {
   maxLength?: number;
   minHeightClassName?: string;
   disabled?: boolean;
+  showActions?: boolean;
+  onChange?: (value: string) => void;
   onSave: (value: string) => void;
   onCancel?: () => void;
 };
@@ -96,6 +98,8 @@ export function RichTextEditor({
   maxLength = 10000,
   minHeightClassName,
   disabled = false,
+  showActions = true,
+  onChange,
   onSave,
   onCancel,
 }: RichTextEditorProps) {
@@ -139,7 +143,10 @@ export function RichTextEditor({
       },
     },
     onUpdate({ editor }) {
-      setDraft(editor.getHTML());
+      const nextValue = editor.getHTML();
+
+      setDraft(nextValue);
+      onChange?.(nextValue);
     },
   });
 
@@ -186,29 +193,31 @@ export function RichTextEditor({
           {characterCount.toLocaleString()} / {maxLength.toLocaleString()}{" "}
           characters
         </p>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={disabled}
-            onClick={() => {
-              editor.commands.setContent(value || "");
-              setDraft(value);
-              onCancel?.();
-            }}
-          >
-            <XIcon className="size-4" />
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            disabled={disabled || isOverLimit || draft === value}
-            onClick={() => onSave(draft)}
-          >
-            <SaveIcon className="size-4" />
-            Save
-          </Button>
-        </div>
+        {showActions ? (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={disabled}
+              onClick={() => {
+                editor.commands.setContent(value || "");
+                setDraft(value);
+                onCancel?.();
+              }}
+            >
+              <XIcon className="size-4" />
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={disabled || isOverLimit || draft === value}
+              onClick={() => onSave(draft)}
+            >
+              <SaveIcon className="size-4" />
+              Save
+            </Button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

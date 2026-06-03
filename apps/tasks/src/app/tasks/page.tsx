@@ -2,7 +2,7 @@
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { TaskWorkspace } from "~/src/components/workspace/task-workspace";
 import { workLogEvents } from "~/src/lib/data";
@@ -31,6 +31,7 @@ function toTaskPriority(value: string): TaskPriority {
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<WorkspaceTask[] | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
   const trpc = useTrpcClient();
 
   async function updateTaskStatus(task: WorkspaceTask, status: TaskStatus) {
@@ -72,33 +73,36 @@ export default function TasksPage() {
     }
   }
 
+  const fetchTasks = useCallback(async () => {
+    const data = await trpc.task.getTasksByOrgId.query();
+
+    return data.map((task) => ({
+      id: task.id,
+      key: task.key,
+
+      title: task.name,
+      description: task.description ?? "",
+
+      projectSlug: task.projectSlug,
+      projectName: task.project,
+
+      status: toTaskStatus(task.status),
+      priority: toTaskPriority(task.priority),
+
+      assignee: task.assignee ?? "Unassigned",
+
+      dueDate: task.due ? task.due.toDateString() : "",
+
+      logged: "0",
+    }));
+  }, [trpc]);
+
   useEffect(() => {
     let isMounted = true;
 
-    async function fetchTasks() {
+    async function loadTasks() {
       try {
-        const data = await trpc.task.getTasksByOrgId.query();
-
-        const updatedTasks: WorkspaceTask[] = data.map((task) => ({
-          id: task.id,
-          key: task.key,
-
-          title: task.name,
-          description: task.description ?? "",
-
-          projectSlug: task.projectSlug,
-          projectName: task.project,
-
-          status: toTaskStatus(task.status),
-          priority: toTaskPriority(task.priority),
-
-          assignee: task.assignee ?? "Unassigned",
-
-          dueDate: task.due ? task.due.toDateString() : "",
-
-          logged: "0",
-        }));
-
+        const updatedTasks = await fetchTasks();
         if (isMounted) {
           setTasks(updatedTasks);
         }
@@ -111,12 +115,12 @@ export default function TasksPage() {
       }
     }
 
-    void fetchTasks();
+    void loadTasks();
 
     return () => {
       isMounted = false;
     };
-  }, [trpc]);
+  }, [fetchTasks, refreshToken]);
 
   if (!tasks) {
     return null;
@@ -129,6 +133,7 @@ export default function TasksPage() {
       tasks={tasks}
       logs={workLogEvents}
       onTaskStatusChange={updateTaskStatus}
+      onTaskCreated={() => setRefreshToken((token) => token + 1)}
     />
   );
 }
