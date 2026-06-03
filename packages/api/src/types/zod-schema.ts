@@ -92,7 +92,7 @@ export const taskPrioritySchema = z.enum(["low", "medium", "high"]);
 export const createTaskSchema = z.object({
   projectId: z.string().uuid(),
   name: z.string().trim().min(1, "Task name is required.").max(120),
-  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  description: z.string().trim().max(10000).optional().or(z.literal("")),
   status: taskStatusSchema.default("todo"),
   priority: taskPrioritySchema.default("medium"),
   assignedToMemberId: z.string().uuid().optional().nullable(),
@@ -100,6 +100,40 @@ export const createTaskSchema = z.object({
     (value) => (value === "" ? null : value),
     z.coerce.date().optional().nullable(),
   ),
+});
+
+export const getTaskByKeySchema = z.object({
+  key: z.string(),
+});
+
+export const updateTaskByKeySchema = z.object({
+  key: z.string().trim().min(1, "Task key is required."),
+  name: z.string().trim().min(1, "Task name is required.").max(120).optional(),
+  description: z.string().trim().max(10000).optional().nullable(),
+  status: taskStatusSchema.optional(),
+  priority: taskPrioritySchema.optional(),
+  assignedToMemberId: z.string().uuid().optional().nullable(),
+  dueAt: z.preprocess(
+    (value) => (value === "" ? null : value),
+    z.coerce.date().optional().nullable(),
+  ),
+});
+
+export const deleteTaskByKeySchema = z.object({
+  key: z.string().trim().min(1, "Task key is required."),
+});
+
+export const getTaskCommentsSchema = z.object({
+  taskKey: z.string().trim().min(1, "Task key is required."),
+});
+
+export const createTaskCommentSchema = z.object({
+  taskKey: z.string().trim().min(1, "Task key is required."),
+  body: z.string().trim().min(1, "Comment is required.").max(10000),
+});
+
+export const getTaskActivityEventsSchema = z.object({
+  taskKey: z.string().trim().min(1, "Task key is required."),
 });
 
 export type OrgInviteDetailsFormValues = z.infer<typeof orgInviteDetailsSchema>;
@@ -110,3 +144,7 @@ export type JoinOrganizationListSchema = z.infer<
 export type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
 export type UpdateProjectFormValues = z.infer<typeof updateProjectBySlugSchema>;
 export type CreateTaskFormValues = z.input<typeof createTaskSchema>;
+export type UpdateTaskByKeyFormValues = z.input<typeof updateTaskByKeySchema>;
+export type CreateTaskCommentFormValues = z.input<
+  typeof createTaskCommentSchema
+>;

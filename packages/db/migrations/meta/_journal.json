@@ -43,6 +43,13 @@
       "when": 1780410695539,
       "tag": "0005_thick_eddie_brock",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780473542757,
+      "tag": "0006_awesome_mauler",
+      "breakpoints": true
     }
   ]
 }
