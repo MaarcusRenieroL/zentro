@@ -50,6 +50,13 @@
       "when": 1780473542757,
       "tag": "0006_awesome_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780536412392,
+      "tag": "0007_loud_meltdown",
+      "breakpoints": true
     }
   ]
 }

@@ -136,6 +136,48 @@ export const getTaskActivityEventsSchema = z.object({
   taskKey: z.string().trim().min(1, "Task key is required."),
 });
 
+export const createDocSchema = z.object({
+  projectId: z.string().uuid().optional().nullable(),
+  title: z.string().trim().min(1, "Title is required.").max(160).optional(),
+  content: z.string().max(100000).optional(),
+  slug: z
+    .string()
+    .trim()
+    .min(1, "Slug is required.")
+    .max(120, "Slug must be 120 characters or less.")
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Use lowercase letters, numbers, and hyphens only.",
+    ),
+});
+
+export const getDocsSchema = z.object({
+  projectId: z.string().uuid().optional().nullable(),
+  includeDeleted: z.boolean().optional().default(false),
+});
+
+export const getDocByIdSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const updateDocTitleSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().trim().min(1, "Title is required.").max(160),
+});
+
+export const updateDocContentSchema = z.object({
+  id: z.string().uuid(),
+  content: z.string().max(100000),
+});
+
+export const deleteDocSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const restoreDocSchema = z.object({
+  id: z.string().uuid(),
+});
+
 export type OrgInviteDetailsFormValues = z.infer<typeof orgInviteDetailsSchema>;
 export type JoinOrganizationListSchema = z.infer<
   typeof joinOrganizationListSchema
