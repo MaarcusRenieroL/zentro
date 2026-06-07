@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  ArchiveIcon,
   EyeIcon,
   FolderKanbanIcon,
   MoreHorizontalIcon,
@@ -29,6 +29,8 @@ type ProjectListProps = {
   isLoading: boolean;
   projects: DbProject[];
   searchQuery: string;
+  sortBy: "updated" | "name" | "status";
+  initialStatus: "all" | "active" | "archived";
 };
 
 function formatProjectStatus(status: string) {
@@ -50,25 +52,46 @@ export const ProjectList = ({
   isLoading,
   projects,
   searchQuery,
+  sortBy,
+  initialStatus,
 }: ProjectListProps) => {
-  const [status, setStatus] = useState("all");
+  const router = useRouter();
+  const [status, setStatus] = useState(initialStatus);
+
+  useEffect(() => {
+    setStatus(initialStatus);
+  }, [initialStatus]);
 
   const filteredProjects = useMemo(() => {
     const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
-    return projects.filter((project) => {
-      const matchesStatus = status === "all" || project.status === status;
-      const matchesSearch =
-        normalizedSearchQuery.length === 0 ||
-        project.name.toLowerCase().includes(normalizedSearchQuery) ||
-        project.slug.toLowerCase().includes(normalizedSearchQuery) ||
-        (project.description ?? "")
-          .toLowerCase()
-          .includes(normalizedSearchQuery);
+    return projects
+      .filter((project) => {
+        const matchesStatus = status === "all" || project.status === status;
+        const matchesSearch =
+          normalizedSearchQuery.length === 0 ||
+          project.name.toLowerCase().includes(normalizedSearchQuery) ||
+          project.slug.toLowerCase().includes(normalizedSearchQuery) ||
+          (project.description ?? "")
+            .toLowerCase()
+            .includes(normalizedSearchQuery);
 
-      return matchesStatus && matchesSearch;
-    });
-  }, [projects, searchQuery, status]);
+        return matchesStatus && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (sortBy === "name") {
+          return a.name.localeCompare(b.name);
+        }
+
+        if (sortBy === "status") {
+          return (
+            a.status.localeCompare(b.status) || a.name.localeCompare(b.name)
+          );
+        }
+
+        return b.updatedAt.getTime() - a.updatedAt.getTime();
+      });
+  }, [projects, searchQuery, sortBy, status]);
 
   const emptyTitle = searchQuery.trim()
     ? "No matching projects"
@@ -80,7 +103,12 @@ export const ProjectList = ({
 
   return (
     <div className="flex flex-col gap-5">
-      <Tabs value={status} onValueChange={setStatus}>
+      <Tabs
+        value={status}
+        onValueChange={(value) =>
+          setStatus(value as "all" | "active" | "archived")
+        }
+      >
         <TabsList variant="line">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="active">Active</TabsTrigger>
@@ -170,7 +198,7 @@ export const ProjectList = ({
                   </Badge>
 
                   <span className="text-xs text-muted-foreground">
-                    0 tasks · 0 docs
+                    Project workspace
                   </span>
                 </div>
               </div>
@@ -181,18 +209,11 @@ export const ProjectList = ({
                     {formatUpdatedAt(project.updatedAt)}
                   </p>
 
-                  <div className="mt-2 flex -space-x-2 sm:justify-end">
-                    {Array.from({ length: 1 }).map((_, index) => (
-                      <Avatar
-                        key={index}
-                        className="size-6 border border-background"
-                      >
-                        <AvatarFallback className="text-xs">
-                          {String.fromCharCode(65 + index)}
-                        </AvatarFallback>
-                      </Avatar>
-                    ))}
-                  </div>
+                  <Avatar className="mt-2 size-6 border border-background sm:ml-auto">
+                    <AvatarFallback className="text-xs">
+                      {project.name.slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
 
                 <DropdownMenu>
@@ -209,30 +230,39 @@ export const ProjectList = ({
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/projects/${project.slug}`}>
-                        <EyeIcon className="size-4" />
-                        View
-                      </Link>
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        router.push(`/projects/${project.slug}`);
+                      }}
+                    >
+                      <EyeIcon className="size-4" />
+                      View
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem asChild>
-                      <Link href={`/projects/${project.slug}/settings`}>
-                        <SettingsIcon className="size-4" />
-                        Settings
-                      </Link>
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        router.push(`/projects/${project.slug}/settings`);
+                      }}
+                    >
+                      <SettingsIcon className="size-4" />
+                      Settings
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
 
-                    <DropdownMenuItem>
-                      <ArchiveIcon className="size-4" />
-                      Archive
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem variant="destructive">
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        router.push(
+                          `/projects/${project.slug}/settings/danger`,
+                        );
+                      }}
+                    >
                       <Trash2Icon className="size-4" />
-                      Delete
+                      Danger zone
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

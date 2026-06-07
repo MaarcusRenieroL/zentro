@@ -1,13 +1,7 @@
 "use client";
 
-import { FC, useState } from "react";
-import {
-  CalendarDaysIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  DownloadIcon,
-  RefreshCwIcon,
-} from "lucide-react";
+import { FC, useMemo, useState } from "react";
+import { CalendarDaysIcon, DownloadIcon, RefreshCwIcon } from "lucide-react";
 
 import {
   DataTable,
@@ -88,10 +82,31 @@ type Props = {
 
 export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
   const [period, setPeriod] = useState<Period>("2-weeks");
+  const [issueSearch, setIssueSearch] = useState("");
 
   const visibleDays = getVisibleDays(period);
-  const assignments = getAssignments(tasks, visibleDays);
-  const loggedRows = getLoggedRows(logs);
+  const filteredTasks = useMemo(() => {
+    const normalizedSearch = issueSearch.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return tasks;
+    }
+
+    return tasks.filter((task) =>
+      [task.key, task.title, task.description, task.projectName, task.assignee]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch),
+    );
+  }, [issueSearch, tasks]);
+  const filteredTaskIds = useMemo(
+    () => new Set(filteredTasks.map((task) => task.id)),
+    [filteredTasks],
+  );
+  const assignments = getAssignments(filteredTasks, visibleDays);
+  const loggedRows = getLoggedRows(
+    logs.filter((log) => filteredTaskIds.has(log.taskId)),
+  );
 
   const totalCapacity = visibleDays.reduce(
     (total, day) => total + day.capacity,
@@ -103,6 +118,42 @@ export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
   const utilization = totalCapacity
     ? Math.round((totalLogged / totalCapacity) * 100)
     : 0;
+
+  function resetPlanner() {
+    setPeriod("2-weeks");
+    setIssueSearch("");
+  }
+
+  function exportLoggedRows() {
+    const headers = [
+      "Date",
+      "Task",
+      "Project",
+      "Category",
+      "Duration",
+      "Comment",
+    ];
+    const rows = loggedRows.map((row) => [
+      row.date,
+      row.task,
+      row.project,
+      row.category,
+      row.duration,
+      row.comment,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","),
+      )
+      .join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "zentro-worklog.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <Card className="rounded-lg">
@@ -130,21 +181,11 @@ export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="icon">
-              <ChevronLeftIcon className="size-4" />
-            </Button>
-
-            <Button variant="outline">Today</Button>
-
-            <Button variant="outline" size="icon">
-              <ChevronRightIcon className="size-4" />
-            </Button>
-
             <LogWorkDialog tasks={tasks} />
 
-            <Button variant="outline">
+            <Button variant="outline" onClick={resetPlanner}>
               <RefreshCwIcon className="size-4" />
-              Refresh
+              Reset
             </Button>
           </div>
         </div>
@@ -162,10 +203,14 @@ export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
               <CalendarDaysIcon className="size-4 text-muted-foreground" />
             </div>
 
-            <Input placeholder="Search issues" />
+            <Input
+              placeholder="Search issues"
+              value={issueSearch}
+              onChange={(event) => setIssueSearch(event.target.value)}
+            />
 
             <div className="mt-4 space-y-2">
-              {tasks.slice(0, 6).map((task) => (
+              {filteredTasks.slice(0, 6).map((task) => (
                 <div
                   key={task.id}
                   className="rounded-md border bg-muted/35 p-2 text-xs"
@@ -180,6 +225,12 @@ export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
                   </p>
                 </div>
               ))}
+
+              {!filteredTasks.length ? (
+                <div className="rounded-md border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
+                  No issues match this search.
+                </div>
+              ) : null}
             </div>
           </aside>
 
@@ -318,6 +369,19 @@ export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
                       </div>
                     </div>
                   ))}
+
+                  {!assignments.length ? (
+                    <div className="absolute inset-0 flex items-center justify-center px-4 text-center">
+                      <div>
+                        <CalendarDaysIcon className="mx-auto mb-3 size-8 text-muted-foreground" />
+                        <p className="text-sm font-medium">No planned work</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Adjust the issue search to bring tasks back into the
+                          timeline.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -333,7 +397,7 @@ export const WorklogPlanner: FC<Props> = ({ tasks, logs }) => {
               </p>
             </div>
 
-            <Button variant="outline">
+            <Button variant="outline" onClick={exportLoggedRows}>
               <DownloadIcon className="size-4" />
               Export
             </Button>

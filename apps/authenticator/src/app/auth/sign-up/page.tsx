@@ -23,6 +23,9 @@ import { SignupFormValues, signupSchema } from "../../lib/zod-schema";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [socialProvider, setSocialProvider] = useState<
+    "google" | "github" | null
+  >(null);
   const router = useRouter();
 
   const {
@@ -78,13 +81,16 @@ export default function SignupPage() {
   };
 
   const handleSocialSignIn = async (provider: "google" | "github") => {
+    setSocialProvider(provider);
+
     const { error } = await authClient.signIn.social({
       provider,
-      callbackURL: "/dashboard",
+      callbackURL: "/auth/create-organization",
     });
 
     if (error) {
       toastError(error.statusText, error.message);
+      setSocialProvider(null);
     }
   };
 
@@ -255,22 +261,26 @@ export default function SignupPage() {
           type="button"
           variant="outline"
           className="mb-3 w-full"
-          disabled
+          disabled={socialProvider !== null}
           onClick={() => handleSocialSignIn("google")}
         >
           <GoogleIcon className="fill-white" />
-          Continue with Google
+          {socialProvider === "google"
+            ? "Connecting Google..."
+            : "Continue with Google"}
         </Button>
 
         <Button
           type="button"
           variant="outline"
           className="w-full"
-          disabled
+          disabled={socialProvider !== null}
           onClick={() => handleSocialSignIn("github")}
         >
           <GithubIcon className="fill-white" />
-          Continue with GitHub
+          {socialProvider === "github"
+            ? "Connecting GitHub..."
+            : "Continue with GitHub"}
         </Button>
       </div>
 

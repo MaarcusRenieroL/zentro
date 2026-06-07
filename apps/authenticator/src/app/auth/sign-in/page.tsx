@@ -27,6 +27,9 @@ type OnboardingRedirectResponse = {
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [socialProvider, setSocialProvider] = useState<
+    "google" | "github" | null
+  >(null);
 
   const router = useRouter();
 
@@ -83,6 +86,24 @@ export default function LoginPage() {
       redirectTo: redirect.redirectTo ?? "/auth/sign-in",
       sessionToken: data?.token ?? redirect.sessionToken,
     });
+  };
+
+  const handleSocialSignIn = async (provider: "google" | "github") => {
+    const redirectTo =
+      new URLSearchParams(window.location.search).get("redirectTo") ??
+      "/auth/create-organization";
+
+    setSocialProvider(provider);
+
+    const { error } = await authClient.signIn.social({
+      provider,
+      callbackURL: redirectTo,
+    });
+
+    if (error) {
+      toastError(error, "Social sign-in failed");
+      setSocialProvider(null);
+    }
   };
 
   return (
@@ -195,13 +216,29 @@ export default function LoginPage() {
         <FieldSeparator className="my-6">or</FieldSeparator>
 
         <div className="flex flex-col gap-3">
-          <Button variant="outline" className="w-full">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={socialProvider !== null}
+            onClick={() => handleSocialSignIn("google")}
+          >
             <GoogleIcon className="fill-white" />
-            Continue with Google
+            {socialProvider === "google"
+              ? "Connecting Google..."
+              : "Continue with Google"}
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={socialProvider !== null}
+            onClick={() => handleSocialSignIn("github")}
+          >
             <GithubIcon className="fill-white" />
-            Continue with GitHub
+            {socialProvider === "github"
+              ? "Connecting GitHub..."
+              : "Continue with GitHub"}
           </Button>
         </div>
       </div>

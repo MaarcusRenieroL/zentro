@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@zentro/ui/components/shadcn/button";
-import { ChevronDownIcon, SearchIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
 import {
   InputGroup,
   InputGroupAddon,
@@ -15,20 +15,36 @@ import {
 } from "@zentro/ui/components/shadcn/dropdown-menu";
 import { CreateProjectModal } from "./create-project-modal";
 
+type ProjectSort = "updated" | "name" | "status";
+
 type ProjectToolbarProps = {
   onProjectCreated: () => void | Promise<void>;
   searchQuery: string;
+  sortBy: ProjectSort;
   onSearchQueryChange: (query: string) => void;
+  onSortByChange: (sort: ProjectSort) => void;
 };
+
+const sortOptions: Array<{ value: ProjectSort; label: string }> = [
+  { value: "updated", label: "Recently updated" },
+  { value: "name", label: "Name" },
+  { value: "status", label: "Status" },
+];
 
 export const ProjectToolbar = ({
   onProjectCreated,
   searchQuery,
+  sortBy,
   onSearchQueryChange,
+  onSortByChange,
 }: ProjectToolbarProps) => {
+  const activeSortLabel =
+    sortOptions.find((option) => option.value === sortBy)?.label ??
+    "Recently updated";
+
   return (
     <div className="flex flex-col gap-5">
-      <div className="w-full flex items-center justify-between">
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold">Projects</h1>
           <p className="text-md text-muted-foreground">
@@ -37,7 +53,7 @@ export const ProjectToolbar = ({
         </div>
         <CreateProjectModal onProjectCreated={onProjectCreated} />
       </div>
-      <div className="flex items-center justify-between gap-5">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <InputGroup>
           <InputGroupAddon>
             <SearchIcon aria-hidden="true" />
@@ -53,14 +69,25 @@ export const ProjectToolbar = ({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              Sort: Recently updated
+            <Button variant="outline" className="justify-start gap-2">
+              Sort: {activeSortLabel}
               <ChevronDownIcon className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem>Recently updated</DropdownMenuItem>
-            <DropdownMenuItem>Name</DropdownMenuItem>
+            {sortOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => onSortByChange(option.value)}
+              >
+                <CheckIcon
+                  className={`size-4 ${
+                    option.value === sortBy ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+                {option.label}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

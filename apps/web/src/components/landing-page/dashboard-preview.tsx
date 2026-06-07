@@ -27,7 +27,10 @@ const tasks = [
 
 export const DashboardPreview: FC = () => {
   return (
-    <section className="border-t border-border/40 py-20 md:py-32">
+    <section
+      id="dashboard-preview"
+      className="border-t border-border/40 py-20 md:py-32"
+    >
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
