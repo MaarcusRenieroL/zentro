@@ -35,6 +35,7 @@ type ProjectOption = {
   id: string;
   name: string;
   taskKeyPrefix: string;
+  teamName: string | null;
 };
 
 type MemberOption = {
@@ -124,6 +125,7 @@ export const CreateTaskModal: FC<Props> = ({
             id: project.id,
             name: project.name,
             taskKeyPrefix: project.taskKeyPrefix,
+            teamName: project.teamName,
           })),
         );
         setMembers(
@@ -242,6 +244,7 @@ export const CreateTaskModal: FC<Props> = ({
                         {projects.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             {project.taskKeyPrefix} - {project.name}
+                            {project.teamName ? ` · ${project.teamName}` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>

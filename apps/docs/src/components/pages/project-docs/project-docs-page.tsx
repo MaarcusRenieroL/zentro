@@ -13,12 +13,18 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 
-import { DocsListItem, formatDocDate, getDocTitle } from "../../../lib/docs";
+import {
+  DocsListItem,
+  formatDocDate,
+  getDocTeam,
+  getDocTitle,
+} from "../../../lib/docs";
 import { CreateDocModal } from "../home/create-doc-modal";
 
 type ProjectItem = {
   id: string;
   name: string;
+  teamName: string | null;
 };
 
 export function ProjectDocsPage() {
@@ -59,6 +65,7 @@ export function ProjectDocsPage() {
     const projectGroups = projects.map((project) => ({
       id: project.id,
       name: project.name,
+      teamName: project.teamName,
       docs: docs.filter((doc) => doc.projectId === project.id),
     }));
     const workspaceDocs = docs.filter((doc) => !doc.projectId);
@@ -133,6 +140,9 @@ export function ProjectDocsPage() {
                     </CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {group.docs.length} docs
+                      {"teamName" in group && group.teamName
+                        ? ` · ${group.teamName}`
+                        : ""}
                     </p>
                   </div>
                 </div>
@@ -157,7 +167,10 @@ export function ProjectDocsPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant="secondary">Doc</Badge>
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                      <Badge variant="outline">{getDocTeam(doc)}</Badge>
+                      <Badge variant="secondary">Doc</Badge>
+                    </div>
                   </Link>
                 ))}
               </CardContent>

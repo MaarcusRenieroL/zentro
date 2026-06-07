@@ -10,6 +10,7 @@ import {
 
 import { members, organizations } from "./auth";
 import { projects } from "./project";
+import { teams } from "./team";
 
 export const tasks = pgTable(
   "task",
@@ -25,6 +26,10 @@ export const tasks = pgTable(
       .references(() => projects.id, {
         onDelete: "cascade",
       }),
+
+    teamId: uuid("teamId").references(() => teams.id, {
+      onDelete: "set null",
+    }),
 
     key: text("key").notNull(),
     taskNumber: integer("taskNumber").notNull(),
@@ -68,6 +73,7 @@ export const tasks = pgTable(
       table.status,
     ),
     index("task_project_status_idx").on(table.projectId, table.status),
+    index("task_team_status_idx").on(table.teamId, table.status),
     index("task_assigned_to_member_idx").on(table.assignedToMemberId),
     index("task_due_at_idx").on(table.dueAt),
   ],

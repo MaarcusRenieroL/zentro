@@ -1,12 +1,14 @@
 "use client";
 
 import { useTrpcClient } from "@zentro/api/react";
-import { ProjectList } from "~/src/components/projects/list";
+import {
+  ProjectList,
+  type ProjectListItem,
+} from "~/src/components/projects/list";
 import { ProjectToolbar } from "~/src/components/projects/toolbar";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toastError } from "@zentro/ui/index";
-import type { Project } from "@zentro/db/schema";
 
 type ProjectSort = "updated" | "name" | "status";
 
@@ -15,7 +17,7 @@ function getInitialStatus(value: string | null) {
 }
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<ProjectSort>("updated");
   const [isLoading, setIsLoading] = useState(true);

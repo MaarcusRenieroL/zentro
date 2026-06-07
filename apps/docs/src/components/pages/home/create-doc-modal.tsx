@@ -45,7 +45,9 @@ export function CreateDocModal({
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>(
     [],
   );
+  const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [projectId, setProjectId] = useState("workspace");
+  const [teamId, setTeamId] = useState("workspace");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -57,19 +59,23 @@ export function CreateDocModal({
 
     let isMounted = true;
 
-    async function fetchProjects() {
+    async function fetchOptions() {
       try {
-        const projectList = await trpc.project.getProjectsByOrgId.query();
+        const [projectList, teamList] = await Promise.all([
+          trpc.project.getProjectsByOrgId.query(),
+          trpc.team.getAll.query(),
+        ]);
 
         if (isMounted) {
           setProjects(projectList);
+          setTeams(teamList);
         }
       } catch (error) {
-        toastError(error, "Failed to load projects");
+        toastError(error, "Failed to load doc options");
       }
     }
 
-    void fetchProjects();
+    void fetchOptions();
 
     return () => {
       isMounted = false;
@@ -92,11 +98,17 @@ export function CreateDocModal({
         title: docTitle,
         content,
         projectId: projectId === "workspace" ? null : projectId,
+        teamId:
+          projectId === "workspace" && teamId !== "workspace" ? teamId : null,
         slug,
       });
 
       toastSuccess("Doc created", doc.title);
       setOpen(false);
+      setProjectId("workspace");
+      setTeamId("workspace");
+      setTitle("");
+      setContent("");
       router.push(`/docs/${doc.slug}`);
     } catch (error) {
       toastError(error, "Failed to create doc");
@@ -123,7 +135,7 @@ export function CreateDocModal({
 
         <form onSubmit={handleCreateDoc}>
           <FieldGroup>
-            <div className="grid gap-4 sm:grid-cols-[1fr_12rem]">
+            <div className="grid gap-4 sm:grid-cols-[1fr_12rem_12rem]">
               <Field>
                 <FieldLabel>Title</FieldLabel>
                 <Input
@@ -147,6 +159,31 @@ export function CreateDocModal({
                     ))}
                   </SelectContent>
                 </Select>
+              </Field>
+              <Field>
+                <FieldLabel>Team</FieldLabel>
+                <Select
+                  value={teamId}
+                  onValueChange={setTeamId}
+                  disabled={projectId !== "workspace"}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="workspace">Workspace</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {projectId !== "workspace" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Project docs inherit their project team.
+                  </p>
+                ) : null}
               </Field>
             </div>
 

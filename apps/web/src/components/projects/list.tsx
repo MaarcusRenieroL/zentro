@@ -21,13 +21,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@zentro/ui/shadcn/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@zentro/ui/shadcn/select";
 import { Tabs, TabsList, TabsTrigger } from "@zentro/ui/shadcn/tabs";
-import type { Project as DbProject } from "@zentro/db/schema";
 import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
+
+export type ProjectListItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  teamId: string | null;
+  teamName: string | null;
+  teamColor: string | null;
+  status: string;
+  updatedAt: Date;
+};
 
 type ProjectListProps = {
   isLoading: boolean;
-  projects: DbProject[];
+  projects: ProjectListItem[];
   searchQuery: string;
   sortBy: "updated" | "name" | "status";
   initialStatus: "all" | "active" | "archived";
@@ -57,10 +75,25 @@ export const ProjectList = ({
 }: ProjectListProps) => {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
+  const [teamFilter, setTeamFilter] = useState("all");
 
   useEffect(() => {
     setStatus(initialStatus);
   }, [initialStatus]);
+
+  const teamOptions = useMemo(() => {
+    const options = new Map<string, string>();
+
+    projects.forEach((project) => {
+      if (project.teamId && project.teamName) {
+        options.set(project.teamId, project.teamName);
+      }
+    });
+
+    return Array.from(options, ([id, name]) => ({ id, name })).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  }, [projects]);
 
   const filteredProjects = useMemo(() => {
     const normalizedSearchQuery = searchQuery.trim().toLowerCase();
@@ -68,15 +101,22 @@ export const ProjectList = ({
     return projects
       .filter((project) => {
         const matchesStatus = status === "all" || project.status === status;
+        const matchesTeam =
+          teamFilter === "all" ||
+          (teamFilter === "workspace" && !project.teamId) ||
+          project.teamId === teamFilter;
         const matchesSearch =
           normalizedSearchQuery.length === 0 ||
           project.name.toLowerCase().includes(normalizedSearchQuery) ||
           project.slug.toLowerCase().includes(normalizedSearchQuery) ||
+          (project.teamName ?? "")
+            .toLowerCase()
+            .includes(normalizedSearchQuery) ||
           (project.description ?? "")
             .toLowerCase()
             .includes(normalizedSearchQuery);
 
-        return matchesStatus && matchesSearch;
+        return matchesStatus && matchesTeam && matchesSearch;
       })
       .sort((a, b) => {
         if (sortBy === "name") {
@@ -91,30 +131,46 @@ export const ProjectList = ({
 
         return b.updatedAt.getTime() - a.updatedAt.getTime();
       });
-  }, [projects, searchQuery, sortBy, status]);
+  }, [projects, searchQuery, sortBy, status, teamFilter]);
 
-  const emptyTitle = searchQuery.trim()
-    ? "No matching projects"
-    : "No projects yet";
+  const hasFilters = searchQuery.trim() || teamFilter !== "all";
+  const emptyTitle = hasFilters ? "No matching projects" : "No projects yet";
 
-  const emptyDescription = searchQuery.trim()
-    ? "Try a different project name, slug, or description."
+  const emptyDescription = hasFilters
+    ? "Try a different project name, slug, team, or description."
     : "Create a project to start organizing and tracking work across your team.";
 
   return (
     <div className="flex flex-col gap-5">
-      <Tabs
-        value={status}
-        onValueChange={(value) =>
-          setStatus(value as "all" | "active" | "archived")
-        }
-      >
-        <TabsList variant="line">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="archived">Archived</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Tabs
+          value={status}
+          onValueChange={(value) =>
+            setStatus(value as "all" | "active" | "archived")
+          }
+        >
+          <TabsList variant="line">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="archived">Archived</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Select value={teamFilter} onValueChange={setTeamFilter}>
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder="Filter by team" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All teams</SelectItem>
+            <SelectItem value="workspace">Workspace level</SelectItem>
+            {teamOptions.map((team) => (
+              <SelectItem key={team.id} value={team.id}>
+                {team.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -198,7 +254,7 @@ export const ProjectList = ({
                   </Badge>
 
                   <span className="text-xs text-muted-foreground">
-                    Project workspace
+                    {project.teamName ?? "Workspace level"}
                   </span>
                 </div>
               </div>

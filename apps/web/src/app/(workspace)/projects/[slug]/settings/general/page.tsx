@@ -1,7 +1,7 @@
 import { JSX } from "react";
 import { db } from "@zentro/db";
 import { and, eq } from "@zentro/db/drizzle";
-import { projects, users } from "@zentro/db/schema";
+import { projects, teams, users } from "@zentro/db/schema";
 import { redirect } from "next/navigation";
 
 import { GeneralSection } from "~/src/components/project-detail/settings/general-section";
@@ -27,6 +27,9 @@ export default async function GeneralSettingsPage({
       name: projects.name,
       description: projects.description,
       slug: projects.slug,
+      teamId: projects.teamId,
+      teamName: teams.name,
+      teamColor: teams.color,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
       status: projects.status,
@@ -34,6 +37,7 @@ export default async function GeneralSettingsPage({
     })
     .from(projects)
     .leftJoin(users, eq(users.id, projects.createdById))
+    .leftJoin(teams, eq(teams.id, projects.teamId))
     .where(
       and(
         eq(projects.slug, slug),
@@ -57,6 +61,9 @@ export default async function GeneralSettingsPage({
           name: project.name,
           slug: project.slug,
           description: project.description,
+          teamId: project.teamId,
+          teamName: project.teamName,
+          teamColor: project.teamColor,
           status: project.status,
           owner: project.owner ?? "Unknown owner",
           createdAt: project.createdAt,

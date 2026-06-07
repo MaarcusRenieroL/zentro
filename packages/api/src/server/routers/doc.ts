@@ -9,7 +9,14 @@ import {
   isNull,
   or,
 } from "@zentro/db/drizzle";
-import { docComments, docs, members, projects, users } from "@zentro/db/schema";
+import {
+  docComments,
+  docs,
+  members,
+  projects,
+  teams,
+  users,
+} from "@zentro/db/schema";
 
 import {
   createDocCommentSchema,
@@ -75,6 +82,10 @@ export const docsRouter = router({
         conditions.push(eq(docs.projectId, input.projectId));
       }
 
+      if (input.teamId) {
+        conditions.push(eq(docs.teamId, input.teamId));
+      }
+
       const docsList = await db
         .select({
           id: docs.id,
@@ -82,6 +93,9 @@ export const docsRouter = router({
           slug: docs.slug,
           projectId: docs.projectId,
           projectName: projects.name,
+          teamId: docs.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
           createdBy: users.name,
           deletedAt: docs.deletedAt,
           createdAt: docs.createdAt,
@@ -91,6 +105,7 @@ export const docsRouter = router({
         .leftJoin(members, eq(members.id, docs.createdByMemberId))
         .leftJoin(users, eq(users.id, members.userId))
         .leftJoin(projects, eq(projects.id, docs.projectId))
+        .leftJoin(teams, eq(teams.id, docs.teamId))
         .where(and(...conditions))
         .orderBy(desc(docs.updatedAt));
 
@@ -111,6 +126,10 @@ export const docsRouter = router({
         conditions.push(eq(docs.projectId, input.projectId));
       }
 
+      if (input.teamId) {
+        conditions.push(eq(docs.teamId, input.teamId));
+      }
+
       if (query) {
         const pattern = `%${query}%`;
 
@@ -119,6 +138,7 @@ export const docsRouter = router({
             ilike(docs.title, pattern),
             ilike(docs.content, pattern),
             ilike(projects.name, pattern),
+            ilike(teams.name, pattern),
             ilike(users.name, pattern),
           )!,
         );
@@ -131,6 +151,9 @@ export const docsRouter = router({
           slug: docs.slug,
           projectId: docs.projectId,
           projectName: projects.name,
+          teamId: docs.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
           createdBy: users.name,
           deletedAt: docs.deletedAt,
           createdAt: docs.createdAt,
@@ -140,6 +163,7 @@ export const docsRouter = router({
         .leftJoin(members, eq(members.id, docs.createdByMemberId))
         .leftJoin(users, eq(users.id, members.userId))
         .leftJoin(projects, eq(projects.id, docs.projectId))
+        .leftJoin(teams, eq(teams.id, docs.teamId))
         .where(and(...conditions))
         .orderBy(desc(docs.updatedAt))
         .limit(50);
@@ -157,6 +181,9 @@ export const docsRouter = router({
           slug: docs.slug,
           projectId: docs.projectId,
           projectName: projects.name,
+          teamId: docs.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
           createdByMemberId: docs.createdByMemberId,
           createdBy: users.name,
           deletedAt: docs.deletedAt,
@@ -167,6 +194,7 @@ export const docsRouter = router({
         .leftJoin(members, eq(members.id, docs.createdByMemberId))
         .leftJoin(users, eq(users.id, members.userId))
         .leftJoin(projects, eq(projects.id, docs.projectId))
+        .leftJoin(teams, eq(teams.id, docs.teamId))
         .where(
           and(
             eq(docs.id, input.id),
@@ -198,6 +226,9 @@ export const docsRouter = router({
           slug: docs.slug,
           projectId: docs.projectId,
           projectName: projects.name,
+          teamId: docs.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
           createdByMemberId: docs.createdByMemberId,
           createdBy: users.name,
           deletedAt: docs.deletedAt,
@@ -208,6 +239,7 @@ export const docsRouter = router({
         .leftJoin(members, eq(members.id, docs.createdByMemberId))
         .leftJoin(users, eq(users.id, members.userId))
         .leftJoin(projects, eq(projects.id, docs.projectId))
+        .leftJoin(teams, eq(teams.id, docs.teamId))
         .where(
           and(
             eq(docs.slug, input.slug),
@@ -250,10 +282,13 @@ export const docsRouter = router({
           });
         }
 
+        let teamId = input.teamId ?? null;
+
         if (input.projectId) {
           const [project] = await tx
             .select({
               id: projects.id,
+              teamId: projects.teamId,
             })
             .from(projects)
             .where(
@@ -270,6 +305,28 @@ export const docsRouter = router({
               message: "Project not found",
             });
           }
+
+          teamId = project.teamId;
+        } else if (teamId) {
+          const [team] = await tx
+            .select({ id: teams.id })
+            .from(teams)
+            .where(
+              and(
+                eq(teams.id, teamId),
+                eq(teams.organizationId, activeOrganization.id),
+              ),
+            )
+            .limit(1);
+
+          if (!team) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Team not found",
+            });
+          }
+
+          teamId = team.id;
         }
 
         const [doc] = await tx
@@ -279,6 +336,7 @@ export const docsRouter = router({
             content: input.content,
             organizationId: activeOrganization.id,
             projectId: input.projectId,
+            teamId,
             createdByMemberId: member.id,
             slug: input.slug,
           })

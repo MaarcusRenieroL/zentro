@@ -21,6 +21,7 @@ import {
   formatDocDate,
   getDocOwner,
   getDocProject,
+  getDocTeam,
   getDocTitle,
   getInitials,
 } from "../../../lib/docs";
@@ -110,8 +111,11 @@ export const RecentDocs: FC = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="mt-auto flex items-center justify-between gap-3 text-xs text-muted-foreground">
-              <Badge variant="outline">{getDocProject(doc)}</Badge>
+            <CardContent className="mt-auto flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <Badge variant="outline">{getDocProject(doc)}</Badge>
+                <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+              </div>
               <div className="flex min-w-0 items-center gap-2">
                 <Avatar className="size-6">
                   <AvatarFallback className="text-[10px]">

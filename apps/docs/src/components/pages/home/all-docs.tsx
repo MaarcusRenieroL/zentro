@@ -40,6 +40,7 @@ import {
   formatDocDate,
   getDocOwner,
   getDocProject,
+  getDocTeam,
   getDocTitle,
   getInitials,
 } from "../../../lib/docs";
@@ -115,6 +116,7 @@ export const AllDocs: FC = () => {
                   <TableRow>
                     <TableHead>Doc</TableHead>
                     <TableHead>Project</TableHead>
+                    <TableHead>Team</TableHead>
                     <TableHead>Owner</TableHead>
                     <TableHead>Updated</TableHead>
                   </TableRow>
@@ -144,6 +146,9 @@ export const AllDocs: FC = () => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{getDocProject(doc)}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{getDocTeam(doc)}</Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -225,6 +230,7 @@ export const AllDocs: FC = () => {
                 </CardHeader>
                 <CardContent className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline">{getDocProject(doc)}</Badge>
+                  <Badge variant="secondary">{getDocTeam(doc)}</Badge>
                   <span className="inline-flex items-center gap-1">
                     <ClockIcon className="size-3" />
                     {formatDocDate(doc.updatedAt)}

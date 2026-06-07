@@ -53,10 +53,25 @@ export const TaskWorkspace: FC<Props> = ({
     "all",
   );
   const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [teamFilter, setTeamFilter] = useState("all");
 
   const assigneeOptions = useMemo(() => {
     return Array.from(new Set(tasks.map((task) => task.assignee))).sort(
       (a, b) => a.localeCompare(b),
+    );
+  }, [tasks]);
+
+  const teamOptions = useMemo(() => {
+    const options = new Map<string, string>();
+
+    tasks.forEach((task) => {
+      if (task.teamId && task.teamName) {
+        options.set(task.teamId, task.teamName);
+      }
+    });
+
+    return Array.from(options, ([id, name]) => ({ id, name })).sort((a, b) =>
+      a.name.localeCompare(b.name),
     );
   }, [tasks]);
 
@@ -71,6 +86,7 @@ export const TaskWorkspace: FC<Props> = ({
           task.title,
           task.description,
           task.projectName,
+          task.teamName ?? "",
           task.assignee,
         ]
           .join(" ")
@@ -82,18 +98,34 @@ export const TaskWorkspace: FC<Props> = ({
         priorityFilter === "all" || task.priority === priorityFilter;
       const matchesAssignee =
         assigneeFilter === "all" || task.assignee === assigneeFilter;
+      const matchesTeam =
+        teamFilter === "all" ||
+        (teamFilter === "workspace" && !task.teamId) ||
+        task.teamId === teamFilter;
 
       return (
-        matchesSearch && matchesStatus && matchesPriority && matchesAssignee
+        matchesSearch &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesAssignee &&
+        matchesTeam
       );
     });
-  }, [assigneeFilter, priorityFilter, searchQuery, statusFilter, tasks]);
+  }, [
+    assigneeFilter,
+    priorityFilter,
+    searchQuery,
+    statusFilter,
+    tasks,
+    teamFilter,
+  ]);
 
   const filtersActive =
     Boolean(searchQuery.trim()) ||
     statusFilter !== "all" ||
     priorityFilter !== "all" ||
-    assigneeFilter !== "all";
+    assigneeFilter !== "all" ||
+    teamFilter !== "all";
 
   return (
     <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
@@ -103,21 +135,25 @@ export const TaskWorkspace: FC<Props> = ({
         taskCount={filteredTasks.length}
         projectScoped={projectScoped}
         assigneeOptions={assigneeOptions}
+        teamOptions={teamOptions}
         filtersActive={filtersActive}
         searchQuery={searchQuery}
         statusFilter={statusFilter}
         priorityFilter={priorityFilter}
         assigneeFilter={assigneeFilter}
+        teamFilter={teamFilter}
         onSearchQueryChange={setSearchQuery}
         onStatusFilterChange={setStatusFilter}
         onPriorityFilterChange={setPriorityFilter}
         onAssigneeFilterChange={setAssigneeFilter}
+        onTeamFilterChange={setTeamFilter}
         onTaskCreated={onTaskCreated}
         onClearFilters={() => {
           setSearchQuery("");
           setStatusFilter("all");
           setPriorityFilter("all");
           setAssigneeFilter("all");
+          setTeamFilter("all");
         }}
       />
 

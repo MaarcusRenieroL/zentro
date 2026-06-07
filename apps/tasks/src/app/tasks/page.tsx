@@ -74,7 +74,7 @@ export default function TasksPage() {
   }
 
   const fetchTasks = useCallback(async () => {
-    const data = await trpc.task.getTasksByOrgId.query();
+    const data = await trpc.task.getTasksByOrgId.query({});
 
     return data.map((task) => ({
       id: task.id,
@@ -85,6 +85,9 @@ export default function TasksPage() {
 
       projectSlug: task.projectSlug,
       projectName: task.project,
+      teamId: task.teamId,
+      teamName: task.teamName,
+      teamColor: task.teamColor,
 
       status: toTaskStatus(task.status),
       priority: toTaskPriority(task.priority),

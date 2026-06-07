@@ -7,6 +7,9 @@ export type Project = {
   name: string;
   description: string;
   lead: string;
+  teamId: string | null;
+  teamName: string | null;
+  teamColor: string | null;
 };
 
 export type WorkspaceTask = {
@@ -16,6 +19,9 @@ export type WorkspaceTask = {
   description: string;
   projectSlug: string;
   projectName: string;
+  teamId: string | null;
+  teamName: string | null;
+  teamColor: string | null;
   status: TaskStatus;
   priority: TaskPriority;
   assignee: string;

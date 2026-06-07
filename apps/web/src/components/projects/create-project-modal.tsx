@@ -25,9 +25,16 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@zentro/ui/shadcn/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@zentro/ui/shadcn/select";
 import { useSlugAvailability } from "@zentro/ui/hooks/use-slug-availability";
 import { useTrpcClient } from "@zentro/api/react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { LoadingState } from "@zentro/ui/components/loading-state";
 import { slugify } from "@zentro/utils";
@@ -36,11 +43,19 @@ type CreateProjectModalProps = {
   onProjectCreated: () => void | Promise<void>;
 };
 
+type TeamOption = {
+  id: string;
+  name: string;
+  color: string;
+};
+
 export const CreateProjectModal = ({
   onProjectCreated,
 }: CreateProjectModalProps) => {
   const [open, setOpen] = useState<boolean>(false);
   const [slugEdited, setSlugEdited] = useState(false);
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
   const trpc = useTrpcClient();
 
@@ -67,6 +82,7 @@ export const CreateProjectModal = ({
       name: "",
       slug: "",
       description: "",
+      teamId: null,
     },
     mode: "onChange",
   });
@@ -77,6 +93,40 @@ export const CreateProjectModal = ({
     slug,
     checkSlug: checkProjectSlug,
   });
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadTeams() {
+      setIsLoadingTeams(true);
+
+      try {
+        const teamList = await trpc.team.getAll.query();
+
+        if (!cancelled) {
+          setTeams(teamList);
+        }
+      } catch {
+        if (!cancelled) {
+          toastError("Error", "Could not load teams");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingTeams(false);
+        }
+      }
+    }
+
+    void loadTeams();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, trpc]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -97,6 +147,7 @@ export const CreateProjectModal = ({
         name: formValues.name,
         slug: formValues.slug,
         description: formValues.description,
+        teamId: formValues.teamId ?? null,
       });
 
       toastSuccess("Success", "Project created successfully");
@@ -248,6 +299,45 @@ export const CreateProjectModal = ({
                         {fieldState.error.message}
                       </p>
                     )}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                name="teamId"
+                control={control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="project-team">Team</FieldLabel>
+                    <Select
+                      value={field.value ?? "workspace"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "workspace" ? null : value)
+                      }
+                      disabled={isLoadingTeams}
+                    >
+                      <SelectTrigger id="project-team" className="mt-1.5">
+                        <SelectValue
+                          placeholder={
+                            isLoadingTeams ? "Loading teams..." : "Select team"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="workspace">
+                          Workspace level
+                        </SelectItem>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                      Projects assigned to a team will scope their tasks and
+                      docs to that team.
+                    </FieldDescription>
                   </Field>
                 )}
               />

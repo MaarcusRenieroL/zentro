@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { organizations, users } from "./auth";
+import { teams } from "./team";
 
 export const projects = pgTable(
   "project",
@@ -22,6 +23,10 @@ export const projects = pgTable(
     slug: text("slug").notNull(),
     taskKeyPrefix: text("taskKeyPrefix").notNull(),
     description: text("description"),
+
+    teamId: uuid("teamId").references(() => teams.id, {
+      onDelete: "set null",
+    }),
 
     status: text("status").notNull().default("active"),
 
@@ -48,6 +53,7 @@ export const projects = pgTable(
       table.organizationId,
       table.status,
     ),
+    index("project_team_idx").on(table.teamId),
   ],
 );
 

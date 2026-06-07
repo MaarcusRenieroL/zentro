@@ -19,6 +19,7 @@ import {
   DocsListItem,
   formatDocDate,
   getDocProject,
+  getDocTeam,
   getDocTitle,
 } from "../../../lib/docs";
 import { CreateDocModal } from "../home/create-doc-modal";
@@ -106,8 +107,11 @@ export function StaticDocListPage({
                 Updated {formatDocDate(doc.updatedAt)}
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center justify-between gap-3">
-              <Badge variant="outline">{getDocProject(doc)}</Badge>
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{getDocProject(doc)}</Badge>
+                <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+              </div>
               <Button variant="link" size="sm" asChild>
                 <Link href={`/docs/${doc.slug}`}>Open</Link>
               </Button>

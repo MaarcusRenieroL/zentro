@@ -31,6 +31,11 @@ export const TaskCard: FC<Props> = ({ task }) => {
         {task.description}
       </p>
 
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Badge variant="secondary">{task.projectName}</Badge>
+        <Badge variant="outline">{task.teamName ?? "Workspace level"}</Badge>
+      </div>
+
       <div className="mt-4 flex items-center justify-between gap-2 text-xs">
         <span className="truncate text-muted-foreground">{task.assignee}</span>
         <span

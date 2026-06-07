@@ -15,6 +15,7 @@ import {
   formatDocDate,
   getDocOwner,
   getDocProject,
+  getDocTeam,
   getDocTitle,
   getInitials,
 } from "../../../lib/docs";
@@ -71,7 +72,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">Search docs</h1>
           <p className="text-sm text-muted-foreground">
-            Find pages by title, content, project, or owner.
+            Find pages by title, content, project, team, or owner.
           </p>
         </div>
       </div>
@@ -150,6 +151,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
                       </p>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline">{getDocProject(doc)}</Badge>
+                        <Badge variant="secondary">{getDocTeam(doc)}</Badge>
                         <span>Created by {owner}</span>
                       </div>
                     </div>
@@ -172,7 +174,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
             </p>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
               {normalizedQuery
-                ? "Try searching by doc title, project, status, or owner."
+                ? "Try searching by doc title, project, team, status, or owner."
                 : "Enter a keyword above to see matching workspace docs."}
             </p>
           </div>

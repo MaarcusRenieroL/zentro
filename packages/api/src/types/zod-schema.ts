@@ -33,6 +33,7 @@ export const createProjectSchema = z.object({
     .max(500, "Description must be 500 characters or less.")
     .optional()
     .or(z.literal("")),
+  teamId: z.string().uuid().optional().nullable(),
 });
 
 export const checkSlugSchema = z.object({
@@ -69,6 +70,7 @@ export const updateProjectBySlugSchema = z.object({
     .max(500, "Description must be 500 characters or less.")
     .optional()
     .or(z.literal("")),
+  teamId: z.string().uuid().optional().nullable(),
 });
 
 export const archiveProjectBySlugSchema = z.object({
@@ -77,6 +79,62 @@ export const archiveProjectBySlugSchema = z.object({
 
 export const deleteProjectBySlugSchema = z.object({
   slug: z.string().trim().min(2),
+});
+
+export const teamColorSchema = z.enum([
+  "slate",
+  "red",
+  "orange",
+  "amber",
+  "green",
+  "blue",
+  "purple",
+  "pink",
+]);
+
+export const createTeamSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Team name must be at least 2 characters.")
+    .max(80, "Team name must be 80 characters or less."),
+  description: z
+    .string()
+    .trim()
+    .max(500, "Description must be 500 characters or less.")
+    .optional()
+    .or(z.literal("")),
+  color: teamColorSchema.default("slate"),
+  memberIds: z.array(z.string().uuid()).optional().default([]),
+});
+
+export const updateTeamSchema = z.object({
+  id: z.string().uuid(),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Team name must be at least 2 characters.")
+    .max(80, "Team name must be 80 characters or less."),
+  description: z
+    .string()
+    .trim()
+    .max(500, "Description must be 500 characters or less.")
+    .optional()
+    .or(z.literal("")),
+  color: teamColorSchema,
+});
+
+export const deleteTeamSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const getTeamByIdSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const updateTeamMembersSchema = z.object({
+  teamId: z.string().uuid(),
+  memberIds: z.array(z.string().uuid()),
 });
 
 export const taskStatusSchema = z.enum([
@@ -100,6 +158,10 @@ export const createTaskSchema = z.object({
     (value) => (value === "" ? null : value),
     z.coerce.date().optional().nullable(),
   ),
+});
+
+export const getTasksSchema = z.object({
+  teamId: z.string().uuid().optional().nullable(),
 });
 
 export const getTaskByKeySchema = z.object({
@@ -138,6 +200,7 @@ export const getTaskActivityEventsSchema = z.object({
 
 export const createDocSchema = z.object({
   projectId: z.string().uuid().optional().nullable(),
+  teamId: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1, "Title is required.").max(160).optional(),
   content: z.string().max(100000).optional(),
   slug: z
@@ -153,12 +216,14 @@ export const createDocSchema = z.object({
 
 export const getDocsSchema = z.object({
   projectId: z.string().uuid().optional().nullable(),
+  teamId: z.string().uuid().optional().nullable(),
   includeDeleted: z.boolean().optional().default(false),
 });
 
 export const searchDocsSchema = z.object({
   query: z.string().trim().max(200).optional().default(""),
   projectId: z.string().uuid().optional().nullable(),
+  teamId: z.string().uuid().optional().nullable(),
   includeDeleted: z.boolean().optional().default(false),
 });
 
@@ -208,6 +273,8 @@ export type JoinOrganizationListSchema = z.infer<
 
 export type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
 export type UpdateProjectFormValues = z.infer<typeof updateProjectBySlugSchema>;
+export type CreateTeamFormValues = z.input<typeof createTeamSchema>;
+export type UpdateTeamFormValues = z.input<typeof updateTeamSchema>;
 export type CreateTaskFormValues = z.input<typeof createTaskSchema>;
 export type UpdateTaskByKeyFormValues = z.input<typeof updateTaskByKeySchema>;
 export type CreateTaskCommentFormValues = z.input<

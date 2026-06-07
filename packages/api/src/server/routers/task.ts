@@ -5,6 +5,7 @@ import {
   projects,
   taskActivityEvents,
   tasks,
+  teams,
   users,
 } from "@zentro/db/schema";
 
@@ -12,6 +13,7 @@ import {
   createTaskSchema,
   deleteTaskByKeySchema,
   getTaskByKeySchema,
+  getTasksSchema,
   updateTaskByKeySchema,
 } from "../../types/zod-schema";
 import { organizationProcedure, protectedProcedure, router } from "../trpc";
@@ -49,6 +51,7 @@ export const taskRouter = router({
         const [project] = await tx
           .select({
             id: projects.id,
+            teamId: projects.teamId,
             taskKeyPrefix: projects.taskKeyPrefix,
           })
           .from(projects)
@@ -108,6 +111,7 @@ export const taskRouter = router({
             priority: input.priority,
             dueAt: input.dueAt,
             projectId: project.id,
+            teamId: project.teamId,
             description: input.description || null,
             assignedToMemberId,
             createdByMemberId: member.id,
@@ -134,37 +138,46 @@ export const taskRouter = router({
         return task;
       });
     }),
-  getTasksByOrgId: protectedProcedure.query(async ({ ctx }) => {
-    const { db, activeOrganization } = ctx;
+  getTasksByOrgId: protectedProcedure
+    .input(getTasksSchema.optional().default({}))
+    .query(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const conditions = [
+        eq(tasks.organizationId, activeOrganization.id),
+        isNull(tasks.deletedAt),
+      ];
 
-    const allTasks = await db
-      .select({
-        id: tasks.id,
-        key: tasks.key,
-        name: tasks.name,
-        description: tasks.description,
-        project: projects.name,
-        projectSlug: projects.slug,
-        status: tasks.status,
-        priority: tasks.priority,
-        assignee: users.name,
-        due: tasks.dueAt,
-        createdAt: tasks.createdAt,
-      })
-      .from(tasks)
-      .innerJoin(projects, eq(projects.id, tasks.projectId))
-      .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
-      .leftJoin(users, eq(users.id, members.userId))
-      .where(
-        and(
-          eq(tasks.organizationId, activeOrganization.id),
-          isNull(tasks.deletedAt),
-        ),
-      )
-      .orderBy(desc(tasks.createdAt));
+      if (input.teamId) {
+        conditions.push(eq(tasks.teamId, input.teamId));
+      }
 
-    return allTasks;
-  }),
+      const allTasks = await db
+        .select({
+          id: tasks.id,
+          key: tasks.key,
+          name: tasks.name,
+          description: tasks.description,
+          project: projects.name,
+          projectSlug: projects.slug,
+          teamId: tasks.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
+          status: tasks.status,
+          priority: tasks.priority,
+          assignee: users.name,
+          due: tasks.dueAt,
+          createdAt: tasks.createdAt,
+        })
+        .from(tasks)
+        .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .leftJoin(teams, eq(teams.id, tasks.teamId))
+        .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .where(and(...conditions))
+        .orderBy(desc(tasks.createdAt));
+
+      return allTasks;
+    }),
   getTaskByKey: protectedProcedure
     .input(getTaskByKeySchema)
     .query(async ({ ctx, input }) => {
@@ -181,6 +194,9 @@ export const taskRouter = router({
           projectId: projects.id,
           projectName: projects.name,
           projectSlug: projects.slug,
+          teamId: tasks.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
           status: tasks.status,
           priority: tasks.priority,
           assignedToMemberId: tasks.assignedToMemberId,
@@ -192,6 +208,7 @@ export const taskRouter = router({
         })
         .from(tasks)
         .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .leftJoin(teams, eq(teams.id, tasks.teamId))
         .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
         .leftJoin(users, eq(users.id, members.userId))
         .where(
@@ -314,6 +331,9 @@ export const taskRouter = router({
           projectId: projects.id,
           projectName: projects.name,
           projectSlug: projects.slug,
+          teamId: tasks.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
           status: tasks.status,
           priority: tasks.priority,
           assignedToMemberId: tasks.assignedToMemberId,
@@ -325,6 +345,7 @@ export const taskRouter = router({
         })
         .from(tasks)
         .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .leftJoin(teams, eq(teams.id, tasks.teamId))
         .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
         .leftJoin(users, eq(users.id, members.userId))
         .where(eq(tasks.id, updatedTask.id))

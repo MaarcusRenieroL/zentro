@@ -4,6 +4,9 @@ export type DocsListItem = {
   slug: string;
   projectId: string | null;
   projectName: string | null;
+  teamId: string | null;
+  teamName: string | null;
+  teamColor: string | null;
   createdBy: string | null;
   deletedAt: Date | null;
   createdAt: Date;
@@ -32,6 +35,10 @@ export function getDocTitle(title?: string | null) {
 
 export function getDocProject(doc: Pick<DocsListItem, "projectName">) {
   return doc.projectName ?? "Workspace";
+}
+
+export function getDocTeam(doc: Pick<DocsListItem, "teamName">) {
+  return doc.teamName ?? "Workspace";
 }
 
 export function getDocOwner(doc: Pick<DocsListItem, "createdBy">) {

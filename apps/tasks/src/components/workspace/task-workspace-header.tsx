@@ -21,15 +21,18 @@ type Props = {
   taskCount: number;
   projectScoped?: boolean;
   assigneeOptions: string[];
+  teamOptions: Array<{ id: string; name: string }>;
   filtersActive: boolean;
   searchQuery: string;
   statusFilter: TaskStatus | "all";
   priorityFilter: TaskPriority | "all";
   assigneeFilter: string;
+  teamFilter: string;
   onSearchQueryChange: (value: string) => void;
   onStatusFilterChange: (value: TaskStatus | "all") => void;
   onPriorityFilterChange: (value: TaskPriority | "all") => void;
   onAssigneeFilterChange: (value: string) => void;
+  onTeamFilterChange: (value: string) => void;
   onClearFilters: () => void;
   onTaskCreated?: () => void | Promise<void>;
 };
@@ -40,15 +43,18 @@ export const TaskWorkspaceHeader: FC<Props> = ({
   taskCount,
   projectScoped = false,
   assigneeOptions,
+  teamOptions,
   filtersActive,
   searchQuery,
   statusFilter,
   priorityFilter,
   assigneeFilter,
+  teamFilter,
   onSearchQueryChange,
   onStatusFilterChange,
   onPriorityFilterChange,
   onAssigneeFilterChange,
+  onTeamFilterChange,
   onClearFilters,
   onTaskCreated,
 }) => {
@@ -134,6 +140,21 @@ export const TaskWorkspaceHeader: FC<Props> = ({
               {assigneeOptions.map((assignee) => (
                 <SelectItem key={assignee} value={assignee}>
                   {assignee}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={teamFilter} onValueChange={onTeamFilterChange}>
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Team" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All teams</SelectItem>
+              <SelectItem value="workspace">Workspace level</SelectItem>
+              {teamOptions.map((team) => (
+                <SelectItem key={team.id} value={team.id}>
+                  {team.name}
                 </SelectItem>
               ))}
             </SelectContent>

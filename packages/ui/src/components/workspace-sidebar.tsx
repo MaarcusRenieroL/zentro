@@ -219,6 +219,11 @@ export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
         icon: UsersIcon,
       },
       {
+        label: "Teams",
+        href: "/settings/organization/teams",
+        icon: ShieldIcon,
+      },
+      {
         label: "Invitations",
         href: "/settings/organization/invitations",
         icon: UserPlusIcon,

@@ -9,6 +9,7 @@ import {
 
 import { members, organizations } from "./auth";
 import { projects } from "./project";
+import { teams } from "./team";
 
 export const docs = pgTable(
   "doc",
@@ -20,6 +21,10 @@ export const docs = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
 
     projectId: uuid("projectId").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+
+    teamId: uuid("teamId").references(() => teams.id, {
       onDelete: "set null",
     }),
 
@@ -47,6 +52,7 @@ export const docs = pgTable(
       table.organizationId,
       table.projectId,
     ),
+    index("doc_organization_team_idx").on(table.organizationId, table.teamId),
     index("doc_created_by_member_idx").on(table.createdByMemberId),
     index("doc_updated_at_idx").on(table.updatedAt),
     uniqueIndex("doc_organization_slug_unique").on(

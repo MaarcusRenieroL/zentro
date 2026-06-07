@@ -8,7 +8,14 @@ import {
   updateProjectBySlugSchema,
 } from "../../types/zod-schema";
 import { authorizedProcedure, organizationProcedure, router } from "../trpc";
-import { members, projects, users } from "@zentro/db/schema";
+import {
+  docs,
+  members,
+  projects,
+  tasks,
+  teams,
+  users,
+} from "@zentro/db/schema";
 import { and, asc, count, eq } from "@zentro/db/drizzle";
 
 const createTaskKeyPrefixBase = (slug: string) => {
@@ -64,11 +71,34 @@ export const projectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { name, slug, description } = input;
       const { db, user, activeOrganization } = ctx;
+      let teamId = input.teamId ?? null;
       const taskKeyPrefix = await createUniqueTaskKeyPrefix({
         db,
         organizationId: activeOrganization.id,
         slug,
       });
+
+      if (teamId) {
+        const [team] = await db
+          .select({ id: teams.id })
+          .from(teams)
+          .where(
+            and(
+              eq(teams.id, teamId),
+              eq(teams.organizationId, activeOrganization.id),
+            ),
+          )
+          .limit(1);
+
+        if (!team) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Team not found",
+          });
+        }
+
+        teamId = team.id;
+      }
 
       const [project] = await db
         .insert(projects)
@@ -77,6 +107,7 @@ export const projectRouter = router({
           slug,
           taskKeyPrefix,
           description: description || null,
+          teamId,
           organizationId: activeOrganization.id,
           createdById: user.id,
           status: "active",
@@ -125,6 +156,9 @@ export const projectRouter = router({
         slug: projects.slug,
         taskKeyPrefix: projects.taskKeyPrefix,
         description: projects.description,
+        teamId: projects.teamId,
+        teamName: teams.name,
+        teamColor: teams.color,
         status: projects.status,
         createdById: projects.createdById,
         archivedAt: projects.archivedAt,
@@ -133,6 +167,7 @@ export const projectRouter = router({
         updatedAt: projects.updatedAt,
       })
       .from(projects)
+      .leftJoin(teams, eq(teams.id, projects.teamId))
       .where(eq(projects.organizationId, activeOrganization.id))
       .orderBy(asc(projects.name));
 
@@ -149,6 +184,9 @@ export const projectRouter = router({
           name: projects.name,
           description: projects.description,
           slug: projects.slug,
+          teamId: projects.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
           status: projects.status,
@@ -156,6 +194,7 @@ export const projectRouter = router({
         })
         .from(projects)
         .leftJoin(users, eq(users.id, projects.createdById))
+        .leftJoin(teams, eq(teams.id, projects.teamId))
         .where(
           and(
             eq(projects.slug, slug),
@@ -190,6 +229,7 @@ export const projectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
       const { currentSlug, name, slug, description } = input;
+      let teamId = input.teamId ?? null;
 
       const [existingProject] = await db
         .select({
@@ -235,21 +275,78 @@ export const projectRouter = router({
         }
       }
 
-      const [updatedProject] = await db
-        .update(projects)
-        .set({
-          name,
-          slug,
-          description: description || null,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(projects.id, existingProject.id),
-            eq(projects.organizationId, activeOrganization.id),
-          ),
-        )
-        .returning();
+      if (teamId) {
+        const [team] = await db
+          .select({ id: teams.id })
+          .from(teams)
+          .where(
+            and(
+              eq(teams.id, teamId),
+              eq(teams.organizationId, activeOrganization.id),
+            ),
+          )
+          .limit(1);
+
+        if (!team) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Team not found",
+          });
+        }
+
+        teamId = team.id;
+      }
+
+      const updatedProject = await db.transaction(async (tx) => {
+        const [project] = await tx
+          .update(projects)
+          .set({
+            name,
+            slug,
+            description: description || null,
+            teamId,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(projects.id, existingProject.id),
+              eq(projects.organizationId, activeOrganization.id),
+            ),
+          )
+          .returning();
+
+        if (!project) {
+          return null;
+        }
+
+        await tx
+          .update(tasks)
+          .set({
+            teamId,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(tasks.projectId, existingProject.id),
+              eq(tasks.organizationId, activeOrganization.id),
+            ),
+          );
+
+        await tx
+          .update(docs)
+          .set({
+            teamId,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(docs.projectId, existingProject.id),
+              eq(docs.organizationId, activeOrganization.id),
+            ),
+          );
+
+        return project;
+      });
 
       if (!updatedProject) {
         throw new TRPCError({

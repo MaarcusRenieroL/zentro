@@ -7,6 +7,13 @@ import { Button } from "@zentro/ui/components/shadcn/button";
 import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
 import { Input } from "@zentro/ui/components/shadcn/input";
 import { Label } from "@zentro/ui/components/shadcn/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@zentro/ui/components/shadcn/select";
 import { Textarea } from "@zentro/ui/components/shadcn/textarea";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import {
@@ -15,10 +22,11 @@ import {
   EyeIcon,
   RotateCcwIcon,
   RocketIcon,
+  UsersIcon,
   UserIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import {
@@ -31,11 +39,20 @@ type Props = {
     name: string;
     slug: string;
     description: string | null;
+    teamId: string | null;
+    teamName: string | null;
+    teamColor: string | null;
     status: string;
     owner: string;
     createdAt: Date;
     updatedAt: Date;
   };
+};
+
+type TeamOption = {
+  id: string;
+  name: string;
+  color: string;
 };
 
 const formatDate = (date: Date) => {
@@ -54,6 +71,8 @@ const getErrorMessage = (error: unknown) => {
 
 export const GeneralSection: FC<Props> = ({ project }) => {
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(true);
   const trpc = useTrpcClient();
   const router = useRouter();
 
@@ -69,17 +88,50 @@ export const GeneralSection: FC<Props> = ({ project }) => {
       name: project.name,
       slug: project.slug,
       description: project.description ?? "",
+      teamId: project.teamId,
     },
     mode: "onChange",
   });
 
   const preview = watch();
+  const previewTeam = teams.find((team) => team.id === preview.teamId);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTeams() {
+      setIsLoadingTeams(true);
+
+      try {
+        const teamList = await trpc.team.getAll.query();
+
+        if (!cancelled) {
+          setTeams(teamList);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toastError("Failed to load teams", getErrorMessage(error));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingTeams(false);
+        }
+      }
+    }
+
+    void loadTeams();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trpc]);
 
   const handleCancel = () => {
     reset({
       name: project.name,
       slug: project.slug,
       description: project.description ?? "",
+      teamId: project.teamId,
     });
 
     setSaveState("idle");
@@ -92,6 +144,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
         name: values.name,
         slug: values.slug,
         description: values.description,
+        teamId: values.teamId ?? null,
       });
 
       toastSuccess("Success", "Project updated successfully.");
@@ -100,6 +153,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
         name: updatedProject.name,
         slug: updatedProject.slug,
         description: updatedProject.description ?? "",
+        teamId: updatedProject.teamId,
       });
 
       setSaveState("saved");
@@ -220,6 +274,43 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                 </div>
               )}
             />
+
+            <Controller
+              name="teamId"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="project-team">Team</Label>
+                  <Select
+                    value={field.value ?? "workspace"}
+                    onValueChange={(value) => {
+                      field.onChange(value === "workspace" ? null : value);
+                      setSaveState("idle");
+                    }}
+                    disabled={isLoadingTeams}
+                  >
+                    <SelectTrigger id="project-team" className="sm:max-w-sm">
+                      <SelectValue
+                        placeholder={
+                          isLoadingTeams ? "Loading teams..." : "Select team"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="workspace">Workspace level</SelectItem>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Tasks and docs created under this project inherit this team.
+                  </p>
+                </div>
+              )}
+            />
           </div>
         </div>
 
@@ -255,6 +346,9 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   {preview.description || "No description provided."}
                 </p>
+                <Badge variant="outline" className="mt-3">
+                  {previewTeam?.name ?? project.teamName ?? "Workspace level"}
+                </Badge>
               </div>
             </CardContent>
           </Card>
@@ -282,6 +376,16 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                     <p className="text-muted-foreground">Created</p>
                     <p className="font-medium text-foreground">
                       {formatDate(project.createdAt)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <UsersIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-muted-foreground">Team</p>
+                    <p className="truncate font-medium text-foreground">
+                      {project.teamName ?? "Workspace level"}
                     </p>
                   </div>
                 </div>

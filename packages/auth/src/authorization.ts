@@ -68,5 +68,17 @@ export function getOrganizationPermissions(role: OrganizationRole) {
     canCommentOnDocs: hasOrganizationPermission(role, {
       doc: ["comment"],
     }),
+    canCreateTeams: hasOrganizationPermission(role, {
+      team: ["create"],
+    }),
+    canUpdateTeams: hasOrganizationPermission(role, {
+      team: ["update"],
+    }),
+    canDeleteTeams: hasOrganizationPermission(role, {
+      team: ["delete"],
+    }),
+    canManageTeamMembers: hasOrganizationPermission(role, {
+      team: ["manage-members"],
+    }),
   };
 }

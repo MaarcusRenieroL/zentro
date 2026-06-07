@@ -64,6 +64,20 @@
       "when": 1780823745435,
       "tag": "0008_material_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780849334212,
+      "tag": "0009_milky_ikaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780850340362,
+      "tag": "0010_late_rocket_raccoon",
+      "breakpoints": true
     }
   ]
 }

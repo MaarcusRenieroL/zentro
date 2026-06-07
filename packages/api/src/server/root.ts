@@ -9,6 +9,7 @@ import { memberRouter } from "./routers/member";
 import { projectRouter } from "./routers/project";
 import { searchRouter } from "./routers/search";
 import { taskRouter } from "./routers/task";
+import { teamRouter } from "./routers/team";
 
 export const appRouter = router({
   health: publicProcedure.query(() => {
@@ -26,6 +27,7 @@ export const appRouter = router({
   project: projectRouter,
   search: searchRouter,
   task: taskRouter,
+  team: teamRouter,
   user: userRouter,
 });
 

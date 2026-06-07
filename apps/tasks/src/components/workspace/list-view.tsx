@@ -44,6 +44,16 @@ const listColumns: DataTableColumnDef<WorkspaceTask>[] = [
     },
   },
   {
+    accessorKey: "teamName",
+    header: "Team",
+    meta: {
+      label: "Team",
+    },
+    cell: ({ row }) => (
+      <Badge variant="outline">{row.original.teamName ?? "Workspace"}</Badge>
+    ),
+  },
+  {
     accessorKey: "status",
     header: "Status",
     meta: {

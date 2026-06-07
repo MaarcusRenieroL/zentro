@@ -22,6 +22,7 @@ import {
   formatDocDate,
   getDocOwner,
   getDocProject,
+  getDocTeam,
   getDocTitle,
   getInitials,
 } from "../../../lib/docs";
@@ -95,6 +96,7 @@ export function TrashRestorePage() {
               <TableHead>Doc</TableHead>
               <TableHead>Deleted by</TableHead>
               <TableHead>Project</TableHead>
+              <TableHead>Team</TableHead>
               <TableHead>Deleted</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -102,7 +104,7 @@ export function TrashRestorePage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <div className="space-y-3 py-2">
                     {Array.from({ length: 4 }).map((_, index) => (
                       <div
@@ -117,7 +119,7 @@ export function TrashRestorePage() {
 
             {!isLoading && !docs.length ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-36 text-center">
+                <TableCell colSpan={6} className="h-36 text-center">
                   <Trash2Icon className="mx-auto mb-3 size-9 text-muted-foreground" />
                   <p className="text-sm font-medium">Trash is empty</p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -155,6 +157,9 @@ export function TrashRestorePage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{getDocProject(doc)}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{getDocTeam(doc)}</Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDocDate(doc.deletedAt)}

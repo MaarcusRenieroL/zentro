@@ -6,6 +6,7 @@ import {
   Building2Icon,
   MailIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -22,6 +23,11 @@ const settingsNavItems = [
     href: "/settings/organization/members",
     label: "Members",
     icon: UsersIcon,
+  },
+  {
+    href: "/settings/organization/teams",
+    label: "Teams",
+    icon: ShieldCheckIcon,
   },
   {
     href: "/settings/organization/invitations",

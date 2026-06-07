@@ -25,6 +25,7 @@ export const projectGeneralSectionSchema = z.object({
     .max(500, "Description must be 500 characters or less.")
     .optional()
     .or(z.literal("")),
+  teamId: z.string().uuid().optional().nullable(),
 });
 
 export const inviteMemberSchema = z.object({
