@@ -3,28 +3,59 @@
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
-import { Input } from "@zentro/ui/shadcn/input";
-import { Textarea } from "@zentro/ui/shadcn/textarea";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@zentro/ui/shadcn/dropdown-menu";
+import { Input } from "@zentro/ui/shadcn/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@zentro/ui/shadcn/popover";
+import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import Underline from "@tiptap/extension-underline";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import {
+  ArrowLeftIcon,
   BracesIcon,
+  CalendarClockIcon,
   CheckSquareIcon,
   Code2Icon,
-  EyeIcon,
   FileTextIcon,
   Heading1Icon,
   Heading2Icon,
+  Heading3Icon,
+  Heading4Icon,
+  Heading5Icon,
+  Heading6Icon,
   ListIcon,
   MessageSquareIcon,
   MoreHorizontalIcon,
-  PencilIcon,
   PlusIcon,
   QuoteIcon,
   SaveIcon,
+  TableIcon,
   Trash2Icon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
@@ -44,145 +75,449 @@ const slashCommands = [
     label: "Heading 1",
     description: "Big section heading",
     icon: Heading1Icon,
-    markdown: "# Heading",
+    action: "heading-1",
   },
   {
     label: "Heading 2",
     description: "Section heading",
     icon: Heading2Icon,
-    markdown: "## Section",
+    action: "heading-2",
+  },
+  {
+    label: "Heading 3",
+    description: "Nested section heading",
+    icon: Heading3Icon,
+    action: "heading-3",
   },
   {
     label: "Bullet list",
     description: "Create a simple list",
     icon: ListIcon,
-    markdown: "- List item",
+    action: "bullet-list",
   },
   {
     label: "Todo",
     description: "Track an action item",
     icon: CheckSquareIcon,
-    markdown: "- [ ] Todo item",
+    action: "task-list",
   },
   {
     label: "Quote",
     description: "Highlight a decision",
     icon: QuoteIcon,
-    markdown: "> Important note",
+    action: "quote",
   },
   {
-    label: "Code",
+    label: "Code block",
     description: "Add a code block",
     icon: Code2Icon,
-    markdown: "```ts\n// Code example\n```",
+    action: "code-block",
   },
-];
+  {
+    label: "Inline code",
+    description: "Add a short code phrase",
+    icon: Code2Icon,
+    action: "inline-code",
+  },
+  {
+    label: "Table",
+    description: "Insert a 3 by 3 markdown table",
+    icon: TableIcon,
+    action: "table",
+  },
+] as const;
 
-function renderMarkdownPreview(content: string) {
-  const nodes: ReactNode[] = [];
-  const lines = content.split("\n");
+type SlashAction = (typeof slashCommands)[number]["action"];
+
+const headingOptions = [
+  {
+    label: "H1",
+    icon: Heading1Icon,
+    level: 1,
+  },
+  {
+    label: "H2",
+    icon: Heading2Icon,
+    level: 2,
+  },
+  {
+    label: "H3",
+    icon: Heading3Icon,
+    level: 3,
+  },
+  {
+    label: "H4",
+    icon: Heading4Icon,
+    level: 4,
+  },
+  {
+    label: "H5",
+    icon: Heading5Icon,
+    level: 5,
+  },
+  {
+    label: "H6",
+    icon: Heading6Icon,
+    level: 6,
+  },
+] as const;
+
+const insertOptions = [
+  {
+    label: "Bullet list",
+    description: "Simple unordered list",
+    icon: ListIcon,
+    action: "bullet-list",
+  },
+  {
+    label: "Todo",
+    description: "Checkbox task",
+    icon: CheckSquareIcon,
+    action: "task-list",
+  },
+  {
+    label: "Quote",
+    description: "Callout or quoted note",
+    icon: QuoteIcon,
+    action: "quote",
+  },
+  {
+    label: "Code block",
+    description: "Multi-line fenced code",
+    icon: Code2Icon,
+    action: "code-block",
+  },
+  {
+    label: "Inline code",
+    description: "Short code phrase",
+    icon: Code2Icon,
+    action: "inline-code",
+  },
+] as const;
+
+const inlineOptions = [
+  {
+    label: "Inline code",
+    description: "Wrap a phrase in backticks",
+    icon: Code2Icon,
+    action: "inline-code",
+  },
+  {
+    label: "Code block",
+    description: "Add a fenced code block",
+    icon: BracesIcon,
+    action: "code-block",
+  },
+] as const;
+
+type ToolbarMenuButtonProps = {
+  icon: LucideIcon;
+  label: string;
+  children: ReactNode;
+};
+
+function ToolbarMenuButton({
+  icon: Icon,
+  label,
+  children,
+}: ToolbarMenuButtonProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Icon className="size-3.5" />
+          {label}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+type MetaPillProps = {
+  icon?: LucideIcon;
+  children: ReactNode;
+};
+
+function MetaPill({ icon: Icon, children }: MetaPillProps) {
+  return (
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs text-muted-foreground">
+      {Icon ? <Icon className="size-3.5" /> : null}
+      {children}
+    </span>
+  );
+}
+
+const docsEditorClassName =
+  "min-h-[620px] text-[15px] leading-8 outline-none [&_.ProseMirror]:min-h-[620px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_h1]:mt-8 [&_.ProseMirror_h1]:mb-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-semibold [&_.ProseMirror_h1]:tracking-tight [&_.ProseMirror_h2]:mt-7 [&_.ProseMirror_h2]:mb-3 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:mt-6 [&_.ProseMirror_h3]:mb-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_h4]:mt-5 [&_.ProseMirror_h4]:mb-2 [&_.ProseMirror_h4]:text-lg [&_.ProseMirror_h4]:font-semibold [&_.ProseMirror_h5]:mt-4 [&_.ProseMirror_h5]:mb-2 [&_.ProseMirror_h5]:text-base [&_.ProseMirror_h5]:font-semibold [&_.ProseMirror_h6]:mt-4 [&_.ProseMirror_h6]:mb-2 [&_.ProseMirror_h6]:text-sm [&_.ProseMirror_h6]:font-semibold [&_.ProseMirror_h6]:uppercase [&_.ProseMirror_h6]:text-muted-foreground [&_.ProseMirror_ul]:ml-5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ol]:ml-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_blockquote]:my-4 [&_.ProseMirror_blockquote]:border-l-2 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-muted-foreground [&_.ProseMirror_pre]:my-4 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-lg [&_.ProseMirror_pre]:border [&_.ProseMirror_pre]:bg-muted/50 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:bg-muted [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:text-sm [&_.ProseMirror_table]:my-4 [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_th]:border [&_.ProseMirror_th]:bg-muted/60 [&_.ProseMirror_th]:px-3 [&_.ProseMirror_th]:py-2 [&_.ProseMirror_th]:text-left [&_.ProseMirror_td]:border [&_.ProseMirror_td]:px-3 [&_.ProseMirror_td]:py-2 [&_.ProseMirror_ul[data-type='taskList']]:ml-0 [&_.ProseMirror_ul[data-type='taskList']]:list-none [&_.ProseMirror_li[data-type='taskItem']]:flex [&_.ProseMirror_li[data-type='taskItem']]:gap-2 [&_.ProseMirror_li[data-type='taskItem']>label]:pt-1";
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function renderInlineMarkdown(value: string) {
+  return escapeHtml(value).replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
+function parseMarkdownTableRow(line: string) {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+function isMarkdownTableSeparator(line: string) {
+  const cells = parseMarkdownTableRow(line);
+
+  return (
+    line.trim().startsWith("|") &&
+    cells.length > 0 &&
+    cells.every((cell) => /^:?-{3,}:?$/.test(cell))
+  );
+}
+
+function markdownToHtml(markdown: string) {
+  const lines = markdown.split("\n");
+  const html: string[] = [];
   let codeLines: string[] = [];
   let isCodeBlock = false;
 
-  lines.forEach((line, index) => {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+
     if (line.startsWith("```")) {
       if (isCodeBlock) {
-        nodes.push(
-          <pre
-            key={`code-${index}`}
-            className="overflow-x-auto rounded-lg border bg-muted/50 p-4 text-sm"
-          >
-            <code>{codeLines.join("\n")}</code>
-          </pre>,
+        html.push(
+          `<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`,
         );
         codeLines = [];
       }
 
       isCodeBlock = !isCodeBlock;
-      return;
+      continue;
     }
 
     if (isCodeBlock) {
       codeLines.push(line);
-      return;
+      continue;
+    }
+
+    if (
+      line.trim().startsWith("|") &&
+      lines[index + 1] &&
+      isMarkdownTableSeparator(lines[index + 1] ?? "")
+    ) {
+      const headers = parseMarkdownTableRow(line);
+      const rows: string[][] = [];
+      index += 2;
+
+      while (lines[index]?.trim().startsWith("|")) {
+        rows.push(parseMarkdownTableRow(lines[index] ?? ""));
+        index += 1;
+      }
+
+      index -= 1;
+      html.push(
+        `<table><tbody><tr>${headers
+          .map((header) => `<th>${escapeHtml(header)}</th>`)
+          .join("")}</tr>${rows
+          .map((row) => {
+            return `<tr>${headers
+              .map((_, cellIndex) => {
+                return `<td>${escapeHtml(row[cellIndex] ?? "")}</td>`;
+              })
+              .join("")}</tr>`;
+          })
+          .join("")}</tbody></table>`,
+      );
+      continue;
     }
 
     if (line.startsWith("# ")) {
-      nodes.push(
-        <h1 key={index} className="text-3xl font-semibold tracking-tight">
-          {line.slice(2)}
-        </h1>,
-      );
-      return;
+      html.push(`<h1>${escapeHtml(line.slice(2))}</h1>`);
+      continue;
     }
 
     if (line.startsWith("## ")) {
-      nodes.push(
-        <h2 key={index} className="text-xl font-semibold">
-          {line.slice(3)}
-        </h2>,
-      );
-      return;
+      html.push(`<h2>${escapeHtml(line.slice(3))}</h2>`);
+      continue;
+    }
+
+    if (line.startsWith("### ")) {
+      html.push(`<h3>${escapeHtml(line.slice(4))}</h3>`);
+      continue;
+    }
+
+    if (line.startsWith("#### ")) {
+      html.push(`<h4>${escapeHtml(line.slice(5))}</h4>`);
+      continue;
+    }
+
+    if (line.startsWith("##### ")) {
+      html.push(`<h5>${escapeHtml(line.slice(6))}</h5>`);
+      continue;
+    }
+
+    if (line.startsWith("###### ")) {
+      html.push(`<h6>${escapeHtml(line.slice(7))}</h6>`);
+      continue;
     }
 
     if (line.startsWith("> ")) {
-      nodes.push(
-        <blockquote
-          key={index}
-          className="border-l-2 pl-4 text-muted-foreground"
-        >
-          {line.slice(2)}
-        </blockquote>,
+      html.push(
+        `<blockquote><p>${renderInlineMarkdown(line.slice(2))}</p></blockquote>`,
       );
-      return;
+      continue;
     }
 
     if (line.startsWith("- [ ] ")) {
-      nodes.push(
-        <label key={index} className="flex items-center gap-2 text-sm">
-          <input type="checkbox" disabled />
-          {line.slice(6)}
-        </label>,
+      html.push(
+        `<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>${renderInlineMarkdown(
+          line.slice(6),
+        )}</p></div></li></ul>`,
       );
-      return;
+      continue;
     }
 
     if (line.startsWith("- ")) {
-      nodes.push(
-        <p
-          key={index}
-          className="pl-4 text-sm leading-7 before:mr-2 before:content-['•']"
-        >
-          {line.slice(2)}
-        </p>,
+      html.push(
+        `<ul><li><p>${renderInlineMarkdown(line.slice(2))}</p></li></ul>`,
+      );
+      continue;
+    }
+
+    if (!line.trim()) {
+      html.push("<p></p>");
+      continue;
+    }
+
+    html.push(`<p>${renderInlineMarkdown(line)}</p>`);
+  }
+
+  if (isCodeBlock && codeLines.length) {
+    html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+  }
+
+  return html.join("");
+}
+
+function inlineMarkdown(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent ?? "";
+  }
+
+  if (!(node instanceof Element)) {
+    return "";
+  }
+
+  const tag = node.tagName.toLowerCase();
+  const children = Array.from(node.childNodes).map(inlineMarkdown).join("");
+
+  if (tag === "code") {
+    return `\`${children}\``;
+  }
+
+  return children;
+}
+
+function blockInlineMarkdown(node: Element) {
+  return Array.from(node.childNodes).map(inlineMarkdown).join("").trim();
+}
+
+function htmlToMarkdown(html: string) {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const blocks: string[] = [];
+
+  doc.body.childNodes.forEach((node) => {
+    if (!(node instanceof Element)) {
+      return;
+    }
+
+    const tag = node.tagName.toLowerCase();
+
+    if (/^h[1-6]$/.test(tag)) {
+      blocks.push(
+        `${"#".repeat(Number(tag.slice(1)))} ${blockInlineMarkdown(node)}`,
       );
       return;
     }
 
-    if (!line.trim()) {
-      nodes.push(<div key={index} className="h-3" />);
+    if (tag === "blockquote") {
+      blocks.push(`> ${blockInlineMarkdown(node)}`);
       return;
     }
 
-    nodes.push(
-      <p key={index} className="text-base leading-7">
-        {line}
-      </p>,
-    );
+    if (tag === "pre") {
+      blocks.push(`\`\`\`\n${node.textContent ?? ""}\n\`\`\``);
+      return;
+    }
+
+    if (tag === "ul" && node.getAttribute("data-type") === "taskList") {
+      node.querySelectorAll("li").forEach((item) => {
+        const checked = item.getAttribute("data-checked") === "true";
+        blocks.push(`- [${checked ? "x" : " "}] ${blockInlineMarkdown(item)}`);
+      });
+      return;
+    }
+
+    if (tag === "ul") {
+      node.querySelectorAll(":scope > li").forEach((item) => {
+        blocks.push(`- ${blockInlineMarkdown(item)}`);
+      });
+      return;
+    }
+
+    if (tag === "ol") {
+      node.querySelectorAll(":scope > li").forEach((item, index) => {
+        blocks.push(`${index + 1}. ${blockInlineMarkdown(item)}`);
+      });
+      return;
+    }
+
+    if (tag === "table") {
+      const rows = Array.from(node.querySelectorAll("tr")).map((row) => {
+        return Array.from(row.querySelectorAll("th,td")).map((cell) =>
+          blockInlineMarkdown(cell),
+        );
+      });
+      const [header, ...body] = rows;
+
+      if (header?.length) {
+        blocks.push(
+          [
+            `| ${header.join(" | ")} |`,
+            `| ${header.map(() => "---").join(" | ")} |`,
+            ...body.map((row) => `| ${row.join(" | ")} |`),
+          ].join("\n"),
+        );
+      }
+      return;
+    }
+
+    const text = blockInlineMarkdown(node);
+
+    if (text) {
+      blocks.push(text);
+    }
   });
 
-  if (isCodeBlock && codeLines.length) {
-    nodes.push(
-      <pre
-        key="code-open"
-        className="overflow-x-auto rounded-lg border bg-muted/50 p-4 text-sm"
-      >
-        <code>{codeLines.join("\n")}</code>
-      </pre>,
-    );
-  }
-
-  return nodes;
+  return blocks.join("\n\n");
 }
 
 export function NotionEditorPage({ slug }: { slug: string }) {
@@ -195,8 +530,43 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
-  const [mode, setMode] = useState<"write" | "preview">("write");
-  const previewNodes = useMemo(() => renderMarkdownPreview(content), [content]);
+  const [commentsOpen, setCommentsOpen] = useState(true);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableColumns, setTableColumns] = useState(3);
+  const loadedEditorDocIdRef = useRef<string | null>(null);
+  const editorExtensions = useMemo(
+    () => [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3, 4, 5, 6],
+        },
+      }),
+      Placeholder.configure({
+        placeholder: "Start typing, or press / for blocks...",
+      }),
+      Underline,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ],
+    [],
+  );
+  const editor = useEditor({
+    extensions: editorExtensions,
+    content: "",
+    immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class: "docs-editor-content",
+      },
+    },
+    onUpdate({ editor }) {
+      setContent(htmlToMarkdown(editor.getHTML()));
+    },
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -225,6 +595,19 @@ export function NotionEditorPage({ slug }: { slug: string }) {
       isMounted = false;
     };
   }, [slug, trpc]);
+
+  useEffect(() => {
+    if (!editor || !doc) {
+      return;
+    }
+
+    if (loadedEditorDocIdRef.current === doc.id) {
+      return;
+    }
+
+    editor.commands.setContent(markdownToHtml(doc.content));
+    loadedEditorDocIdRef.current = doc.id;
+  }, [doc, editor]);
 
   useEffect(() => {
     if (!doc || content === doc.content) {
@@ -303,20 +686,67 @@ export function NotionEditorPage({ slug }: { slug: string }) {
     }
   }
 
-  function insertMarkdown(markdown: string) {
-    setContent((currentContent) => {
-      const trimmedContent = currentContent.endsWith("/")
-        ? currentContent.slice(0, -1)
-        : currentContent;
-      const prefix = trimmedContent.trim() ? "\n\n" : "";
+  function removeTypedSlash(currentEditor: Editor) {
+    const position = currentEditor.state.selection.from;
+    const previousCharacter = currentEditor.state.doc.textBetween(
+      Math.max(0, position - 1),
+      position,
+    );
 
-      return `${trimmedContent}${prefix}${markdown}`;
-    });
-    setMode("write");
+    if (previousCharacter === "/") {
+      currentEditor
+        .chain()
+        .focus()
+        .deleteRange({ from: position - 1, to: position })
+        .run();
+    }
+  }
+
+  function runEditorAction(action: SlashAction, removeSlash = false) {
+    if (!editor) {
+      return;
+    }
+
+    if (removeSlash) {
+      removeTypedSlash(editor);
+    }
+
+    const chain = editor.chain().focus();
+
+    if (action === "heading-1") {
+      chain.toggleHeading({ level: 1 }).run();
+    } else if (action === "heading-2") {
+      chain.toggleHeading({ level: 2 }).run();
+    } else if (action === "heading-3") {
+      chain.toggleHeading({ level: 3 }).run();
+    } else if (action === "bullet-list") {
+      chain.toggleBulletList().run();
+    } else if (action === "task-list") {
+      chain.toggleTaskList().run();
+    } else if (action === "quote") {
+      chain.toggleBlockquote().run();
+    } else if (action === "code-block") {
+      chain.toggleCodeBlock().run();
+    } else if (action === "inline-code") {
+      chain.toggleCode().run();
+    } else if (action === "table") {
+      chain
+        .insertTable({
+          rows: tableRows,
+          cols: tableColumns,
+          withHeaderRow: true,
+        })
+        .run();
+    }
+
     setShowSlashMenu(false);
   }
 
-  function handleEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+  function setHeading(level: 1 | 2 | 3 | 4 | 5 | 6) {
+    editor?.chain().focus().toggleHeading({ level }).run();
+  }
+
+  function handleEditorKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "/") {
       setShowSlashMenu(true);
     }
@@ -357,170 +787,261 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const owner = getDocOwner(doc);
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] border-t">
-      <main className="min-w-0 flex-1 bg-background">
-        <div className="mx-auto max-w-4xl px-6 py-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline">{getDocProject(doc)}</Badge>
-              <span>Edited {formatDocDate(doc.updatedAt)}</span>
-              <span className="inline-flex items-center gap-1">
-                {saveStatus === "saving" ? (
-                  <BracesIcon className="size-3" />
-                ) : (
-                  <SaveIcon className="size-3" />
-                )}
-                {saveStatus}
+    <div className="min-h-[calc(100vh-3.5rem)] border-t bg-muted/20">
+      <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+        <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => router.push("/docs")}
+            >
+              <ArrowLeftIcon className="size-4" />
+              <span className="sr-only">Back to docs</span>
+            </Button>
+            <div className="hidden min-w-0 items-center gap-2 text-sm text-muted-foreground sm:flex">
+              <span>Docs</span>
+              <span>/</span>
+              <span className="truncate text-foreground">
+                {getDocTitle(title)}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <MessageSquareIcon className="size-4" />
-                Comments
-              </Button>
-              <Button variant="ghost" size="icon-sm">
-                <MoreHorizontalIcon className="size-4" />
-                <span className="sr-only">Page actions</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={isDeleting}
-                onClick={deleteDoc}
-              >
-                <Trash2Icon className="size-4 text-destructive" />
-                <span className="sr-only">Move doc to trash</span>
-              </Button>
-            </div>
           </div>
 
-          <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            onBlur={saveTitle}
-            className="h-auto border-none px-0 py-0 text-4xl font-semibold tracking-tight shadow-none focus-visible:ring-0"
-          />
-
-          <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Avatar className="size-6">
-              <AvatarFallback>{getInitials(owner)}</AvatarFallback>
-            </Avatar>
-            <span>{owner}</span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Badge
+              variant={saveStatus === "saving" ? "outline" : "secondary"}
+              className="h-8 gap-1.5 rounded-md px-2.5 font-normal"
+            >
+              {saveStatus === "saving" ? (
+                <BracesIcon className="size-3.5" />
+              ) : (
+                <SaveIcon className="size-3.5" />
+              )}
+              {saveStatus}
+            </Badge>
+            <Button
+              variant={commentsOpen ? "secondary" : "outline"}
+              size="sm"
+              className="hidden sm:flex"
+              onClick={() => setCommentsOpen((isOpen) => !isOpen)}
+            >
+              <MessageSquareIcon className="size-4" />
+              Comments
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm">
+                  <MoreHorizontalIcon className="size-4" />
+                  <span className="sr-only">Page actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  className="gap-2"
+                  onClick={() => setCommentsOpen((isOpen) => !isOpen)}
+                >
+                  <MessageSquareIcon className="size-4" />
+                  {commentsOpen ? "Hide comments" : "Show comments"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="gap-2 text-destructive focus:text-destructive"
+                  disabled={isDeleting}
+                  onClick={deleteDoc}
+                >
+                  <Trash2Icon className="size-4" />
+                  {isDeleting ? "Moving..." : "Move to trash"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
+      </div>
 
-          <div className="mt-10 space-y-5">
-            <div className="sticky top-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur">
-              <div className="flex flex-wrap items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => insertMarkdown("# Heading")}
-                  aria-label="Insert heading"
-                >
-                  <Heading1Icon className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => insertMarkdown("- List item")}
-                  aria-label="Insert list"
-                >
-                  <ListIcon className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => insertMarkdown("- [ ] Todo item")}
-                  aria-label="Insert todo"
-                >
-                  <CheckSquareIcon className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => insertMarkdown("> Important note")}
-                  aria-label="Insert quote"
-                >
-                  <QuoteIcon className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => insertMarkdown("```ts\n// Code example\n```")}
-                  aria-label="Insert code"
-                >
-                  <Code2Icon className="size-4" />
-                </Button>
+      <div
+        className={`grid min-h-[calc(100vh-7rem)] ${
+          commentsOpen ? "xl:grid-cols-[minmax(0,1fr)_22rem]" : ""
+        }`}
+      >
+        <main className="min-w-0 bg-background">
+          <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 lg:px-14 lg:py-12">
+            <div className="max-w-4xl">
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                <MetaPill>
+                  <FileTextIcon className="size-3.5" />
+                  {getDocProject(doc)}
+                </MetaPill>
+                <MetaPill icon={CalendarClockIcon}>
+                  Edited {formatDocDate(doc.updatedAt)}
+                </MetaPill>
+                <span className="inline-flex h-7 items-center gap-2 rounded-md border bg-background px-2.5 text-xs text-muted-foreground">
+                  <Avatar className="size-4">
+                    <AvatarFallback className="text-[9px]">
+                      {getInitials(owner)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {owner}
+                </span>
               </div>
 
-              <div className="flex items-center rounded-md border p-1">
-                <Button
-                  variant={mode === "write" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setMode("write")}
-                >
-                  <PencilIcon className="size-4" />
-                  Write
-                </Button>
-                <Button
-                  variant={mode === "preview" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setMode("preview")}
-                >
-                  <EyeIcon className="size-4" />
-                  Preview
-                </Button>
-              </div>
+              <Input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                onBlur={saveTitle}
+                placeholder="Untitled"
+                className="!h-auto border-none bg-transparent px-0 py-0 !text-5xl !leading-tight font-semibold tracking-tight shadow-none outline-none focus-visible:ring-0 sm:!text-6xl md:!text-6xl"
+              />
             </div>
 
-            <div className="relative group flex gap-3">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="mt-1 opacity-0 group-hover:opacity-100"
-                onClick={() => setShowSlashMenu((isOpen) => !isOpen)}
-              >
-                <PlusIcon className="size-4" />
-              </Button>
-              <div className="min-w-0 flex-1">
-                {mode === "write" ? (
-                  <Textarea
-                    value={content}
+            <div className="mt-9 max-w-4xl">
+              <div className="mb-5 flex flex-wrap items-center gap-1 rounded-lg border bg-background p-2 shadow-sm">
+                <div className="flex flex-wrap items-center gap-1">
+                  <ToolbarMenuButton icon={Heading1Icon} label="H1">
+                    <DropdownMenuLabel>Headings</DropdownMenuLabel>
+                    {headingOptions.map((option) => (
+                      <DropdownMenuItem
+                        key={option.label}
+                        className="gap-2"
+                        onClick={() => setHeading(option.level)}
+                      >
+                        <option.icon className="size-4" />
+                        {option.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </ToolbarMenuButton>
+
+                  <ToolbarMenuButton icon={PlusIcon} label="Blocks">
+                    <DropdownMenuLabel>Insert block</DropdownMenuLabel>
+                    {insertOptions.map((option) => (
+                      <DropdownMenuItem
+                        key={option.label}
+                        className="gap-2"
+                        onClick={() => runEditorAction(option.action)}
+                      >
+                        <option.icon className="size-4" />
+                        <span>{option.label}</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </ToolbarMenuButton>
+
+                  <ToolbarMenuButton icon={Code2Icon} label="Code">
+                    <DropdownMenuLabel>Code</DropdownMenuLabel>
+                    {inlineOptions.map((option) => (
+                      <DropdownMenuItem
+                        key={option.label}
+                        className="gap-2"
+                        onClick={() => runEditorAction(option.action)}
+                      >
+                        <option.icon className="size-4" />
+                        <div>
+                          <p>{option.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {option.description}
+                          </p>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </ToolbarMenuButton>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        <TableIcon className="size-3.5" />
+                        Table
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-72 p-0">
+                      <PopoverHeader className="border-b p-4">
+                        <PopoverTitle>Insert table</PopoverTitle>
+                        <PopoverDescription>
+                          Choose the shape and drop a markdown table into the
+                          doc.
+                        </PopoverDescription>
+                      </PopoverHeader>
+                      <div className="space-y-4 p-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="space-y-1.5 text-sm font-medium">
+                            Rows
+                            <Input
+                              type="number"
+                              min={1}
+                              max={12}
+                              value={tableRows}
+                              onChange={(event) =>
+                                setTableRows(Number(event.target.value))
+                              }
+                            />
+                          </label>
+                          <label className="space-y-1.5 text-sm font-medium">
+                            Columns
+                            <Input
+                              type="number"
+                              min={1}
+                              max={8}
+                              value={tableColumns}
+                              onChange={(event) =>
+                                setTableColumns(Number(event.target.value))
+                              }
+                            />
+                          </label>
+                        </div>
+                        <Button
+                          className="w-full"
+                          onClick={() => runEditorAction("table")}
+                        >
+                          <TableIcon className="size-4" />
+                          Insert table
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute top-1 -left-10 hidden opacity-0 group-hover:opacity-100 lg:inline-flex"
+                  onClick={() => setShowSlashMenu((isOpen) => !isOpen)}
+                >
+                  <PlusIcon className="size-4" />
+                  <span className="sr-only">Insert block</span>
+                </Button>
+
+                {editor ? (
+                  <EditorContent
+                    editor={editor}
                     onKeyDown={handleEditorKeyDown}
-                    onChange={(event) => setContent(event.target.value)}
-                    placeholder="Write markdown, type / for blocks..."
-                    className="min-h-[520px] resize-none border-none px-0 text-base leading-7 shadow-none focus-visible:ring-0"
+                    className={docsEditorClassName}
                   />
                 ) : (
-                  <div className="min-h-[520px] space-y-4 rounded-lg border bg-muted/20 p-6">
-                    {content.trim() ? (
-                      previewNodes
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Nothing to preview yet.
-                      </p>
-                    )}
-                  </div>
+                  <div className="min-h-[620px] animate-pulse rounded-lg bg-muted/40" />
                 )}
 
                 {showSlashMenu && (
-                  <div className="absolute top-10 left-10 z-10 w-80 overflow-hidden rounded-lg border bg-popover shadow-lg">
+                  <div className="absolute top-9 left-0 z-10 w-84 overflow-hidden rounded-lg border bg-popover shadow-lg">
                     <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
-                      Blocks
+                      Insert block
                     </div>
                     {slashCommands.map((command) => (
                       <button
                         key={command.label}
                         type="button"
-                        onClick={() => insertMarkdown(command.markdown)}
-                        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted"
+                        onClick={() => runEditorAction(command.action, true)}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted"
                       >
-                        <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                           <command.icon className="size-4" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-medium">{command.label}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="truncate text-xs text-muted-foreground">
                             {command.description}
                           </p>
                         </div>
@@ -531,10 +1052,14 @@ export function NotionEditorPage({ slug }: { slug: string }) {
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <CommentsPanel docId={doc.id} />
+        <CommentsPanel
+          docId={doc.id}
+          isOpen={commentsOpen}
+          onClose={() => setCommentsOpen(false)}
+        />
+      </div>
     </div>
   );
 }
