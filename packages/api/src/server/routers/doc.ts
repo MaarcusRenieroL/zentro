@@ -6,6 +6,7 @@ import {
   createDocSchema,
   deleteDocSchema,
   getDocByIdSchema,
+  getDocBySlugSchema,
   getDocsSchema,
   restoreDocSchema,
   updateDocContentSchema,
@@ -34,6 +35,7 @@ export const docsRouter = router({
           title: docs.title,
           slug: docs.slug,
           projectId: docs.projectId,
+          projectName: projects.name,
           createdBy: users.name,
           deletedAt: docs.deletedAt,
           createdAt: docs.createdAt,
@@ -42,6 +44,7 @@ export const docsRouter = router({
         .from(docs)
         .leftJoin(members, eq(members.id, docs.createdByMemberId))
         .leftJoin(users, eq(users.id, members.userId))
+        .leftJoin(projects, eq(projects.id, docs.projectId))
         .where(and(...conditions))
         .orderBy(desc(docs.updatedAt));
 
@@ -59,6 +62,7 @@ export const docsRouter = router({
           content: docs.content,
           slug: docs.slug,
           projectId: docs.projectId,
+          projectName: projects.name,
           createdByMemberId: docs.createdByMemberId,
           createdBy: users.name,
           deletedAt: docs.deletedAt,
@@ -68,9 +72,51 @@ export const docsRouter = router({
         .from(docs)
         .leftJoin(members, eq(members.id, docs.createdByMemberId))
         .leftJoin(users, eq(users.id, members.userId))
+        .leftJoin(projects, eq(projects.id, docs.projectId))
         .where(
           and(
             eq(docs.id, input.id),
+            eq(docs.organizationId, activeOrganization.id),
+            isNull(docs.deletedAt),
+          ),
+        )
+        .limit(1);
+
+      if (!doc) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Doc not found.",
+        });
+      }
+
+      return doc;
+    }),
+  getBySlug: protectedProcedure
+    .input(getDocBySlugSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+
+      const [doc] = await db
+        .select({
+          id: docs.id,
+          title: docs.title,
+          content: docs.content,
+          slug: docs.slug,
+          projectId: docs.projectId,
+          projectName: projects.name,
+          createdByMemberId: docs.createdByMemberId,
+          createdBy: users.name,
+          deletedAt: docs.deletedAt,
+          createdAt: docs.createdAt,
+          updatedAt: docs.updatedAt,
+        })
+        .from(docs)
+        .leftJoin(members, eq(members.id, docs.createdByMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .leftJoin(projects, eq(projects.id, docs.projectId))
+        .where(
+          and(
+            eq(docs.slug, input.slug),
             eq(docs.organizationId, activeOrganization.id),
             isNull(docs.deletedAt),
           ),

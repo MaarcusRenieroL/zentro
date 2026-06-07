@@ -160,6 +160,10 @@ export const getDocByIdSchema = z.object({
   id: z.string().uuid(),
 });
 
+export const getDocBySlugSchema = z.object({
+  slug: z.string().trim().min(1, "Slug is required."),
+});
+
 export const updateDocTitleSchema = z.object({
   id: z.string().uuid(),
   title: z.string().trim().min(1, "Title is required.").max(160),

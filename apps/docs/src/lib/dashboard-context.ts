@@ -84,12 +84,12 @@ export const getDashboardContext = cache(async () => {
     redirect(getAuthAppUrl({ path: "/auth/create-organization" }));
   }
 
-  if (!resolvedApp || resolvedApp.app !== "workspace") {
+  if (!resolvedApp || resolvedApp.app !== "docs") {
     redirect(
       getOrgAppUrl({
         orgSlug: activeOrganization.slug,
-        app: "workspace",
-        path: "/dashboard",
+        app: "docs",
+        path: "/docs",
       }),
     );
   }

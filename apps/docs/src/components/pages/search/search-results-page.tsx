@@ -1,0 +1,209 @@
+"use client";
+
+import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
+import { Badge } from "@zentro/ui/shadcn/badge";
+import { Button } from "@zentro/ui/shadcn/button";
+import { Input } from "@zentro/ui/shadcn/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@zentro/ui/shadcn/select";
+import {
+  FileSearchIcon,
+  SearchIcon,
+  SlidersHorizontalIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+import { useTrpcClient } from "@zentro/api/react";
+
+import {
+  DocsListItem,
+  formatDocDate,
+  getDocOwner,
+  getDocProject,
+  getDocTitle,
+  getInitials,
+} from "../../../lib/docs";
+
+type SearchResultsPageProps = {
+  query: string;
+};
+
+export function SearchResultsPage({ query }: SearchResultsPageProps) {
+  const trpc = useTrpcClient();
+  const [docs, setDocs] = useState<DocsListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const normalizedQuery = query.trim().toLowerCase();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchDocs() {
+      try {
+        const docsList = await trpc.docs.getAll.query({});
+
+        if (isMounted) {
+          setDocs(docsList);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void fetchDocs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [trpc]);
+
+  const results = useMemo(() => {
+    if (!normalizedQuery) {
+      return [];
+    }
+
+    return docs.filter((doc) => {
+      return [
+        doc.title,
+        doc.projectName ?? "",
+        doc.createdBy ?? "",
+        formatDocDate(doc.updatedAt),
+      ].some((value) => value.toLowerCase().includes(normalizedQuery));
+    });
+  }, [docs, normalizedQuery]);
+
+  return (
+    <section className="mx-auto flex w-full max-w-400 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Search docs</h1>
+        <p className="text-sm text-muted-foreground">
+          Find pages by title, project, owner, or status.
+        </p>
+      </div>
+
+      <form
+        action="/search"
+        className="flex flex-col gap-3 rounded-lg border bg-card p-4 lg:flex-row lg:items-center"
+      >
+        <div className="relative flex-1">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            name="q"
+            className="pl-9"
+            defaultValue={query}
+            placeholder="Search docs..."
+          />
+        </div>
+        <Select defaultValue="all">
+          <SelectTrigger className="w-full lg:w-44">
+            <SelectValue placeholder="Scope" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All docs</SelectItem>
+            <SelectItem value="title">Titles only</SelectItem>
+            <SelectItem value="content">Content</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" type="button">
+          <SlidersHorizontalIcon className="size-4" />
+          More filters
+        </Button>
+        <Button type="submit">
+          <SearchIcon className="size-4" />
+          Search
+        </Button>
+      </form>
+
+      <div className="overflow-hidden rounded-lg border bg-card">
+        <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+          <div>
+            <p className="text-sm font-medium">
+              {normalizedQuery
+                ? `${results.length} result${results.length === 1 ? "" : "s"}`
+                : "Start a search"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {normalizedQuery
+                ? `Showing matches for "${query.trim()}"`
+                : "Use the search box to find docs across the workspace."}
+            </p>
+          </div>
+          {normalizedQuery ? (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/search">Clear</Link>
+            </Button>
+          ) : null}
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-3 p-4">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-16 animate-pulse rounded-md bg-muted"
+              />
+            ))}
+          </div>
+        ) : results.length > 0 ? (
+          <div>
+            {results.map((doc) => {
+              const owner = getDocOwner(doc);
+
+              return (
+                <Link
+                  key={doc.id}
+                  href={`/docs/${doc.slug}`}
+                  className="flex flex-col gap-3 border-b px-4 py-4 last:border-b-0 hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <FileSearchIcon className="size-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{getDocTitle(doc.title)}</p>
+                        <Badge variant="secondary">Doc</Badge>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        Updated {formatDocDate(doc.updatedAt)}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant="outline">{getDocProject(doc)}</Badge>
+                        <span>Created by {owner}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+                    <Avatar className="size-7">
+                      <AvatarFallback>{getInitials(owner)}</AvatarFallback>
+                    </Avatar>
+                    {owner}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+            <FileSearchIcon className="mb-3 size-9 text-muted-foreground" />
+            <p className="text-sm font-medium">
+              {normalizedQuery ? "No docs found" : "Search your docs"}
+            </p>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              {normalizedQuery
+                ? "Try searching by doc title, project, status, or owner."
+                : "Enter a keyword above to see matching workspace docs."}
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

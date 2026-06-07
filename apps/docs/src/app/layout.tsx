@@ -12,8 +12,8 @@ import { getAuthAppUrl, getOrgAppUrl } from "@zentro/utils";
 import { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "Zentro Tasks",
-  description: "Plan, assign, and track startup work in one Zentro workspace.",
+  title: "Zentro Docs",
+  description: "Write, find, and organize workspace documentation in Zentro.",
 };
 
 export const viewport: Viewport = {
