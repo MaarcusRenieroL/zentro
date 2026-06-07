@@ -15,6 +15,7 @@ import {
   InboxIcon,
   LayoutDashboardIcon,
   ListChecksIcon,
+  StarIcon,
   SettingsIcon,
   ShieldIcon,
   Trash2Icon,
@@ -45,6 +46,8 @@ import {
 
 import type { LucideIcon } from "lucide-react";
 
+export type WorkspaceSidebarApp = "workspace" | "tasks" | "docs";
+
 export type WorkspaceSidebarLinkComponentProps = {
   href: string;
   children: ReactNode;
@@ -57,6 +60,7 @@ export type WorkspaceSidebarItem = {
   label: string;
   href: string;
   icon: LucideIcon;
+  app?: WorkspaceSidebarApp;
   disabled?: boolean;
   children?: WorkspaceSidebarItem[];
 };
@@ -173,19 +177,37 @@ export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
         label: "Docs",
         href: "/docs",
         icon: BookOpenIcon,
-        disabled: true,
+        app: "docs",
         children: [
           {
             label: "All docs",
             href: "/docs",
             icon: FileTextIcon,
-            disabled: true,
+            app: "docs",
           },
           {
-            label: "Shared with me",
-            href: "/docs/shared",
-            icon: UsersIcon,
-            disabled: true,
+            label: "My docs",
+            href: "/my-docs",
+            icon: StarIcon,
+            app: "docs",
+          },
+          {
+            label: "Recent",
+            href: "/recent",
+            icon: CalendarIcon,
+            app: "docs",
+          },
+          {
+            label: "Project docs",
+            href: "/projects",
+            icon: FolderIcon,
+            app: "docs",
+          },
+          {
+            label: "Trash",
+            href: "/trash",
+            icon: Trash2Icon,
+            app: "docs",
           },
         ],
       },
@@ -234,6 +256,78 @@ export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
     ],
   },
 ];
+
+type CreateWorkspaceSidebarSectionsInput = {
+  orgSlug: string;
+  getOrgAppUrl: (input: {
+    orgSlug: string;
+    app: WorkspaceSidebarApp;
+    path?: string;
+  }) => string;
+  sections?: WorkspaceSidebarSection[];
+};
+
+const appByPath: Record<string, WorkspaceSidebarApp> = {
+  "/dashboard": "workspace",
+  "/inbox": "workspace",
+  "/notifications": "workspace",
+  "/projects": "workspace",
+  "/tasks": "tasks",
+  "/calendar": "tasks",
+  "/docs": "docs",
+  "/my-docs": "docs",
+  "/recent": "docs",
+  "/search": "docs",
+  "/trash": "docs",
+  "/settings": "workspace",
+};
+
+function getAppForHref(item: WorkspaceSidebarItem): WorkspaceSidebarApp {
+  if (item.app) {
+    return item.app;
+  }
+
+  const pathname = item.href.split("?")[0] ?? item.href;
+  const pathKey = Object.keys(appByPath)
+    .sort((a, b) => b.length - a.length)
+    .find((key) => pathname === key || pathname.startsWith(`${key}/`));
+
+  return pathKey ? (appByPath[pathKey] ?? "workspace") : "workspace";
+}
+
+function resolveSidebarItemHref({
+  item,
+  orgSlug,
+  getOrgAppUrl,
+}: {
+  item: WorkspaceSidebarItem;
+  orgSlug: string;
+  getOrgAppUrl: CreateWorkspaceSidebarSectionsInput["getOrgAppUrl"];
+}) {
+  return getOrgAppUrl({
+    orgSlug,
+    app: getAppForHref(item),
+    path: item.href,
+  });
+}
+
+export function createWorkspaceSidebarSections({
+  orgSlug,
+  getOrgAppUrl,
+  sections = zentroWorkspaceSidebarSections,
+}: CreateWorkspaceSidebarSectionsInput): WorkspaceSidebarSection[] {
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({
+      ...item,
+      href: resolveSidebarItemHref({ item, orgSlug, getOrgAppUrl }),
+      children: item.children?.map((child) => ({
+        ...child,
+        href: resolveSidebarItemHref({ item: child, orgSlug, getOrgAppUrl }),
+      })),
+    })),
+  }));
+}
 
 function getHrefPathname(href: string) {
   return new URL(href, "http://zentro.local").pathname;

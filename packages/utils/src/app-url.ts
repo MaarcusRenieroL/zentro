@@ -29,6 +29,7 @@ const protocol = appUrl.protocol.replace(":", "");
 const localAppPorts: Partial<Record<ZentroApp, string>> = {
   workspace: "3000",
   tasks: "3002",
+  docs: "3003",
 };
 
 function normalizePath(path?: string) {
