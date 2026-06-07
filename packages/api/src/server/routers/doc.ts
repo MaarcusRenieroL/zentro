@@ -1,18 +1,64 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, isNotNull, isNull } from "@zentro/db/drizzle";
-import { docs, members, projects, users } from "@zentro/db/schema";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  isNotNull,
+  isNull,
+  or,
+} from "@zentro/db/drizzle";
+import { docComments, docs, members, projects, users } from "@zentro/db/schema";
 
 import {
+  createDocCommentSchema,
   createDocSchema,
   deleteDocSchema,
+  getDocCommentsSchema,
   getDocByIdSchema,
   getDocBySlugSchema,
   getDocsSchema,
   restoreDocSchema,
+  resolveDocCommentSchema,
+  searchDocsSchema,
   updateDocContentSchema,
   updateDocTitleSchema,
 } from "../../types/zod-schema";
-import { organizationProcedure, protectedProcedure, router } from "../trpc";
+import type { TRPCContext } from "../../types";
+import { authorizedProcedure, protectedProcedure, router } from "../trpc";
+import { getCurrentMember } from "./task-helpers";
+
+async function getDocForActiveOrganization({
+  ctx,
+  id,
+}: {
+  ctx: TRPCContext & {
+    activeOrganization: NonNullable<TRPCContext["activeOrganization"]>;
+  };
+  id: string;
+}) {
+  const [doc] = await ctx.db
+    .select({ id: docs.id })
+    .from(docs)
+    .where(
+      and(
+        eq(docs.id, id),
+        eq(docs.organizationId, ctx.activeOrganization.id),
+        isNull(docs.deletedAt),
+      ),
+    )
+    .limit(1);
+
+  if (!doc) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Doc not found.",
+    });
+  }
+
+  return doc;
+}
 
 export const docsRouter = router({
   getAll: protectedProcedure
@@ -49,6 +95,54 @@ export const docsRouter = router({
         .orderBy(desc(docs.updatedAt));
 
       return docsList;
+    }),
+  search: protectedProcedure
+    .input(searchDocsSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const query = input.query.trim();
+      const conditions = [eq(docs.organizationId, activeOrganization.id)];
+
+      if (!input.includeDeleted) {
+        conditions.push(isNull(docs.deletedAt));
+      }
+
+      if (input.projectId) {
+        conditions.push(eq(docs.projectId, input.projectId));
+      }
+
+      if (query) {
+        const pattern = `%${query}%`;
+
+        conditions.push(
+          or(
+            ilike(docs.title, pattern),
+            ilike(docs.content, pattern),
+            ilike(projects.name, pattern),
+            ilike(users.name, pattern),
+          )!,
+        );
+      }
+
+      return db
+        .select({
+          id: docs.id,
+          title: docs.title,
+          slug: docs.slug,
+          projectId: docs.projectId,
+          projectName: projects.name,
+          createdBy: users.name,
+          deletedAt: docs.deletedAt,
+          createdAt: docs.createdAt,
+          updatedAt: docs.updatedAt,
+        })
+        .from(docs)
+        .leftJoin(members, eq(members.id, docs.createdByMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .leftJoin(projects, eq(projects.id, docs.projectId))
+        .where(and(...conditions))
+        .orderBy(desc(docs.updatedAt))
+        .limit(50);
     }),
   getById: protectedProcedure
     .input(getDocByIdSchema)
@@ -132,7 +226,7 @@ export const docsRouter = router({
 
       return doc;
     }),
-  create: organizationProcedure
+  create: authorizedProcedure({ doc: ["create"] })
     .input(createDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -200,7 +294,7 @@ export const docsRouter = router({
         return doc;
       });
     }),
-  updateDocTitle: organizationProcedure
+  updateDocTitle: authorizedProcedure({ doc: ["update"] })
     .input(updateDocTitleSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -230,7 +324,7 @@ export const docsRouter = router({
 
       return updatedDoc;
     }),
-  updateDocContent: organizationProcedure
+  updateDocContent: authorizedProcedure({ doc: ["update"] })
     .input(updateDocContentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -260,7 +354,7 @@ export const docsRouter = router({
 
       return updatedDoc;
     }),
-  delete: organizationProcedure
+  delete: authorizedProcedure({ doc: ["delete"] })
     .input(deleteDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -290,7 +384,7 @@ export const docsRouter = router({
 
       return deletedDoc;
     }),
-  restore: organizationProcedure
+  restore: authorizedProcedure({ doc: ["restore"] })
     .input(restoreDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -319,5 +413,91 @@ export const docsRouter = router({
       }
 
       return restoredDoc;
+    }),
+  getComments: protectedProcedure
+    .input(getDocCommentsSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const doc = await getDocForActiveOrganization({ ctx, id: input.docId });
+
+      return db
+        .select({
+          id: docComments.id,
+          body: docComments.body,
+          authorMemberId: docComments.authorMemberId,
+          authorName: users.name,
+          authorEmail: users.email,
+          authorImage: users.image,
+          resolvedAt: docComments.resolvedAt,
+          createdAt: docComments.createdAt,
+          updatedAt: docComments.updatedAt,
+        })
+        .from(docComments)
+        .leftJoin(members, eq(members.id, docComments.authorMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .where(
+          and(
+            eq(docComments.organizationId, activeOrganization.id),
+            eq(docComments.docId, doc.id),
+            isNull(docComments.deletedAt),
+          ),
+        )
+        .orderBy(asc(docComments.createdAt));
+    }),
+  createComment: authorizedProcedure({ doc: ["comment"] })
+    .input(createDocCommentSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const doc = await getDocForActiveOrganization({ ctx, id: input.docId });
+      const member = await getCurrentMember(ctx);
+
+      const [comment] = await db
+        .insert(docComments)
+        .values({
+          organizationId: activeOrganization.id,
+          docId: doc.id,
+          authorMemberId: member.id,
+          body: input.body,
+        })
+        .returning();
+
+      if (!comment) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create comment.",
+        });
+      }
+
+      return comment;
+    }),
+  resolveComment: authorizedProcedure({ doc: ["comment"] })
+    .input(resolveDocCommentSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+
+      const [comment] = await db
+        .update(docComments)
+        .set({
+          resolvedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(docComments.id, input.id),
+            eq(docComments.organizationId, activeOrganization.id),
+            isNull(docComments.deletedAt),
+            isNull(docComments.resolvedAt),
+          ),
+        )
+        .returning();
+
+      if (!comment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found.",
+        });
+      }
+
+      return comment;
     }),
 });

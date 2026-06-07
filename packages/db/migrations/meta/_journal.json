@@ -57,6 +57,13 @@
       "when": 1780536412392,
       "tag": "0007_loud_meltdown",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780823745435,
+      "tag": "0008_material_thor",
+      "breakpoints": true
     }
   ]
 }

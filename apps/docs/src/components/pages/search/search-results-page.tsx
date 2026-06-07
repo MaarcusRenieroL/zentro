@@ -17,7 +17,7 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 
@@ -36,7 +36,7 @@ type SearchResultsPageProps = {
 
 export function SearchResultsPage({ query }: SearchResultsPageProps) {
   const trpc = useTrpcClient();
-  const [docs, setDocs] = useState<DocsListItem[]>([]);
+  const [results, setResults] = useState<DocsListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -44,11 +44,20 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
     let isMounted = true;
 
     async function fetchDocs() {
+      if (!normalizedQuery) {
+        setResults([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const docsList = await trpc.docs.getAll.query({});
+        setIsLoading(true);
+        const docsList = await trpc.docs.search.query({
+          query,
+        });
 
         if (isMounted) {
-          setDocs(docsList);
+          setResults(docsList);
         }
       } finally {
         if (isMounted) {
@@ -62,22 +71,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
     return () => {
       isMounted = false;
     };
-  }, [trpc]);
-
-  const results = useMemo(() => {
-    if (!normalizedQuery) {
-      return [];
-    }
-
-    return docs.filter((doc) => {
-      return [
-        doc.title,
-        doc.projectName ?? "",
-        doc.createdBy ?? "",
-        formatDocDate(doc.updatedAt),
-      ].some((value) => value.toLowerCase().includes(normalizedQuery));
-    });
-  }, [docs, normalizedQuery]);
+  }, [normalizedQuery, query, trpc]);
 
   return (
     <section className="mx-auto flex w-full max-w-400 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">

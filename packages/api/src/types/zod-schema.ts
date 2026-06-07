@@ -156,6 +156,12 @@ export const getDocsSchema = z.object({
   includeDeleted: z.boolean().optional().default(false),
 });
 
+export const searchDocsSchema = z.object({
+  query: z.string().trim().max(200).optional().default(""),
+  projectId: z.string().uuid().optional().nullable(),
+  includeDeleted: z.boolean().optional().default(false),
+});
+
 export const getDocByIdSchema = z.object({
   id: z.string().uuid(),
 });
@@ -179,6 +185,19 @@ export const deleteDocSchema = z.object({
 });
 
 export const restoreDocSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export const getDocCommentsSchema = z.object({
+  docId: z.string().uuid(),
+});
+
+export const createDocCommentSchema = z.object({
+  docId: z.string().uuid(),
+  body: z.string().trim().min(1, "Comment is required.").max(10000),
+});
+
+export const resolveDocCommentSchema = z.object({
   id: z.string().uuid(),
 });
 

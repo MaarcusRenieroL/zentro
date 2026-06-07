@@ -29,6 +29,8 @@ const trustedOrigins = Array.from(
     "http://*.localhost:3000",
     "http://*.localhost:3002",
     "http://*.tasks.localhost:3002",
+    "http://*.localhost:3003",
+    "http://*.docs.localhost:3003",
   ]),
 ).filter((origin): origin is string => Boolean(origin));
 

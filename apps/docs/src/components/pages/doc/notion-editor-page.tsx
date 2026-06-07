@@ -9,19 +9,22 @@ import {
   BracesIcon,
   CheckSquareIcon,
   Code2Icon,
+  EyeIcon,
   FileTextIcon,
   Heading1Icon,
+  Heading2Icon,
   ListIcon,
   MessageSquareIcon,
   MoreHorizontalIcon,
-  PilcrowIcon,
+  PencilIcon,
   PlusIcon,
   QuoteIcon,
-  SlashIcon,
+  SaveIcon,
   Trash2Icon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
@@ -41,28 +44,146 @@ const slashCommands = [
     label: "Heading 1",
     description: "Big section heading",
     icon: Heading1Icon,
+    markdown: "# Heading",
+  },
+  {
+    label: "Heading 2",
+    description: "Section heading",
+    icon: Heading2Icon,
+    markdown: "## Section",
   },
   {
     label: "Bullet list",
     description: "Create a simple list",
     icon: ListIcon,
+    markdown: "- List item",
   },
   {
     label: "Todo",
     description: "Track an action item",
     icon: CheckSquareIcon,
+    markdown: "- [ ] Todo item",
   },
   {
     label: "Quote",
     description: "Highlight a decision",
     icon: QuoteIcon,
+    markdown: "> Important note",
   },
   {
     label: "Code",
     description: "Add a code block",
     icon: Code2Icon,
+    markdown: "```ts\n// Code example\n```",
   },
 ];
+
+function renderMarkdownPreview(content: string) {
+  const nodes: ReactNode[] = [];
+  const lines = content.split("\n");
+  let codeLines: string[] = [];
+  let isCodeBlock = false;
+
+  lines.forEach((line, index) => {
+    if (line.startsWith("```")) {
+      if (isCodeBlock) {
+        nodes.push(
+          <pre
+            key={`code-${index}`}
+            className="overflow-x-auto rounded-lg border bg-muted/50 p-4 text-sm"
+          >
+            <code>{codeLines.join("\n")}</code>
+          </pre>,
+        );
+        codeLines = [];
+      }
+
+      isCodeBlock = !isCodeBlock;
+      return;
+    }
+
+    if (isCodeBlock) {
+      codeLines.push(line);
+      return;
+    }
+
+    if (line.startsWith("# ")) {
+      nodes.push(
+        <h1 key={index} className="text-3xl font-semibold tracking-tight">
+          {line.slice(2)}
+        </h1>,
+      );
+      return;
+    }
+
+    if (line.startsWith("## ")) {
+      nodes.push(
+        <h2 key={index} className="text-xl font-semibold">
+          {line.slice(3)}
+        </h2>,
+      );
+      return;
+    }
+
+    if (line.startsWith("> ")) {
+      nodes.push(
+        <blockquote
+          key={index}
+          className="border-l-2 pl-4 text-muted-foreground"
+        >
+          {line.slice(2)}
+        </blockquote>,
+      );
+      return;
+    }
+
+    if (line.startsWith("- [ ] ")) {
+      nodes.push(
+        <label key={index} className="flex items-center gap-2 text-sm">
+          <input type="checkbox" disabled />
+          {line.slice(6)}
+        </label>,
+      );
+      return;
+    }
+
+    if (line.startsWith("- ")) {
+      nodes.push(
+        <p
+          key={index}
+          className="pl-4 text-sm leading-7 before:mr-2 before:content-['•']"
+        >
+          {line.slice(2)}
+        </p>,
+      );
+      return;
+    }
+
+    if (!line.trim()) {
+      nodes.push(<div key={index} className="h-3" />);
+      return;
+    }
+
+    nodes.push(
+      <p key={index} className="text-base leading-7">
+        {line}
+      </p>,
+    );
+  });
+
+  if (isCodeBlock && codeLines.length) {
+    nodes.push(
+      <pre
+        key="code-open"
+        className="overflow-x-auto rounded-lg border bg-muted/50 p-4 text-sm"
+      >
+        <code>{codeLines.join("\n")}</code>
+      </pre>,
+    );
+  }
+
+  return nodes;
+}
 
 export function NotionEditorPage({ slug }: { slug: string }) {
   const router = useRouter();
@@ -73,7 +194,9 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showSlashMenu, setShowSlashMenu] = useState(true);
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [mode, setMode] = useState<"write" | "preview">("write");
+  const previewNodes = useMemo(() => renderMarkdownPreview(content), [content]);
 
   useEffect(() => {
     let isMounted = true;
@@ -180,6 +303,29 @@ export function NotionEditorPage({ slug }: { slug: string }) {
     }
   }
 
+  function insertMarkdown(markdown: string) {
+    setContent((currentContent) => {
+      const trimmedContent = currentContent.endsWith("/")
+        ? currentContent.slice(0, -1)
+        : currentContent;
+      const prefix = trimmedContent.trim() ? "\n\n" : "";
+
+      return `${trimmedContent}${prefix}${markdown}`;
+    });
+    setMode("write");
+    setShowSlashMenu(false);
+  }
+
+  function handleEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "/") {
+      setShowSlashMenu(true);
+    }
+
+    if (event.key === "Escape") {
+      setShowSlashMenu(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex min-h-[calc(100vh-3.5rem)] border-t">
@@ -219,7 +365,11 @@ export function NotionEditorPage({ slug }: { slug: string }) {
               <Badge variant="outline">{getDocProject(doc)}</Badge>
               <span>Edited {formatDocDate(doc.updatedAt)}</span>
               <span className="inline-flex items-center gap-1">
-                <BracesIcon className="size-3" />
+                {saveStatus === "saving" ? (
+                  <BracesIcon className="size-3" />
+                ) : (
+                  <SaveIcon className="size-3" />
+                )}
                 {saveStatus}
               </span>
             </div>
@@ -259,85 +409,132 @@ export function NotionEditorPage({ slug }: { slug: string }) {
           </div>
 
           <div className="mt-10 space-y-5">
-            <div className="group flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="mt-0.5 opacity-0 group-hover:opacity-100"
-              >
-                <PlusIcon className="size-4" />
-              </Button>
-              <Textarea
-                value={content}
-                onChange={(event) => setContent(event.target.value)}
-                placeholder="Write, type / for commands..."
-                className="min-h-60 resize-none border-none px-0 text-base leading-7 shadow-none focus-visible:ring-0"
-              />
+            <div className="sticky top-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur">
+              <div className="flex flex-wrap items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => insertMarkdown("# Heading")}
+                  aria-label="Insert heading"
+                >
+                  <Heading1Icon className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => insertMarkdown("- List item")}
+                  aria-label="Insert list"
+                >
+                  <ListIcon className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => insertMarkdown("- [ ] Todo item")}
+                  aria-label="Insert todo"
+                >
+                  <CheckSquareIcon className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => insertMarkdown("> Important note")}
+                  aria-label="Insert quote"
+                >
+                  <QuoteIcon className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => insertMarkdown("```ts\n// Code example\n```")}
+                  aria-label="Insert code"
+                >
+                  <Code2Icon className="size-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center rounded-md border p-1">
+                <Button
+                  variant={mode === "write" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setMode("write")}
+                >
+                  <PencilIcon className="size-4" />
+                  Write
+                </Button>
+                <Button
+                  variant={mode === "preview" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setMode("preview")}
+                >
+                  <EyeIcon className="size-4" />
+                  Preview
+                </Button>
+              </div>
             </div>
 
-            <div className="group flex gap-2">
+            <div className="relative group flex gap-3">
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="mt-0.5 opacity-0 group-hover:opacity-100"
+                className="mt-1 opacity-0 group-hover:opacity-100"
+                onClick={() => setShowSlashMenu((isOpen) => !isOpen)}
               >
                 <PlusIcon className="size-4" />
               </Button>
               <div className="min-w-0 flex-1">
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <p className="mb-2 flex items-center gap-2 text-sm font-medium">
-                    <PilcrowIcon className="size-4" />
-                    Authentication
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Token validation should happen before project scoped data is
-                    loaded.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative group flex gap-2">
-              <Button variant="ghost" size="icon-sm" className="mt-0.5">
-                <SlashIcon className="size-4" />
-              </Button>
-              <Textarea
-                defaultValue="/"
-                onFocus={() => setShowSlashMenu(true)}
-                className="min-h-10 resize-none border-none px-0 text-base leading-7 shadow-none focus-visible:ring-0"
-              />
-
-              {showSlashMenu && (
-                <div className="absolute top-10 left-10 z-10 w-80 overflow-hidden rounded-lg border bg-popover shadow-lg">
-                  <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
-                    Blocks
+                {mode === "write" ? (
+                  <Textarea
+                    value={content}
+                    onKeyDown={handleEditorKeyDown}
+                    onChange={(event) => setContent(event.target.value)}
+                    placeholder="Write markdown, type / for blocks..."
+                    className="min-h-[520px] resize-none border-none px-0 text-base leading-7 shadow-none focus-visible:ring-0"
+                  />
+                ) : (
+                  <div className="min-h-[520px] space-y-4 rounded-lg border bg-muted/20 p-6">
+                    {content.trim() ? (
+                      previewNodes
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Nothing to preview yet.
+                      </p>
+                    )}
                   </div>
-                  {slashCommands.map((command) => (
-                    <button
-                      key={command.label}
-                      type="button"
-                      onClick={() => setShowSlashMenu(false)}
-                      className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted"
-                    >
-                      <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                        <command.icon className="size-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{command.label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {command.description}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                )}
+
+                {showSlashMenu && (
+                  <div className="absolute top-10 left-10 z-10 w-80 overflow-hidden rounded-lg border bg-popover shadow-lg">
+                    <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
+                      Blocks
+                    </div>
+                    {slashCommands.map((command) => (
+                      <button
+                        key={command.label}
+                        type="button"
+                        onClick={() => insertMarkdown(command.markdown)}
+                        className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted"
+                      >
+                        <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                          <command.icon className="size-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{command.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {command.description}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </main>
 
-      <CommentsPanel />
+      <CommentsPanel docId={doc.id} />
     </div>
   );
 }

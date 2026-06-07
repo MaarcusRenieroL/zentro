@@ -28,7 +28,7 @@ import {
   SparklesIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
@@ -62,9 +62,39 @@ export function CreateDocModal() {
   const trpc = useTrpcClient();
   const [selectedTemplate, setSelectedTemplate] = useState("blank");
   const [open, setOpen] = useState(false);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>(
+    [],
+  );
+  const [projectId, setProjectId] = useState("workspace");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function fetchProjects() {
+      try {
+        const projectList = await trpc.project.getProjectsByOrgId.query();
+
+        if (isMounted) {
+          setProjects(projectList);
+        }
+      } catch (error) {
+        toastError(error, "Failed to load projects");
+      }
+    }
+
+    void fetchProjects();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, trpc]);
 
   async function handleCreateDoc(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,6 +111,7 @@ export function CreateDocModal() {
       const doc = await trpc.docs.create.mutate({
         title: docTitle,
         content,
+        projectId: projectId === "workspace" ? null : projectId,
         slug,
       });
 
@@ -123,15 +154,17 @@ export function CreateDocModal() {
               </Field>
               <Field>
                 <FieldLabel>Project</FieldLabel>
-                <Select defaultValue="platform">
+                <Select value={projectId} onValueChange={setProjectId}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="workspace">Workspace</SelectItem>
-                    <SelectItem value="platform">Platform</SelectItem>
-                    <SelectItem value="product">Product</SelectItem>
-                    <SelectItem value="launch">Launch</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>
