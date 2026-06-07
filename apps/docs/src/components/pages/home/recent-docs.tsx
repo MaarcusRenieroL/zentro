@@ -1,17 +1,16 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@zentro/ui/components/shadcn/avatar";
-import { Button } from "@zentro/ui/components/shadcn/button";
+import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
+import { Badge } from "@zentro/ui/shadcn/badge";
+import { Button } from "@zentro/ui/shadcn/button";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardDescription,
   CardTitle,
 } from "@zentro/ui/shadcn/card";
-import { Badge } from "@zentro/ui/shadcn/badge";
-import { FileTextIcon, MoreHorizontalIcon } from "lucide-react";
+import { FileTextIcon } from "lucide-react";
 import Link from "next/link";
 import { FC, useEffect, useState } from "react";
 
@@ -64,7 +63,7 @@ export const RecentDocs: FC = () => {
             Pages your team touched most recently
           </p>
         </div>
-        <Link href="/docs">
+        <Link href="/recent">
           <Button variant="link" size="sm">
             View all
           </Button>
@@ -73,7 +72,7 @@ export const RecentDocs: FC = () => {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, index) => (
-              <Card key={index} className="min-h-48 rounded-lg" size="sm">
+              <Card key={index} className="min-h-44 rounded-lg" size="sm">
                 <CardHeader>
                   <div className="h-20 animate-pulse rounded-md bg-muted" />
                 </CardHeader>
@@ -85,12 +84,16 @@ export const RecentDocs: FC = () => {
           : null}
 
         {docs.map((doc) => (
-          <Card key={doc.id} className="min-h-48 rounded-lg" size="sm">
+          <Card
+            key={doc.id}
+            className="min-h-44 rounded-lg transition-colors hover:bg-muted/20"
+            size="sm"
+          >
             <CardHeader className="gap-3">
               <div className="flex items-start gap-3">
                 <Link
                   href={`/docs/${doc.slug}`}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm"
                 >
                   <FileTextIcon className="size-4" />
                 </Link>
@@ -105,32 +108,25 @@ export const RecentDocs: FC = () => {
                     Updated {formatDocDate(doc.updatedAt)}
                   </CardDescription>
                 </div>
-
-                <Button variant="ghost" size="icon-sm" className="-mt-1 -mr-1">
-                  <MoreHorizontalIcon className="size-4" />
-                  <span className="sr-only">Open doc actions</span>
-                </Button>
               </div>
             </CardHeader>
-            <CardContent className="mt-auto">
+            <CardContent className="mt-auto flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <Badge variant="outline">{getDocProject(doc)}</Badge>
-            </CardContent>
-            <CardFooter className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
               <div className="flex min-w-0 items-center gap-2">
                 <Avatar className="size-6">
                   <AvatarFallback className="text-[10px]">
                     {getInitials(getDocOwner(doc))}
                   </AvatarFallback>
                 </Avatar>
-
                 <p className="truncate">{getDocOwner(doc)}</p>
               </div>
-            </CardFooter>
+            </CardContent>
           </Card>
         ))}
 
         {!isLoading && !docs.length ? (
-          <div className="rounded-lg border px-4 py-10 text-center md:col-span-2 xl:col-span-4">
+          <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-10 text-center md:col-span-2 xl:col-span-4">
+            <FileTextIcon className="mx-auto mb-3 size-9 text-muted-foreground" />
             <p className="text-sm font-medium">No recent docs</p>
             <p className="mt-1 text-sm text-muted-foreground">
               New and edited docs will show up here.

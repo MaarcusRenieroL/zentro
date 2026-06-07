@@ -2,7 +2,6 @@
 
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
-import { Button } from "@zentro/ui/shadcn/button";
 import {
   Card,
   CardContent,
@@ -30,7 +29,6 @@ import {
   FileTextIcon,
   Grid2X2Icon,
   ListIcon,
-  MoreHorizontalIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { FC, useEffect, useState } from "react";
@@ -45,6 +43,7 @@ import {
   getDocTitle,
   getInitials,
 } from "../../../lib/docs";
+import { CreateDocModal } from "./create-doc-modal";
 
 export const AllDocs: FC = () => {
   const trpc = useTrpcClient();
@@ -100,7 +99,7 @@ export const AllDocs: FC = () => {
         </div>
 
         <TabsContent value="table" className="mt-0">
-          <div className="overflow-hidden rounded-lg border">
+          <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
             {isLoading ? (
               <div className="space-y-3 p-4">
                 {Array.from({ length: 4 }).map((_, index) => (
@@ -118,9 +117,6 @@ export const AllDocs: FC = () => {
                     <TableHead>Project</TableHead>
                     <TableHead>Owner</TableHead>
                     <TableHead>Updated</TableHead>
-                    <TableHead className="w-10">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -131,7 +127,7 @@ export const AllDocs: FC = () => {
                       <TableRow key={doc.id}>
                         <TableCell>
                           <div className="flex min-w-64 items-center gap-3">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground">
                               <FileTextIcon className="size-4" />
                             </div>
                             <div className="min-w-0">
@@ -162,24 +158,22 @@ export const AllDocs: FC = () => {
                         <TableCell className="text-muted-foreground">
                           {formatDocDate(doc.updatedAt)}
                         </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontalIcon className="size-4" />
-                            <span className="sr-only">Open doc actions</span>
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
             ) : (
-              <div className="px-4 py-12 text-center">
+              <div className="flex flex-col items-center px-4 py-12 text-center">
+                <FileTextIcon className="mb-3 size-10 text-muted-foreground" />
                 <p className="text-sm font-medium">No docs yet</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Create your first doc to start building your workspace
                   knowledge base.
                 </p>
+                <div className="mt-4">
+                  <CreateDocModal />
+                </div>
               </div>
             )}
           </div>
@@ -187,17 +181,38 @@ export const AllDocs: FC = () => {
 
         <TabsContent value="grid" className="mt-0">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {isLoading
+              ? Array.from({ length: 6 }).map((_, index) => (
+                  <Card key={index} className="rounded-lg" size="sm">
+                    <CardHeader>
+                      <div className="h-24 animate-pulse rounded-md bg-muted" />
+                    </CardHeader>
+                  </Card>
+                ))
+              : null}
+
+            {!isLoading && !docs.length ? (
+              <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-10 text-center md:col-span-2 xl:col-span-3">
+                <FileTextIcon className="mx-auto mb-3 size-9 text-muted-foreground" />
+                <p className="text-sm font-medium">No docs yet</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  New docs will appear here after you create them.
+                </p>
+              </div>
+            ) : null}
+
             {docs.map((doc) => (
-              <Card key={doc.id} className="rounded-lg" size="sm">
+              <Card
+                key={doc.id}
+                className="rounded-lg transition-colors hover:bg-muted/20"
+                size="sm"
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <div className="flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
                       <BookOpenIcon className="size-4" />
                     </div>
-                    <Button variant="ghost" size="icon-sm">
-                      <MoreHorizontalIcon className="size-4" />
-                      <span className="sr-only">Open doc actions</span>
-                    </Button>
+                    <Badge variant="secondary">Doc</Badge>
                   </div>
                   <CardTitle className="text-sm font-semibold">
                     <Link href={`/docs/${doc.slug}`}>

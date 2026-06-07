@@ -21,6 +21,7 @@ import {
   getDocProject,
   getDocTitle,
 } from "../../../lib/docs";
+import { CreateDocModal } from "../home/create-doc-modal";
 
 type StaticDocListPageProps = {
   title: string;
@@ -66,7 +67,7 @@ export function StaticDocListPage({
     <section className="mx-auto flex w-full max-w-400 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex size-10 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
             <Icon className="size-4" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -86,10 +87,14 @@ export function StaticDocListPage({
           : null}
 
         {docs.map((doc) => (
-          <Card key={doc.id} className="rounded-lg" size="sm">
+          <Card
+            key={doc.id}
+            className="rounded-lg transition-colors hover:bg-muted/20"
+            size="sm"
+          >
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
                   <FileTextIcon className="size-4" />
                 </div>
                 <Badge variant="secondary">Doc</Badge>
@@ -111,11 +116,15 @@ export function StaticDocListPage({
         ))}
 
         {!isLoading && !docs.length ? (
-          <div className="rounded-lg border px-4 py-10 text-center md:col-span-2 xl:col-span-3">
+          <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-10 text-center md:col-span-2 xl:col-span-3">
+            <FileTextIcon className="mx-auto mb-3 size-9 text-muted-foreground" />
             <p className="text-sm font-medium">No docs found</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Create a doc and it will appear here.
             </p>
+            <div className="mt-4">
+              <CreateDocModal />
+            </div>
           </div>
         ) : null}
       </div>

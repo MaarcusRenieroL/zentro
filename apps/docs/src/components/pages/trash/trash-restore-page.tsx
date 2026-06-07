@@ -76,14 +76,19 @@ export function TrashRestorePage() {
 
   return (
     <section className="mx-auto flex w-full max-w-400 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Trash</h1>
-        <p className="text-sm text-muted-foreground">
-          Restore deleted pages or permanently remove old drafts.
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+          <Trash2Icon className="size-5" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Trash</h1>
+          <p className="text-sm text-muted-foreground">
+            Restore pages that were moved out of the workspace.
+          </p>
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -113,6 +118,7 @@ export function TrashRestorePage() {
             {!isLoading && !docs.length ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-36 text-center">
+                  <Trash2Icon className="mx-auto mb-3 size-9 text-muted-foreground" />
                   <p className="text-sm font-medium">Trash is empty</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Deleted docs will appear here.
@@ -128,7 +134,7 @@ export function TrashRestorePage() {
                 <TableRow key={doc.id}>
                   <TableCell>
                     <div className="flex min-w-64 items-center gap-3">
-                      <div className="flex size-8 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                      <div className="flex size-8 items-center justify-center rounded-lg border bg-background text-muted-foreground">
                         <Trash2Icon className="size-4" />
                       </div>
                       <div>
@@ -154,7 +160,7 @@ export function TrashRestorePage() {
                     {formatDocDate(doc.deletedAt)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end">
                       <Button
                         variant="outline"
                         size="sm"
@@ -163,9 +169,6 @@ export function TrashRestorePage() {
                       >
                         <ArchiveRestoreIcon className="size-4" />
                         {restoringId === doc.id ? "Restoring..." : "Restore"}
-                      </Button>
-                      <Button variant="destructive" size="sm" disabled>
-                        Delete forever
                       </Button>
                     </div>
                   </TableCell>

@@ -3,14 +3,13 @@
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@zentro/ui/shadcn/select";
-import { ListFilterIcon, SearchIcon, XIcon } from "lucide-react";
+  ClockIcon,
+  FolderIcon,
+  SearchIcon,
+  Trash2Icon,
+  XIcon,
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FC, useState } from "react";
 import type { FormEvent } from "react";
@@ -35,11 +34,11 @@ export const SearchToolbar: FC = () => {
   }
 
   return (
-    <div className="flex w-full flex-col gap-3">
-      <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="rounded-lg border bg-background p-3 shadow-sm">
+      <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <form
           onSubmit={handleSearch}
-          className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-2xl"
+          className="flex w-full flex-col gap-2 sm:flex-row xl:max-w-2xl"
         >
           <div className="relative flex-1">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -66,49 +65,24 @@ export const SearchToolbar: FC = () => {
           </Button>
         </form>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
-          <Select defaultValue="all">
-            <SelectTrigger className="w-full sm:w-45">
-              <SelectValue placeholder="Select project" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">All projects</SelectItem>
-                <SelectItem value="workspace">Workspace docs</SelectItem>
-                <SelectItem value="project">Project docs</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          <Select defaultValue="all">
-            <SelectTrigger className="w-full sm:w-45">
-              <SelectValue placeholder="Owner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">All owners</SelectItem>
-                <SelectItem value="owned-by-you">Owned by me</SelectItem>
-                <SelectItem value="shared">Shared with me</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          <Select defaultValue="updated">
-            <SelectTrigger className="w-full sm:w-45">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="updated">Recently updated</SelectItem>
-                <SelectItem value="created">Recently created</SelectItem>
-                <SelectItem value="title">Title</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          <Button variant="outline" className="w-full sm:w-auto">
-            <ListFilterIcon className="size-4" />
-            Filters
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
+          <Button variant="outline" className="justify-start" asChild>
+            <Link href="/recent">
+              <ClockIcon className="size-4" />
+              Recent
+            </Link>
+          </Button>
+          <Button variant="outline" className="justify-start" asChild>
+            <Link href="/projects">
+              <FolderIcon className="size-4" />
+              Projects
+            </Link>
+          </Button>
+          <Button variant="outline" className="justify-start" asChild>
+            <Link href="/trash">
+              <Trash2Icon className="size-4" />
+              Trash
+            </Link>
           </Button>
         </div>
       </div>

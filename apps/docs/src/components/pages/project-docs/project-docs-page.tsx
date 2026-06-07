@@ -1,20 +1,20 @@
 "use client";
 
 import { Badge } from "@zentro/ui/shadcn/badge";
-import { Button } from "@zentro/ui/shadcn/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@zentro/ui/shadcn/card";
-import { FileTextIcon, FolderIcon, PlusIcon } from "lucide-react";
+import { FileTextIcon, FolderIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 
 import { DocsListItem, formatDocDate, getDocTitle } from "../../../lib/docs";
+import { CreateDocModal } from "../home/create-doc-modal";
 
 type ProjectItem = {
   id: string;
@@ -76,18 +76,20 @@ export function ProjectDocsPage() {
   return (
     <section className="mx-auto flex w-full max-w-400 flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Project docs
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Browse documentation grouped by active project.
-          </p>
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+            <FolderIcon className="size-5" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Project docs
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Browse documentation grouped by active project.
+            </p>
+          </div>
         </div>
-        <Button>
-          <PlusIcon className="size-4" />
-          New project doc
-        </Button>
+        <CreateDocModal triggerLabel="New project doc" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -105,20 +107,24 @@ export function ProjectDocsPage() {
           : null}
 
         {!isLoading && !groups.length ? (
-          <div className="rounded-lg border px-4 py-12 text-center lg:col-span-2">
+          <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-12 text-center lg:col-span-2">
+            <FolderIcon className="mx-auto mb-3 size-10 text-muted-foreground" />
             <p className="text-sm font-medium">No project docs yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Attach docs to projects and they will be grouped here.
             </p>
+            <div className="mt-4">
+              <CreateDocModal triggerLabel="Create project doc" />
+            </div>
           </div>
         ) : null}
 
         {groups.map((group) => {
           return (
-            <Card key={group.id} className="rounded-lg">
+            <Card key={group.id} className="rounded-lg shadow-sm">
               <CardHeader className="border-b">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <div className="flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
                     <FolderIcon className="size-4" />
                   </div>
                   <div>
@@ -136,7 +142,7 @@ export function ProjectDocsPage() {
                   <Link
                     key={`${group.id}-${doc.id}`}
                     href={`/docs/${doc.slug}`}
-                    className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/30"
+                    className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3 transition-colors hover:bg-muted/30"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

@@ -20,47 +20,27 @@ import {
   SelectValue,
 } from "@zentro/ui/shadcn/select";
 import { Textarea } from "@zentro/ui/shadcn/textarea";
-import {
-  BookOpenIcon,
-  Code2Icon,
-  FileTextIcon,
-  PlusIcon,
-  SparklesIcon,
-} from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { ComponentProps, FormEvent } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 
 import { createDocSlug } from "../../../lib/docs";
 
-const templates = [
-  {
-    id: "blank",
-    title: "Blank page",
-    description: "Start from an empty document.",
-    icon: FileTextIcon,
-  },
-  {
-    id: "spec",
-    title: "Product spec",
-    description: "Problem, goals, scope, and decisions.",
-    icon: BookOpenIcon,
-  },
-  {
-    id: "api",
-    title: "API doc",
-    description: "Endpoints, examples, and errors.",
-    icon: Code2Icon,
-  },
-];
+type CreateDocModalProps = {
+  triggerLabel?: string;
+  triggerVariant?: ComponentProps<typeof Button>["variant"];
+};
 
-export function CreateDocModal() {
+export function CreateDocModal({
+  triggerLabel = "New doc",
+  triggerVariant,
+}: CreateDocModalProps) {
   const router = useRouter();
   const trpc = useTrpcClient();
-  const [selectedTemplate, setSelectedTemplate] = useState("blank");
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>(
     [],
@@ -128,16 +108,16 @@ export function CreateDocModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant={triggerVariant}>
           <PlusIcon className="size-4" />
-          New doc
+          {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Create doc</DialogTitle>
           <DialogDescription>
-            Create a page for decisions, specs, APIs, or handoff notes.
+            Start a workspace page and connect it to a project when needed.
           </DialogDescription>
         </DialogHeader>
 
@@ -147,7 +127,7 @@ export function CreateDocModal() {
               <Field>
                 <FieldLabel>Title</FieldLabel>
                 <Input
-                  placeholder="API documentation"
+                  placeholder="Untitled product note"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                 />
@@ -171,41 +151,14 @@ export function CreateDocModal() {
             </div>
 
             <Field>
-              <FieldLabel>Description</FieldLabel>
+              <FieldLabel>Initial content</FieldLabel>
               <Textarea
-                className="min-h-20"
-                placeholder="A short note about what this page covers."
+                className="min-h-28 resize-none"
+                placeholder="Add the first paragraph, or leave it blank."
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
               />
             </Field>
-
-            <div className="grid gap-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <SparklesIcon className="size-4 text-primary" />
-                Template
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    type="button"
-                    onClick={() => setSelectedTemplate(template.id)}
-                    className={`rounded-lg border p-3 text-left transition-colors ${
-                      selectedTemplate === template.id
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-muted/50"
-                    }`}
-                  >
-                    <template.icon className="mb-3 size-5 text-primary" />
-                    <p className="text-sm font-medium">{template.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {template.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
           </FieldGroup>
 
           <DialogFooter className="mt-6">
