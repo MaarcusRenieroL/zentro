@@ -20,7 +20,7 @@ export default async function DashboardLayout({
 
   return (
     <TooltipProvider>
-      <SidebarProvider defaultOpen={false}>
+      <SidebarProvider defaultOpen>
         <WorkspaceSidebar orgSlug={organization.slug} />
 
         <SidebarInset>

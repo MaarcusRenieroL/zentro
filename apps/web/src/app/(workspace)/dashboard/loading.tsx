@@ -61,14 +61,14 @@ export default function Loading() {
 
         <div className="w-full rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
           <Skeleton className="h-4 w-36" />
-          <div className="mt-5 grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-            {Array.from({ length: 3 }).map((_, index) => (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={index}
-                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 sm:justify-center sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0"
+                className="flex items-center gap-3 rounded-md border bg-background/60 p-3"
               >
                 <Skeleton className="size-5 shrink-0" />
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                   <Skeleton className="h-7 w-12" />
                   <Skeleton className="h-4 w-16" />
                 </div>
@@ -82,8 +82,8 @@ export default function Loading() {
         <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
           <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
             <Skeleton className="h-5 w-32" />
-            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, index) => (
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              {Array.from({ length: 3 }).map((_, index) => (
                 <Skeleton key={index} className="h-11 rounded-md" />
               ))}
             </div>

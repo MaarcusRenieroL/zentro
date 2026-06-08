@@ -1,80 +1,79 @@
 import { FC } from "react";
 import Link from "next/link";
 import { Button } from "@zentro/ui/components/shadcn/button";
-import { Checkbox } from "@zentro/ui/components/shadcn/checkbox";
-import { PlusIcon } from "lucide-react";
+import { CheckIcon, PlusIcon } from "lucide-react";
 
-export const TasksSection: FC = () => {
-  const myTasks = [
-    {
-      id: "1",
-      title: "Review landing page copy",
-      priority: "High",
-      completed: false,
-    },
-    {
-      id: "2",
-      title: "Finalize API integration",
-      priority: "High",
-      completed: false,
-    },
-    {
-      id: "3",
-      title: "Update user permissions",
-      priority: "Medium",
-      completed: false,
-    },
-    {
-      id: "4",
-      title: "Fix mobile navigation bug",
-      priority: "Low",
-      completed: false,
-    },
-  ];
+import type { DashboardTaskItem } from "~/src/lib/dashboard-data";
 
+type Props = {
+  tasks: DashboardTaskItem[];
+  tasksHref: string;
+};
+
+export const TasksSection: FC<Props> = ({ tasks, tasksHref }) => {
   return (
     <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-medium text-foreground">My tasks</h2>
         <Link
-          href="/tasks"
+          href={tasksHref}
           className="text-sm text-primary hover:text-primary/80"
         >
           View all
         </Link>
       </div>
-      <div className="divide-y divide-border">
-        {myTasks.map((task) => (
-          <div
-            key={task.id}
-            className="flex min-w-0 items-center gap-3 py-3 first:pt-0"
-          >
-            <Checkbox className="size-4 rounded border-border" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-foreground">{task.title}</p>
-            </div>
-            <span
-              className={`text-xs font-medium ${
-                task.priority === "High"
-                  ? "text-red-400"
-                  : task.priority === "Medium"
-                    ? "text-yellow-400"
-                    : "text-green-400"
-              } shrink-0`}
+      {tasks.length ? (
+        <div className="divide-y divide-border">
+          {tasks.map((task) => (
+            <Link
+              key={task.id}
+              href={task.href}
+              className="flex min-w-0 items-center gap-3 py-3 first:pt-0 hover:text-primary"
             >
-              {task.priority}
-            </span>
-          </div>
-        ))}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2 w-full justify-start px-0 text-sm font-normal text-primary hover:bg-transparent hover:text-primary/80"
-        >
-          <PlusIcon className="mr-1.5 size-3.5" />
-          Add task
-        </Button>
-      </div>
+              <span className="flex size-4 shrink-0 items-center justify-center rounded border border-border">
+                {task.status === "done" ? (
+                  <CheckIcon className="size-3" />
+                ) : null}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-foreground">{task.title}</p>
+              </div>
+              <span
+                className={`shrink-0 text-xs font-medium capitalize ${
+                  task.priority === "high"
+                    ? "text-red-400"
+                    : task.priority === "medium"
+                      ? "text-yellow-500"
+                      : "text-green-500"
+                }`}
+              >
+                {task.priority}
+              </span>
+            </Link>
+          ))}
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="mt-2 w-full justify-start px-0 text-sm font-normal text-primary hover:bg-transparent hover:text-primary/80"
+          >
+            <Link href={tasksHref}>
+              <PlusIcon className="mr-1.5 size-3.5" />
+              Add task
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-md border border-dashed bg-background/50 px-4 py-8 text-center">
+          <p className="text-sm font-medium">No tasks assigned</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Assigned or recently updated tasks will appear here.
+          </p>
+          <Button asChild variant="link" size="sm" className="mt-2">
+            <Link href={tasksHref}>Open tasks</Link>
+          </Button>
+        </div>
+      )}
     </section>
   );
 };

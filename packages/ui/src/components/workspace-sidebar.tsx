@@ -172,13 +172,13 @@ export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
       },
       {
         label: "Docs",
-        href: "/docs",
+        href: "/",
         icon: BookOpenIcon,
         app: "docs",
         children: [
           {
             label: "All docs",
-            href: "/docs",
+            href: "/",
             icon: FileTextIcon,
             app: "docs",
           },
@@ -448,7 +448,11 @@ export const WorkspaceSidebar: FC<WorkspaceSidebarProps> = ({
                                         pathname,
                                         child.href,
                                       )}
-                                      className="h-8"
+                                      className={
+                                        child.disabled
+                                          ? "h-8 text-sidebar-foreground/45 hover:bg-transparent hover:text-sidebar-foreground/45"
+                                          : "h-8"
+                                      }
                                     >
                                       <LinkComponent
                                         href={child.disabled ? "#" : child.href}
@@ -459,6 +463,11 @@ export const WorkspaceSidebar: FC<WorkspaceSidebarProps> = ({
                                       >
                                         <ChildIcon />
                                         <span>{child.label}</span>
+                                        {child.disabled ? (
+                                          <span className="ml-auto text-[0.62rem] font-medium text-sidebar-foreground/35">
+                                            {soonLabel}
+                                          </span>
+                                        ) : null}
                                       </LinkComponent>
                                     </SidebarMenuSubButton>
                                   </SidebarMenuSubItem>

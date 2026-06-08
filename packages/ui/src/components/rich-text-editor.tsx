@@ -30,7 +30,6 @@ import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
-import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
@@ -122,7 +121,6 @@ export function RichTextEditor({
           target: "_blank",
         },
       }),
-      Underline,
       Highlight,
       TaskList,
       TaskItem.configure({ nested: true }),
