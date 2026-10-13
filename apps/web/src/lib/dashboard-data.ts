@@ -175,8 +175,7 @@ export async function getDashboardData({
   const todayEnd = endOfToday();
   const workspaceUrl = (path: string) =>
     getOrgAppUrl({ orgSlug, app: "workspace", path });
-  const tasksUrl = (path: string) =>
-    getOrgAppUrl({ orgSlug, app: "tasks", path });
+  const tasksUrl = (path: string) => workspaceUrl(path);
   const docsUrl = (path: string) => workspaceUrl(path);
 
   const [

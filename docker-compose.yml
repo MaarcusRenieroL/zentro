@@ -85,22 +85,5 @@ services:
     depends_on:
       - authenticator
 
-  tasks:
-    profiles: [full]
-    build:
-      <<: *app-build
-      args:
-        APP: tasks
-        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
-        NEXT_PUBLIC_AUTHENTICATOR_URL: ${NEXT_PUBLIC_AUTHENTICATOR_URL:-http://localhost:3001}
-        AUTHENTICATOR_INTERNAL_URL: http://authenticator:3001
-    environment:
-      <<: *app-env
-      PORT: "3002"
-    ports:
-      - "3002:3002"
-    depends_on:
-      - authenticator
-
 volumes:
   pgdata:

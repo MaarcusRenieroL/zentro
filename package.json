@@ -9,7 +9,6 @@
     "check-types": "turbo run check-types",
     "validate": "pnpm lint && pnpm check-types && pnpm build",
     "dev:web": "turbo run dev --filter=@zentro/web",
-    "dev:tasks": "turbo run dev --filter=@zentro/tasks",
     "dev:authenticator": "turbo run dev --filter=@zentro/authenticator",
     "prepare": "husky"
   },

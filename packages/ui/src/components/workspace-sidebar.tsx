@@ -268,8 +268,8 @@ const appByPath: Record<string, WorkspaceSidebarApp> = {
   "/inbox": "workspace",
   "/notifications": "workspace",
   "/projects": "workspace",
-  "/tasks": "tasks",
-  "/calendar": "tasks",
+  "/tasks": "workspace",
+  "/calendar": "workspace",
   "/docs": "workspace",
   "/settings": "workspace",
 };
