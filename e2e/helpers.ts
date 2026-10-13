@@ -221,3 +221,43 @@ export async function registerUser(page: Page, label: string) {
 
   return { email };
 }
+
+/** Calls a tRPC mutation as the signed-in user of `page`. */
+export async function trpcMutation<T = unknown>(
+  page: Page,
+  path: string,
+  input: unknown,
+): Promise<T> {
+  const response = await page.request.post(`/api/trpc/${path}?batch=1`, {
+    data: { 0: { json: input } },
+  });
+
+  expect(response.ok(), `${path} failed`).toBe(true);
+
+  const body = (await response.json()) as Array<{
+    result: { data: { json: T } };
+  }>;
+
+  return body[0]!.result.data.json;
+}
+
+/** Calls a tRPC query as the signed-in user of `page`. */
+export async function trpcQuery<T = unknown>(
+  page: Page,
+  path: string,
+  input: unknown = null,
+): Promise<T> {
+  const response = await page.request.get(
+    `/api/trpc/${path}?batch=1&input=${encodeURIComponent(
+      JSON.stringify({ 0: { json: input } }),
+    )}`,
+  );
+
+  expect(response.ok(), `${path} failed`).toBe(true);
+
+  const body = (await response.json()) as Array<{
+    result: { data: { json: T } };
+  }>;
+
+  return body[0]!.result.data.json;
+}
