@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, inArray, lt } from "@zentro/db/drizzle";
+import { and, asc, count, desc, eq, inArray, lt, or } from "@zentro/db/drizzle";
 import {
   members,
   permissionChangeLogs,
@@ -7,6 +7,7 @@ import {
   projects,
   roleAssignments,
   roles,
+  teamMembers,
   teams,
   users,
 } from "@zentro/db/schema";
@@ -179,7 +180,23 @@ const isOwnerRole = (role: string) =>
     .map((part) => part.trim())
     .includes("owner");
 
-/** Self-service and owner protection shared by assignments and overrides. */
+const baseRank = { owner: 3, admin: 2, member: 1 } as const;
+
+function rankOf(role: string | null | undefined) {
+  const parts = (role ?? "").split(",").map((part) => part.trim());
+
+  if (parts.includes("owner")) return baseRank.owner;
+  if (parts.includes("admin")) return baseRank.admin;
+  if (parts.includes("member")) return baseRank.member;
+
+  return 0;
+}
+
+/**
+ * Self-service and rank protection shared by assignments and overrides: you
+ * cannot change your own access, an owner's access, or the access of someone
+ * who outranks you (an admin, when you are not one).
+ */
 async function assertMayModifyUser(ctx: OrganizationContext, userId: string) {
   if (userId === ctx.user.id) {
     throw forbidden("You cannot change your own roles or overrides.");
@@ -193,6 +210,49 @@ async function assertMayModifyUser(ctx: OrganizationContext, userId: string) {
 
   if (isOwnerRole(target.role)) {
     throw forbidden("An owner's access cannot be changed.");
+  }
+
+  const caller = await ctx.permissions.snapshot();
+
+  if (rankOf(target.role) > rankOf(caller.baseRole)) {
+    throw forbidden(
+      "You cannot change the access of someone with a higher role than yours.",
+    );
+  }
+}
+
+/**
+ * A team lead (who holds team-level management but not organization-wide role
+ * assignment) works within their own team only.
+ */
+async function assertTeamLeadBounds(
+  ctx: OrganizationContext,
+  teamId: string,
+  principal: { type: "user" | "team"; id: string },
+) {
+  if (await ctx.permissions.can("roles.assign")) {
+    return;
+  }
+
+  if (principal.type === "team") {
+    if (principal.id !== teamId) {
+      throw forbidden("You can only give roles to your own team.");
+    }
+
+    return;
+  }
+
+  const [membership] = await ctx.db
+    .select({ id: teamMembers.id })
+    .from(teamMembers)
+    .innerJoin(members, eq(members.id, teamMembers.memberId))
+    .where(
+      and(eq(teamMembers.teamId, teamId), eq(members.userId, principal.id)),
+    )
+    .limit(1);
+
+  if (!membership) {
+    throw forbidden("That person is not a member of this team.");
   }
 }
 
@@ -499,7 +559,7 @@ const assignmentsRouter = router({
       if (input?.scopeId)
         conditions.push(eq(roleAssignments.scopeId, input.scopeId));
 
-      const rows = await ctx.db
+      const allRows = await ctx.db
         .select({
           id: roleAssignments.id,
           roleId: roleAssignments.roleId,
@@ -514,6 +574,15 @@ const assignmentsRouter = router({
         .innerJoin(roles, eq(roles.id, roleAssignments.roleId))
         .where(and(...conditions))
         .orderBy(desc(roleAssignments.createdAt));
+      // Projects the caller cannot see (private, or another team's) stay out,
+      // names included.
+      const visibleProjects = new Set(
+        await ctx.permissions.viewableProjectIds("projects.view"),
+      );
+      const rows = allRows.filter(
+        (row) =>
+          row.scopeType !== "project" || visibleProjects.has(row.scopeId),
+      );
 
       const userIds = rows
         .filter((row) => row.principalType === "user")
@@ -571,6 +640,90 @@ const assignmentsRouter = router({
       }));
     }),
 
+  // For the team roles panel. A team lead has no organization-wide
+  // roles.view, so this answers from team-level management instead.
+  listForTeam: protectedProcedure
+    .meta({ permissions: ["roles.view", "teams.members.manage"] })
+    .input(z.object({ teamId: uuid }))
+    .query(async ({ ctx, input }) => {
+      const resource = await resolveScope(ctx, "team", input.teamId);
+
+      await assertAnyPermission(
+        ctx,
+        ["roles.view", "teams.members.manage"],
+        resource,
+      );
+
+      const rows = await ctx.db
+        .select({
+          id: roleAssignments.id,
+          roleId: roleAssignments.roleId,
+          roleName: roles.name,
+          principalType: roleAssignments.principalType,
+          principalId: roleAssignments.principalId,
+          scopeType: roleAssignments.scopeType,
+          scopeId: roleAssignments.scopeId,
+        })
+        .from(roleAssignments)
+        .innerJoin(roles, eq(roles.id, roleAssignments.roleId))
+        .where(
+          and(
+            eq(roleAssignments.organizationId, ctx.activeOrganization.id),
+            or(
+              and(
+                eq(roleAssignments.scopeType, "team"),
+                eq(roleAssignments.scopeId, input.teamId),
+              ),
+              and(
+                eq(roleAssignments.principalType, "team"),
+                eq(roleAssignments.principalId, input.teamId),
+              ),
+            ),
+          ),
+        )
+        .orderBy(desc(roleAssignments.createdAt));
+      const userIds = rows
+        .filter((row) => row.principalType === "user")
+        .map((row) => row.principalId);
+      const [userRows, teamRoles] = await Promise.all([
+        userIds.length
+          ? ctx.db
+              .select({ id: users.id, name: users.name, email: users.email })
+              .from(users)
+              .where(inArray(users.id, userIds))
+          : [],
+        ctx.db
+          .select({ id: roles.id, name: roles.name })
+          .from(roles)
+          .where(
+            and(
+              eq(roles.organizationId, ctx.activeOrganization.id),
+              eq(roles.scope, "team"),
+            ),
+          )
+          .orderBy(asc(roles.name)),
+      ]);
+
+      return {
+        teamRoles,
+        assignments: rows.map((row) => {
+          const user = userRows.find((item) => item.id === row.principalId);
+
+          return {
+            ...row,
+            principalName:
+              row.principalType === "user"
+                ? (user?.name ?? user?.email ?? "Unknown user")
+                : "Whole team",
+            scopeName:
+              row.scopeType === "organization"
+                ? ctx.activeOrganization.name
+                : "This team",
+          };
+        }),
+      };
+    }),
+
   assign: protectedProcedure
     .meta({
       permissions: [
@@ -611,6 +764,13 @@ const assignmentsRouter = router({
           code: "BAD_REQUEST",
           message:
             "Owner, Admin and Member are base roles; change them from the members page.",
+        });
+      }
+
+      if (input.scopeType === "team") {
+        await assertTeamLeadBounds(ctx, input.scopeId, {
+          type: input.principalType,
+          id: input.principalId,
         });
       }
 
@@ -744,11 +904,19 @@ const overridesRouter = router({
         conditions.push(eq(permissionOverrides.userId, input.userId));
       }
 
-      return ctx.db
+      const rows = await ctx.db
         .select()
         .from(permissionOverrides)
         .where(and(...conditions))
         .orderBy(desc(permissionOverrides.createdAt));
+      const visibleProjects = new Set(
+        await ctx.permissions.viewableProjectIds("projects.view"),
+      );
+
+      return rows.filter(
+        (row) =>
+          row.scopeType !== "project" || visibleProjects.has(row.scopeId),
+      );
     }),
 
   set: protectedProcedure
@@ -1014,13 +1182,26 @@ export const permissionsRouter = router({
 
     return {
       baseRole: snapshot.baseRole,
+      userId: snapshot.userId,
       permissions: permissionMap(snapshot, {}),
+      // Held organization-wide or in at least one project or team; decides
+      // which modules and routes the caller sees.
+      reachable: await ctx.permissions.reachable(
+        getCatalog().map((entry) => entry.key),
+      ),
     };
   }),
 
-  // The caller's permissions for one project or team.
+  // The caller's permissions for one project or team. `ownerUserId` is the
+  // creator of the item on screen, so `_own` permissions resolve for it.
   check: protectedProcedure
-    .input(z.object({ projectId: uuid.optional(), teamId: uuid.optional() }))
+    .input(
+      z.object({
+        projectId: uuid.optional(),
+        teamId: uuid.optional(),
+        ownerUserId: uuid.optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const snapshot = await ctx.permissions.snapshot();
       const project = input.projectId
@@ -1031,6 +1212,7 @@ export const permissionsRouter = router({
         permissions: permissionMap(snapshot, {
           project,
           teamId: input.teamId ?? null,
+          ownerUserId: input.ownerUserId ?? null,
         }),
       };
     }),

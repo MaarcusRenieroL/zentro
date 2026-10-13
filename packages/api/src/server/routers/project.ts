@@ -10,7 +10,7 @@ import {
 } from "../../types/zod-schema";
 import { listProcedure, permissionProcedure, router } from "../trpc";
 import { assignCreatorLeadRole, logPermissionChange } from "../access";
-import { projectBySlug } from "../resources";
+import { loadProjectBySlug, projectBySlug } from "../resources";
 import {
   docs,
   members,
@@ -249,39 +249,71 @@ export const projectRouter = router({
         });
       }
 
-      const [memberCount] = await db
-        .select({ count: count() })
-        .from(members)
-        .where(eq(members.organizationId, activeOrganization.id));
+      // Counts only cover what the caller may see inside the project.
+      const access = (await loadProjectBySlug(ctx, slug)) ?? null;
+      const canSeeTasks = await ctx.permissions.can("tasks.view", {
+        project: access,
+      });
+      const canSeeDocs = await ctx.permissions.can("docs.view", {
+        project: access,
+      });
 
-      const [taskCounts] = await db
-        .select({
-          total: count(),
-          open: sql<number>`count(*) filter (where ${tasks.status} <> 'done')`.mapWith(
-            Number,
-          ),
-        })
-        .from(tasks)
-        .innerJoin(projects, eq(projects.id, tasks.projectId))
-        .where(
-          and(
-            eq(projects.slug, slug),
-            eq(tasks.organizationId, activeOrganization.id),
-            isNull(tasks.deletedAt),
-          ),
-        );
+      // The organization's headcount is for people who may see members;
+      // everyone else sees the people with a role on this project.
+      const [memberCount] = (await ctx.permissions.can("members.view"))
+        ? await db
+            .select({ count: count() })
+            .from(members)
+            .where(eq(members.organizationId, activeOrganization.id))
+        : await db
+            .select({
+              count:
+                sql<number>`count(distinct ${roleAssignments.principalId})`.mapWith(
+                  Number,
+                ),
+            })
+            .from(roleAssignments)
+            .where(
+              and(
+                eq(roleAssignments.organizationId, activeOrganization.id),
+                eq(roleAssignments.scopeType, "project"),
+                eq(roleAssignments.scopeId, project.id),
+                eq(roleAssignments.principalType, "user"),
+              ),
+            );
 
-      const [docCount] = await db
-        .select({ total: count() })
-        .from(docs)
-        .innerJoin(projects, eq(projects.id, docs.projectId))
-        .where(
-          and(
-            eq(projects.slug, slug),
-            eq(docs.organizationId, activeOrganization.id),
-            isNull(docs.deletedAt),
-          ),
-        );
+      const [taskCounts] = canSeeTasks
+        ? await db
+            .select({
+              total: count(),
+              open: sql<number>`count(*) filter (where ${tasks.status} <> 'done')`.mapWith(
+                Number,
+              ),
+            })
+            .from(tasks)
+            .innerJoin(projects, eq(projects.id, tasks.projectId))
+            .where(
+              and(
+                eq(projects.slug, slug),
+                eq(tasks.organizationId, activeOrganization.id),
+                isNull(tasks.deletedAt),
+              ),
+            )
+        : [];
+
+      const [docCount] = canSeeDocs
+        ? await db
+            .select({ total: count() })
+            .from(docs)
+            .innerJoin(projects, eq(projects.id, docs.projectId))
+            .where(
+              and(
+                eq(projects.slug, slug),
+                eq(docs.organizationId, activeOrganization.id),
+                isNull(docs.deletedAt),
+              ),
+            )
+        : [];
 
       return {
         ...project,

@@ -20,16 +20,31 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>): Promise<JSX.Element> {
-  const { organization, organizations, session, enabledModules, snapshot } =
-    await getDashboardContext();
+  const {
+    organization,
+    organizations,
+    session,
+    enabledModules,
+    snapshot,
+    reachable,
+  } = await getDashboardContext();
   const permissions = effectivePermissions(snapshot, getCatalogKeys());
+  // Navigation follows what the user can reach, so a role on a single project
+  // still shows Projects, Tasks and Docs.
   const sections = filterNavSections(
     buildNavSections(new Set(enabledModules)),
-    (key) => permissions[key] ?? false,
+    (key) => reachable[key] ?? false,
   );
 
   return (
-    <PermissionProvider value={{ baseRole: snapshot.baseRole, permissions }}>
+    <PermissionProvider
+      value={{
+        baseRole: snapshot.baseRole,
+        userId: snapshot.userId,
+        permissions,
+        reachable,
+      }}
+    >
       <TooltipProvider>
         <SidebarProvider defaultOpen>
           <WorkspaceSidebar sections={sections} />

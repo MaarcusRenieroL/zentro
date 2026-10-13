@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 
-import { requireModule } from "~/src/lib/dashboard-context";
+import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
+import { getModuleAccess, requireModule } from "~/src/lib/dashboard-context";
 
 export default async function TasksLayout({
   children,
@@ -9,5 +10,11 @@ export default async function TasksLayout({
 }>) {
   await requireModule("tasks");
 
-  return children;
+  // A role on a single project or team is enough to open the module; the
+  // pages then show only what the user can see.
+  return (
+    <AuthorizationBoundary isAllowed={await getModuleAccess("tasks.view")}>
+      {children}
+    </AuthorizationBoundary>
+  );
 }

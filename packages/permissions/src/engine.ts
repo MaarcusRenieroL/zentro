@@ -436,5 +436,33 @@ export function effectivePermissions(
   );
 }
 
+/**
+ * Whether each key is reachable somewhere: granted organization-wide, or in at
+ * least one project or team the user can work in. Decides which modules and
+ * routes a person sees; the server still decides every request.
+ */
+export function reachablePermissions(
+  snapshot: PermissionSnapshot,
+  projectList: readonly ProjectAccessInfo[],
+  keys: readonly string[],
+) {
+  const teamIds = Array.from(
+    new Set(
+      snapshot.assignments
+        .filter((assignment) => assignment.scopeType === "team")
+        .map((assignment) => assignment.scopeId),
+    ),
+  );
+
+  return Object.fromEntries(
+    keys.map((key) => [
+      key,
+      can(snapshot, key) ||
+        projectList.some((project) => can(snapshot, key, { project })) ||
+        teamIds.some((teamId) => can(snapshot, key, { teamId })),
+    ]),
+  ) as Record<string, boolean>;
+}
+
 /** Keys the engine itself applies inside every project-scoped check. */
 export const engineEnforcedKeys = ["projects.view_private"] as const;

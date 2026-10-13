@@ -1,6 +1,6 @@
 "use client";
 
-import { usePermission } from "~/src/components/permissions/permission-provider";
+import { useReachable } from "~/src/components/permissions/permission-provider";
 import { paths } from "~/src/lib/paths";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
@@ -66,7 +66,8 @@ function CreateDocModalInner({
         const [projectList, teamList] = await Promise.all([
           // Docs work without the Projects module.
           trpc.project.getProjectsByOrgId.query().catch(() => []),
-          trpc.team.getAll.query(),
+          // Needs teams.view; without it the doc simply has no team to pick.
+          trpc.team.getAll.query().catch(() => []),
         ]);
 
         if (isMounted) {
@@ -221,7 +222,8 @@ function CreateDocModalInner({
 }
 
 export function CreateDocModal(props: CreateDocModalProps) {
-  const canCreate = usePermission("docs.create");
+  // A role on one project is enough; the server checks each project.
+  const canCreate = useReachable("docs.create");
 
   return canCreate ? <CreateDocModalInner {...props} /> : null;
 }

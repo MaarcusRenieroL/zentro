@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { defineConfig } from "vitest/config";
 
 // Relative import: the config is bundled by Vite, which would otherwise try to
@@ -13,6 +15,10 @@ const testDatabaseUrl = getTestDatabaseUrl();
 assertTestDatabaseUrl(testDatabaseUrl);
 
 export default defineConfig({
+  resolve: {
+    // The web app's `~/` imports, for the tests that exercise its server code.
+    alias: { "~": path.resolve(import.meta.dirname, "../../apps/web") },
+  },
   test: {
     include: ["test/**/*.test.ts"],
     globalSetup: ["./test/global-setup.ts"],

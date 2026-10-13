@@ -5,9 +5,13 @@ import { redirect } from "next/navigation";
 import { auth } from "@zentro/auth";
 import { loadEnabledModules, loadPermissionSnapshot } from "@zentro/api/server";
 import { db } from "@zentro/db";
+import { and, eq, isNull } from "@zentro/db/drizzle";
+import { projects } from "@zentro/db/schema";
 import type { ModuleId } from "@zentro/modules";
 import {
   can as engineCan,
+  getCatalogKeys,
+  reachablePermissions,
   type PermissionSnapshot,
   type ResourceContext,
 } from "@zentro/permissions";
@@ -48,7 +52,9 @@ export async function getAuthorizedDashboardContext(permission: string) {
   return {
     ...context,
     authorization: {
-      isAllowed: context.can(permission),
+      // Reachable, not just held organization-wide: a role on one project or
+      // team is enough to open the area it covers.
+      isAllowed: context.reachable[permission] ?? false,
       permission,
     },
   };
@@ -111,6 +117,26 @@ export const getDashboardContext = cache(async () => {
     ...(await loadEnabledModules(db, organization.id)),
   ] as ModuleId[];
 
+  const projectList = await db
+    .select({
+      id: projects.id,
+      teamId: projects.teamId,
+      visibility: projects.visibility,
+    })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.organizationId, organization.id),
+        isNull(projects.deletedAt),
+      ),
+    );
+  // Which permissions the user holds anywhere, for navigation and route guards.
+  const reachable = reachablePermissions(
+    snapshot,
+    projectList,
+    getCatalogKeys(),
+  );
+
   return {
     organization,
     organizations,
@@ -121,11 +147,22 @@ export const getDashboardContext = cache(async () => {
     },
     session: sessionWithUser,
     permissions: toPermissionFlags(snapshot),
+    reachable,
     snapshot,
     can: (key: string, resource?: ResourceContext) =>
       engineCan(snapshot, key, resource),
   };
 });
+
+/**
+ * Whether the user can reach a module's pages at all: the permission is held
+ * organization-wide or through a role on a project or team.
+ */
+export async function getModuleAccess(permission: string) {
+  const { reachable } = await getDashboardContext();
+
+  return reachable[permission] ?? false;
+}
 
 /**
  * Route guard for toggleable modules. A turned-off module never renders; the

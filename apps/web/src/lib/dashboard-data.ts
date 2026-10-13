@@ -1,5 +1,9 @@
 import { db } from "@zentro/db";
-import { can, type PermissionSnapshot } from "@zentro/permissions";
+import {
+  can,
+  reachablePermissions,
+  type PermissionSnapshot,
+} from "@zentro/permissions";
 import {
   and,
   asc,
@@ -196,6 +200,17 @@ export async function getDashboardData({
         isNull(projects.deletedAt),
       ),
     );
+  // What the caller can reach anywhere: organization-wide, or through a role
+  // on a project or team. A project-only person still gets their links.
+  const reachable = reachablePermissions(snapshot, projectRows, [
+    "projects.view",
+    "tasks.view",
+    "tasks.create",
+    "docs.view",
+    "docs.create",
+    "members.view",
+    "teams.view",
+  ]);
   const idsFor = (key: string) =>
     projectRows
       .filter((project) => can(snapshot, key, { project }))
@@ -209,9 +224,23 @@ export async function getDashboardData({
   const tasksVisible = taskProjectIds.length
     ? inArray(tasks.projectId, taskProjectIds)
     : sql`false`;
+  const docsEverywhere = can(snapshot, "docs.view");
+  // A role given on a team covers that team's docs outside any project.
+  const docTeamIds = docsEverywhere
+    ? []
+    : Array.from(
+        new Set(
+          snapshot.assignments
+            .filter((assignment) => assignment.scopeType === "team")
+            .map((assignment) => assignment.scopeId),
+        ),
+      ).filter((teamId) => can(snapshot, "docs.view", { teamId }));
   const docsVisible =
     or(
-      can(snapshot, "docs.view") ? isNull(docs.projectId) : undefined,
+      docsEverywhere ? isNull(docs.projectId) : undefined,
+      docTeamIds.length
+        ? and(isNull(docs.projectId), inArray(docs.teamId, docTeamIds))
+        : undefined,
       docProjectIds.length ? inArray(docs.projectId, docProjectIds) : undefined,
     ) ?? sql`false`;
 
@@ -421,6 +450,7 @@ export async function getDashboardData({
           and(
             eq(taskActivityEvents.organizationId, organizationId),
             tasksVisible,
+            isNull(tasks.deletedAt),
           ),
         )
         .orderBy(desc(taskActivityEvents.createdAt))
@@ -536,7 +566,9 @@ export async function getDashboardData({
         : []),
     ],
     workspaceStats: [
-      { value: memberCount[0]?.count ?? 0, label: "Members" },
+      ...(reachable["members.view"]
+        ? [{ value: memberCount[0]?.count ?? 0, label: "Members" }]
+        : []),
       ...(modules.projects
         ? [
             {
@@ -557,28 +589,28 @@ export async function getDashboardData({
       ...(modules.docs
         ? [{ value: docCount[0]?.count ?? 0, label: "Docs" }]
         : []),
-      { value: teamCount[0]?.count ?? 0, label: "Teams" },
+      ...(reachable["teams.view"]
+        ? [{ value: teamCount[0]?.count ?? 0, label: "Teams" }]
+        : []),
     ],
     recentWork,
     recentActivity,
     tasks: taskItems,
     modules,
     links: {
-      ...(modules.docs && can(snapshot, "docs.view")
+      ...(modules.docs && reachable["docs.view"]
         ? {
             docs: paths.docs(),
-            ...(can(snapshot, "docs.create") ? { newDoc: paths.docs() } : {}),
+            ...(reachable["docs.create"] ? { newDoc: paths.docs() } : {}),
           }
         : {}),
-      ...(modules.projects && can(snapshot, "projects.view")
+      ...(modules.projects && reachable["projects.view"]
         ? { projects: paths.projects() }
         : {}),
-      ...(modules.tasks && can(snapshot, "tasks.view")
+      ...(modules.tasks && reachable["tasks.view"]
         ? {
             tasks: paths.tasks(),
-            ...(can(snapshot, "tasks.create")
-              ? { newTask: paths.tasks() }
-              : {}),
+            ...(reachable["tasks.create"] ? { newTask: paths.tasks() } : {}),
           }
         : {}),
     },

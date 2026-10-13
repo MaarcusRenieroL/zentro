@@ -612,9 +612,10 @@ describe("project visibility", () => {
   });
 
   it("hidden projects and their contents look like they do not exist", async () => {
+    // Same answer as an unknown key, so keys cannot be probed.
     await expect(
       outsider.task.getTaskByKey({ key: "VP-1" }),
-    ).rejects.toMatchObject(notFound);
+    ).resolves.toBeUndefined();
     await expect(
       outsider.docs.getBySlug({ slug: "p-doc" }),
     ).rejects.toMatchObject(notFound);

@@ -568,7 +568,12 @@ export function NotionEditorPage({ slug }: { slug: string }) {
     },
   });
 
-  const docResource = { projectId: doc?.projectId ?? undefined };
+  const docResource = {
+    projectId: doc?.projectId ?? undefined,
+    teamId: doc?.teamId ?? undefined,
+    // `_own` edit and trash rights apply to docs the user created.
+    ownerUserId: doc?.createdByUserId ?? null,
+  };
   const canEdit = useAnyPermission(
     ["docs.update_any", "docs.update_own"],
     docResource,

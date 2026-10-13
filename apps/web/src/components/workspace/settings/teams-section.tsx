@@ -166,11 +166,11 @@ type TeamDialogProps = {
   mode: "create" | "edit";
   open: boolean;
   saving: boolean;
-  canManageMembers: boolean;
   teamId: string | null;
   onChange: (form: TeamFormState) => void;
   onOpenChange: (open: boolean) => void;
-  onSubmit: () => void;
+  /** What the person may change, so only that is saved. */
+  onSubmit: (changes: { details: boolean; members: boolean }) => void;
 };
 
 function TeamDialog({
@@ -179,7 +179,6 @@ function TeamDialog({
   mode,
   open,
   saving,
-  canManageMembers,
   teamId,
   onChange,
   onOpenChange,
@@ -190,7 +189,12 @@ function TeamDialog({
     [availableMembers],
   );
 
+  // Rights on this team: a team lead holds them for their own team only.
+  const scope = mode === "edit" && teamId ? { teamId } : undefined;
   const canViewRoles = usePermission("roles.view");
+  const canManageMembers = usePermission("teams.members.manage", scope);
+  const canUpdateTeam = usePermission("teams.update", scope);
+  const canEditDetails = mode === "create" || canUpdateTeam;
 
   function toggleMember(memberId: string) {
     if (!canManageMembers) {
@@ -223,6 +227,7 @@ function TeamDialog({
             <Label htmlFor="team-name">Name</Label>
             <Input
               id="team-name"
+              disabled={!canEditDetails}
               value={form.name}
               placeholder="Design"
               onChange={(event) =>
@@ -235,6 +240,7 @@ function TeamDialog({
             <Label htmlFor="team-description">Description</Label>
             <Textarea
               id="team-description"
+              disabled={!canEditDetails}
               className="min-h-24 resize-none"
               value={form.description}
               placeholder="What does this team own?"
@@ -251,6 +257,7 @@ function TeamDialog({
                 <button
                   key={teamColor.value}
                   type="button"
+                  disabled={!canEditDetails}
                   className={cn(
                     "flex h-8 items-center gap-2 rounded-md border px-2.5 text-sm transition-colors hover:bg-muted",
                     form.color === teamColor.value && "border-foreground",
@@ -312,7 +319,7 @@ function TeamDialog({
               </p>
             ) : null}
           </div>
-          {mode === "edit" && teamId && canViewRoles ? (
+          {mode === "edit" && teamId && (canViewRoles || canManageMembers) ? (
             <TeamRolesPanel
               teamId={teamId}
               members={sortedMembers
@@ -331,7 +338,12 @@ function TeamDialog({
           </Button>
           <Button
             disabled={saving || form.name.trim().length < 2}
-            onClick={onSubmit}
+            onClick={() =>
+              onSubmit({
+                details: canEditDetails,
+                members: mode === "create" || canManageMembers,
+              })
+            }
           >
             {saving
               ? mode === "create"
@@ -344,6 +356,53 @@ function TeamDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** The buttons of one team card, judged by what the person may do to it. */
+function TeamActions({
+  teamId,
+  onEdit,
+  onDelete,
+}: {
+  teamId: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const canUpdate = usePermission("teams.update", { teamId });
+  const canManageMembers = usePermission("teams.members.manage", { teamId });
+  const canDelete = usePermission("teams.delete", { teamId });
+
+  return (
+    <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={!canUpdate}
+        onClick={onEdit}
+      >
+        <Edit3Icon className="size-4" />
+        Edit
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={!canManageMembers}
+        onClick={onEdit}
+      >
+        <UserPlusIcon className="size-4" />
+        Members
+      </Button>
+      <Button
+        variant="destructive"
+        size="sm"
+        disabled={!canDelete}
+        onClick={onDelete}
+      >
+        <Trash2Icon className="size-4" />
+        Delete
+      </Button>
+    </div>
   );
 }
 
@@ -475,7 +534,7 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
     setDialogOpen(true);
   }
 
-  async function saveTeam() {
+  async function saveTeam(changes: { details: boolean; members: boolean }) {
     try {
       setSaving(true);
 
@@ -488,16 +547,21 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
         });
         toastSuccess("Team created");
       } else if (editingTeamId) {
-        await trpc.team.update.mutate({
-          id: editingTeamId,
-          name: form.name,
-          description: form.description,
-          color: form.color,
-        });
-        await trpc.team.updateMembers.mutate({
-          teamId: editingTeamId,
-          memberIds: form.memberIds,
-        });
+        if (changes.details) {
+          await trpc.team.update.mutate({
+            id: editingTeamId,
+            name: form.name,
+            description: form.description,
+            color: form.color,
+          });
+        }
+
+        if (changes.members) {
+          await trpc.team.updateMembers.mutate({
+            teamId: editingTeamId,
+            memberIds: form.memberIds,
+          });
+        }
         toastSuccess("Team updated");
       }
 
@@ -667,35 +731,11 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!permissions.canUpdateTeams}
-                    onClick={() => openEditDialog(team)}
-                  >
-                    <Edit3Icon className="size-4" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!permissions.canManageTeamMembers}
-                    onClick={() => openEditDialog(team)}
-                  >
-                    <UserPlusIcon className="size-4" />
-                    Members
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={!permissions.canDeleteTeams}
-                    onClick={() => setTeamToDelete(team)}
-                  >
-                    <Trash2Icon className="size-4" />
-                    Delete
-                  </Button>
-                </div>
+                <TeamActions
+                  teamId={team.id}
+                  onEdit={() => openEditDialog(team)}
+                  onDelete={() => setTeamToDelete(team)}
+                />
               </CardContent>
             </Card>
           ))}
@@ -726,7 +766,6 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
 
       <TeamDialog
         availableMembers={availableMembers}
-        canManageMembers={permissions.canManageTeamMembers}
         teamId={editingTeamId}
         form={form}
         mode={dialogMode}

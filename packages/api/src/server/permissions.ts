@@ -12,6 +12,7 @@ import {
 import {
   can as engineCan,
   check as engineCheck,
+  reachablePermissions,
   type BaseRole,
   type Decision,
   type PermissionSnapshot,
@@ -126,6 +127,10 @@ export type PermissionContext = {
   projects(): Promise<ProjectAccessInfo[]>;
   /** Ids of the projects where the caller holds `key` (and may see the project). */
   viewableProjectIds(key: string): Promise<string[]>;
+  /** Ids of the teams where the caller holds `key` through a team-scope role. */
+  teamIdsWith(key: string): Promise<string[]>;
+  /** Whether `key` is held organization-wide, or in any project or team. */
+  reachable(keys: readonly string[]): Promise<Record<string, boolean>>;
 };
 
 /** Loads the caller's snapshot once per request and answers checks from it. */
@@ -184,6 +189,21 @@ export function createPermissionContext(
       return (await projectList())
         .filter((project) => engineCan(current, key, { project }))
         .map((project) => project.id);
+    },
+    async teamIdsWith(key) {
+      const current = await snapshot();
+      const teamIds = new Set(
+        current.assignments
+          .filter((assignment) => assignment.scopeType === "team")
+          .map((assignment) => assignment.scopeId),
+      );
+
+      return [...teamIds].filter((teamId) =>
+        engineCan(current, key, { teamId }),
+      );
+    },
+    async reachable(keys) {
+      return reachablePermissions(await snapshot(), await projectList(), keys);
     },
   };
 }

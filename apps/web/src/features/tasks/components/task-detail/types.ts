@@ -13,8 +13,11 @@ export type TaskDetail = {
   priority: string;
   assignedToMemberId: string | null;
   assignee: string | null;
+  teamId: string | null;
   teamName: string | null;
   reporter: string | null;
+  /** Who created the task; `_own` permissions apply to this person. */
+  createdByUserId: string | null;
   due: Date | null;
   completedAt: Date | null;
   createdAt: Date;

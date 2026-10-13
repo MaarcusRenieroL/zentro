@@ -19,7 +19,11 @@ export type PermissionMap = Record<string, boolean>;
 
 type PermissionContextValue = {
   baseRole: string | null;
+  userId?: string;
+  /** Held organization-wide. */
   permissions: PermissionMap;
+  /** Held organization-wide, or in at least one project or team. */
+  reachable?: PermissionMap;
 };
 
 const PermissionContext = createContext<PermissionContextValue>({
@@ -27,7 +31,12 @@ const PermissionContext = createContext<PermissionContextValue>({
   permissions: {},
 });
 
-export type PermissionResource = { projectId?: string; teamId?: string };
+export type PermissionResource = {
+  projectId?: string;
+  teamId?: string;
+  /** The user who created the item on screen, so `_own` permissions resolve. */
+  ownerUserId?: string | null;
+};
 
 // Scoped answers (for one project or team) are fetched once and shared.
 const scopedCache = new Map<string, Promise<PermissionMap>>();
@@ -50,8 +59,28 @@ export function usePermissionMap() {
   return useContext(PermissionContext).permissions;
 }
 
+/**
+ * Whether the user holds a permission anywhere: organization-wide, or through
+ * a role on a project or team. Use it to decide if an area is worth showing.
+ */
+export function useReachable(key: string) {
+  const { permissions, reachable } = useContext(PermissionContext);
+
+  return (reachable ?? permissions)[key] ?? false;
+}
+
+export function useCurrentUserId() {
+  return useContext(PermissionContext).userId;
+}
+
 export function useBaseRole() {
   return useContext(PermissionContext).baseRole;
+}
+
+function isScoped(resource?: PermissionResource) {
+  return Boolean(
+    resource?.projectId || resource?.teamId || resource?.ownerUserId,
+  );
 }
 
 function useScopedPermissions(resource?: PermissionResource) {
@@ -59,18 +88,19 @@ function useScopedPermissions(resource?: PermissionResource) {
   const [scoped, setScoped] = useState<PermissionMap | null>(null);
   const projectId = resource?.projectId;
   const teamId = resource?.teamId;
+  const ownerUserId = resource?.ownerUserId ?? undefined;
 
   useEffect(() => {
-    if (!projectId && !teamId) {
+    if (!projectId && !teamId && !ownerUserId) {
       return;
     }
 
     let isMounted = true;
-    const cacheKey = `${projectId ?? ""}:${teamId ?? ""}`;
+    const cacheKey = `${projectId ?? ""}:${teamId ?? ""}:${ownerUserId ?? ""}`;
     const request =
       scopedCache.get(cacheKey) ??
       trpc.permissions.check
-        .query({ projectId, teamId })
+        .query({ projectId, teamId, ownerUserId })
         .then((result) => result.permissions);
 
     scopedCache.set(cacheKey, request);
@@ -83,7 +113,7 @@ function useScopedPermissions(resource?: PermissionResource) {
     return () => {
       isMounted = false;
     };
-  }, [projectId, teamId, trpc]);
+  }, [projectId, teamId, ownerUserId, trpc]);
 
   return scoped;
 }
@@ -96,7 +126,7 @@ export function usePermission(key: string, resource?: PermissionResource) {
   const { permissions } = useContext(PermissionContext);
   const scoped = useScopedPermissions(resource);
 
-  if (resource && (resource.projectId || resource.teamId)) {
+  if (isScoped(resource)) {
     return scoped?.[key] ?? false;
   }
 
@@ -110,8 +140,7 @@ export function useAnyPermission(
 ) {
   const { permissions } = useContext(PermissionContext);
   const scoped = useScopedPermissions(resource);
-  const source =
-    resource && (resource.projectId || resource.teamId) ? scoped : permissions;
+  const source = isScoped(resource) ? scoped : permissions;
 
   return keys.some((key) => source?.[key] ?? false);
 }

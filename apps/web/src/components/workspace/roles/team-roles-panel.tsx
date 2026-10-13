@@ -21,8 +21,10 @@ type Row = {
   id: string;
   roleName: string;
   principalType: "user" | "team";
+  principalId: string;
   principalName: string;
   scopeType: "organization" | "team" | "project";
+  scopeId: string;
   scopeName: string;
 };
 type Role = {
@@ -38,33 +40,42 @@ export const TeamRolesPanel: FC<{
   members: Array<{ userId: string; name: string }>;
 }> = ({ teamId, members }) => {
   const trpc = useTrpcClient();
+  // Organization-wide rights, for roles that cover the whole team.
+  const canViewRoles = usePermission("roles.view");
   const canAssignOrg = usePermission("roles.assign");
-  const canAssignTeam = usePermission("teams.members.manage", { teamId });
+  // A team lead holds these for their own team only.
+  const canManageTeam = usePermission("teams.members.manage", { teamId });
+  const canAssignTeamRoles = usePermission("roles.assign", { teamId });
+  const canAssignTeam = canManageTeam || canAssignTeamRoles;
   const [rows, setRows] = useState<Row[]>([]);
-  const [roleList, setRoleList] = useState<Role[]>([]);
+  const [teamRoles, setTeamRoles] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [orgRoles, setOrgRoles] = useState<Role[]>([]);
+  const [organizationId, setOrganizationId] = useState("");
   const [orgRoleId, setOrgRoleId] = useState("");
   const [memberId, setMemberId] = useState("");
   const [teamRoleId, setTeamRoleId] = useState("");
 
   const load = useCallback(async () => {
+    // Answers from team-level management, so leads need no roles.view.
     const [assigned, available] = await Promise.all([
-      trpcResult(trpc.permissions.assignments.list.query()),
-      trpcResult(trpc.permissions.roles.list.query()),
+      trpcResult(trpc.permissions.assignments.listForTeam.query({ teamId })),
+      canViewRoles && canAssignOrg
+        ? trpcResult(trpc.permissions.roles.list.query())
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
-    setRoleList((available.data ?? []) as Role[]);
-    setRows(
-      (
-        (assigned.data ?? []) as Array<
-          Row & { principalId: string; scopeId: string }
-        >
-      ).filter(
-        (row) =>
-          (row.principalType === "team" && row.principalId === teamId) ||
-          (row.scopeType === "team" && row.scopeId === teamId),
-      ),
+    setTeamRoles(assigned.data?.teamRoles ?? []);
+    setRows((assigned.data?.assignments ?? []) as Row[]);
+
+    const organizationRoles = (available.data ?? []) as Role[];
+
+    setOrgRoles(
+      organizationRoles.filter((role) => role.scope === "organization"),
     );
-  }, [trpc, teamId]);
+    setOrganizationId(organizationRoles[0]?.organizationId ?? "");
+  }, [trpc, teamId, canViewRoles, canAssignOrg]);
 
   useEffect(() => {
     void load();
@@ -82,8 +93,6 @@ export const TeamRolesPanel: FC<{
     toastSuccess(message);
     await load();
   };
-
-  const organizationId = roleList[0]?.organizationId ?? "";
 
   return (
     <div className="space-y-3" data-testid="team-roles-panel">
@@ -104,7 +113,7 @@ export const TeamRolesPanel: FC<{
                     : row.principalName}
                 </span>
               </span>
-              {canAssignOrg || canAssignTeam ? (
+              {canAssignTeam || canAssignOrg ? (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -129,20 +138,18 @@ export const TeamRolesPanel: FC<{
         )}
       </ul>
 
-      {canAssignOrg ? (
+      {canAssignOrg && organizationId ? (
         <div className="flex gap-2">
           <Select value={orgRoleId} onValueChange={setOrgRoleId}>
             <SelectTrigger aria-label="Role for whole team">
               <SelectValue placeholder="Give the whole team a role" />
             </SelectTrigger>
             <SelectContent>
-              {roleList
-                .filter((role) => role.scope === "organization")
-                .map((role) => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.name}
-                  </SelectItem>
-                ))}
+              {orgRoles.map((role) => (
+                <SelectItem key={role.id} value={role.id}>
+                  {role.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button
@@ -184,13 +191,11 @@ export const TeamRolesPanel: FC<{
               <SelectValue placeholder="Team role" />
             </SelectTrigger>
             <SelectContent>
-              {roleList
-                .filter((role) => role.scope === "team")
-                .map((role) => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.name}
-                  </SelectItem>
-                ))}
+              {teamRoles.map((role) => (
+                <SelectItem key={role.id} value={role.id}>
+                  {role.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button

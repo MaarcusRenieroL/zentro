@@ -103,7 +103,7 @@ export async function assignCreatorLeadRole(
 /**
  * SQL condition for the docs the caller may see with `key`: docs in projects
  * where they hold the permission, plus docs outside any project when they hold
- * it organization-wide.
+ * it organization-wide (or, for team-scope roles, in that team).
  */
 export async function visibleDocsCondition(
   permissions: PermissionContext,
@@ -115,6 +115,15 @@ export async function visibleDocsCondition(
 
   if (everywhere) {
     conditions.push(isNull(docs.projectId));
+  } else {
+    // A role given on a team covers that team's docs outside any project.
+    const teamIds = await permissions.teamIdsWith(key);
+
+    if (teamIds.length) {
+      conditions.push(
+        and(isNull(docs.projectId), inArray(docs.teamId, teamIds))!,
+      );
+    }
   }
 
   if (projectIds.length) {

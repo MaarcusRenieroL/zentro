@@ -49,7 +49,12 @@ export function TaskDetailView({
   onAddComment,
 }: Props) {
   const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
-  const resource = { projectId: task.projectId };
+  const resource = {
+    projectId: task.projectId,
+    teamId: task.teamId ?? undefined,
+    // `_own` edit and delete rights apply to tasks the user created.
+    ownerUserId: task.createdByUserId,
+  };
   const canEdit = useAnyPermission(
     ["tasks.update_any", "tasks.update_own"],
     resource,

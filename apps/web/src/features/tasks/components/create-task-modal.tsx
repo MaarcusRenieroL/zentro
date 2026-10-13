@@ -1,6 +1,6 @@
 "use client";
 
-import { usePermission } from "~/src/components/permissions/permission-provider";
+import { useReachable } from "~/src/components/permissions/permission-provider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTrpcClient } from "@zentro/api/react";
 import {
@@ -112,7 +112,8 @@ const CreateTaskModalInner: FC<Props> = ({
       try {
         const [projectList, memberList] = await Promise.all([
           trpc.project.getProjectsByOrgId.query(),
-          trpc.member.getMembers.query(),
+          // Needs members.view; without it tasks are created unassigned.
+          trpc.member.getMembers.query().catch(() => []),
         ]);
 
         if (!isMounted) return;
@@ -460,7 +461,8 @@ const CreateTaskModalInner: FC<Props> = ({
 };
 
 export const CreateTaskModal: FC<Props> = (props) => {
-  const canCreate = usePermission("tasks.create");
+  // A role on one project is enough; the server checks each project.
+  const canCreate = useReachable("tasks.create");
 
   return canCreate ? <CreateTaskModalInner {...props} /> : null;
 };

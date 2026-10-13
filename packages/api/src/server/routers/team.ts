@@ -9,7 +9,13 @@ import {
   updateTeamMembersSchema,
   updateTeamSchema,
 } from "../../types/zod-schema";
-import { permissionProcedure, router } from "../trpc";
+import {
+  denialFor,
+  listProcedure,
+  permissionProcedure,
+  protectedProcedure,
+  router,
+} from "../trpc";
 import { assignCreatorLeadRole } from "../access";
 import { teamById } from "../resources";
 
@@ -147,8 +153,18 @@ async function replaceTeamMembers({
 }
 
 export const teamRouter = router({
-  getAll: permissionProcedure("teams.view").query(async ({ ctx }) => {
+  // Everyone who can view teams organization-wide sees all of them. A role
+  // given on a single team shows only that team.
+  getAll: listProcedure("teams.view").query(async ({ ctx }) => {
     const { activeOrganization, db } = ctx;
+    const everywhere = await ctx.permissions.can("teams.view");
+    const visibleTeamIds = everywhere
+      ? null
+      : await ctx.permissions.teamIdsWith("teams.view");
+
+    if (visibleTeamIds && !visibleTeamIds.length) {
+      throw denialFor({ allowed: false, reasons: [] });
+    }
 
     const teamRows = await db
       .select({
@@ -165,6 +181,7 @@ export const teamRouter = router({
         and(
           eq(teams.organizationId, activeOrganization.id),
           isNull(teams.archivedAt),
+          visibleTeamIds ? inArray(teams.id, visibleTeamIds) : undefined,
         ),
       )
       .orderBy(asc(teams.name));
@@ -256,9 +273,19 @@ export const teamRouter = router({
       };
     }),
 
-  getAvailableMembers: permissionProcedure("teams.view").query(
-    async ({ ctx }) => {
+  // The people a team can be given: needed to view teams, or by a team lead
+  // who adds people to their own team.
+  getAvailableMembers: protectedProcedure
+    .meta({ permissions: ["teams.view", "teams.members.manage"] })
+    .query(async ({ ctx }) => {
       const { activeOrganization, db } = ctx;
+
+      if (
+        !(await ctx.permissions.can("teams.view")) &&
+        !(await ctx.permissions.teamIdsWith("teams.members.manage")).length
+      ) {
+        throw denialFor({ allowed: false, reasons: [] });
+      }
 
       return db
         .select({
@@ -273,8 +300,7 @@ export const teamRouter = router({
         .innerJoin(users, eq(users.id, members.userId))
         .where(eq(members.organizationId, activeOrganization.id))
         .orderBy(asc(users.name), asc(users.email));
-    },
-  ),
+    }),
 
   create: permissionProcedure("teams.create")
     .input(createTeamSchema)

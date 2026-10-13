@@ -32,7 +32,9 @@ import {
 } from "../../types/zod-schema";
 import {
   assertAnyPermission,
+  denialFor,
   listProcedure,
+  moduleProcedure,
   permissionProcedure,
   router,
 } from "../trpc";
@@ -243,13 +245,28 @@ export const taskRouter = router({
 
       return allTasks;
     }),
-  getTaskByKey: permissionProcedure("tasks.view", taskByKey("key"), {
-    module: "tasks",
-  })
+  // An unknown key resolves to nothing. A task the caller may not see answers
+  // the same way, so keys cannot be probed to learn what exists.
+  getTaskByKey: moduleProcedure("tasks")
+    .meta({ permissions: ["tasks.view"] })
     .input(getTaskByKeySchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
       const { key } = input;
+      const decision = await ctx.permissions.check(
+        "tasks.view",
+        await taskByKey("key")({ ctx, input }),
+      );
+
+      if (!decision.allowed) {
+        const denial = denialFor(decision);
+
+        if (denial.code === "NOT_FOUND") {
+          return undefined;
+        }
+
+        throw denial;
+      }
 
       const [task] = await db
         .select({
@@ -295,7 +312,11 @@ export const taskRouter = router({
       // The reporter is the member who created the task, if they still exist.
       const [reporter] = task.createdByMemberId
         ? await db
-            .select({ name: users.name, email: users.email })
+            .select({
+              name: users.name,
+              email: users.email,
+              userId: members.userId,
+            })
             .from(members)
             .innerJoin(users, eq(users.id, members.userId))
             .where(
@@ -307,7 +328,12 @@ export const taskRouter = router({
             .limit(1)
         : [];
 
-      return { ...task, reporter: reporter?.name ?? reporter?.email ?? null };
+      return {
+        ...task,
+        reporter: reporter?.name ?? reporter?.email ?? null,
+        // Who created the task, so `_own` permissions can be applied on screen.
+        createdByUserId: reporter?.userId ?? null,
+      };
     }),
   getOverview: listProcedure("tasks.view", "tasks").query(async ({ ctx }) => {
     const { db, user, activeOrganization } = ctx;

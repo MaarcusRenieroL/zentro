@@ -47,7 +47,8 @@ export default function TaskDetailPage() {
       try {
         const [taskData, memberData] = await Promise.all([
           trpc.task.getTaskByKey.query({ key: taskKey }),
-          trpc.member.getMembers.query(),
+          // Needs members.view; people with only a project role get no list.
+          trpc.member.getMembers.query().catch(() => []),
         ]);
 
         if (!isMounted) {
@@ -106,8 +107,12 @@ export default function TaskDetailPage() {
       });
 
       if (updatedTask) {
-        // The update response has no reporter; it cannot change, so keep it.
-        setTask({ ...updatedTask, reporter: task.reporter });
+        // The update response has no reporter or creator; they cannot change.
+        setTask({
+          ...updatedTask,
+          reporter: task.reporter,
+          createdByUserId: task.createdByUserId,
+        });
         await refreshTaskActivity();
         toastSuccess("Task updated");
       }

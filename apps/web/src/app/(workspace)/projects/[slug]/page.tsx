@@ -30,14 +30,18 @@ export default function ProjectPage() {
           slug: params.slug,
         });
 
-        const moduleList = await trpc.modules.list.query();
+        // Needs modules.view; a project role alone does not carry it, so the
+        // links to tasks and docs are offered and the module pages decide.
+        const moduleList = await trpc.modules.list.query().catch(() => null);
 
         if (isMounted) {
           setProject(data as ProjectDetail);
           setEnabledModules(
-            moduleList.modules
-              .filter((module) => module.enabled)
-              .map((module) => module.id),
+            moduleList
+              ? moduleList.modules
+                  .filter((module) => module.enabled)
+                  .map((module) => module.id)
+              : ["tasks", "docs"],
           );
         }
       } catch {

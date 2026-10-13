@@ -8,6 +8,7 @@ export type DocsListItem = {
   teamName: string | null;
   teamColor: string | null;
   createdBy: string | null;
+  createdByUserId?: string | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
