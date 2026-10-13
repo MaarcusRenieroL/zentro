@@ -33,7 +33,14 @@ import {
   updateDocTitleSchema,
 } from "../../types/zod-schema";
 import type { TRPCContext } from "../../types";
-import { authorizedModuleProcedure, moduleProcedure, router } from "../trpc";
+import { visibleDocsCondition } from "../access";
+import { listProcedure, permissionProcedure, router } from "../trpc";
+import {
+  docByCommentId,
+  docById,
+  docBySlug,
+  projectFromInput,
+} from "../resources";
 import { getCurrentMember } from "./task-helpers";
 
 async function getDocForActiveOrganization({
@@ -68,11 +75,14 @@ async function getDocForActiveOrganization({
 }
 
 export const docsRouter = router({
-  getAll: moduleProcedure("docs")
+  getAll: listProcedure("docs.view", "docs")
     .input(getDocsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
-      const conditions = [eq(docs.organizationId, activeOrganization.id)];
+      const conditions = [
+        eq(docs.organizationId, activeOrganization.id),
+        await visibleDocsCondition(ctx.permissions, "docs.view"),
+      ];
 
       if (!input.includeDeleted) {
         conditions.push(isNull(docs.deletedAt));
@@ -111,12 +121,15 @@ export const docsRouter = router({
 
       return docsList;
     }),
-  search: moduleProcedure("docs")
+  search: listProcedure("docs.search", "docs")
     .input(searchDocsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
       const query = input.query.trim();
-      const conditions = [eq(docs.organizationId, activeOrganization.id)];
+      const conditions = [
+        eq(docs.organizationId, activeOrganization.id),
+        await visibleDocsCondition(ctx.permissions, "docs.search"),
+      ];
 
       if (!input.includeDeleted) {
         conditions.push(isNull(docs.deletedAt));
@@ -168,7 +181,9 @@ export const docsRouter = router({
         .orderBy(desc(docs.updatedAt))
         .limit(50);
     }),
-  getById: moduleProcedure("docs")
+  getById: permissionProcedure("docs.view", docById("id"), {
+    module: "docs",
+  })
     .input(getDocByIdSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -213,7 +228,9 @@ export const docsRouter = router({
 
       return doc;
     }),
-  getBySlug: moduleProcedure("docs")
+  getBySlug: permissionProcedure("docs.view", docBySlug, {
+    module: "docs",
+  })
     .input(getDocBySlugSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -258,7 +275,9 @@ export const docsRouter = router({
 
       return doc;
     }),
-  create: authorizedModuleProcedure("docs", { doc: ["create"] })
+  create: permissionProcedure("docs.create", projectFromInput, {
+    module: "docs",
+  })
     .input(createDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -352,7 +371,9 @@ export const docsRouter = router({
         return doc;
       });
     }),
-  updateDocTitle: authorizedModuleProcedure("docs", { doc: ["update"] })
+  updateDocTitle: permissionProcedure("docs.update_own", docById("id"), {
+    module: "docs",
+  })
     .input(updateDocTitleSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -382,7 +403,9 @@ export const docsRouter = router({
 
       return updatedDoc;
     }),
-  updateDocContent: authorizedModuleProcedure("docs", { doc: ["update"] })
+  updateDocContent: permissionProcedure("docs.update_own", docById("id"), {
+    module: "docs",
+  })
     .input(updateDocContentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -412,7 +435,9 @@ export const docsRouter = router({
 
       return updatedDoc;
     }),
-  delete: authorizedModuleProcedure("docs", { doc: ["delete"] })
+  delete: permissionProcedure("docs.trash_own", docById("id"), {
+    module: "docs",
+  })
     .input(deleteDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -442,7 +467,9 @@ export const docsRouter = router({
 
       return deletedDoc;
     }),
-  restore: authorizedModuleProcedure("docs", { doc: ["restore"] })
+  restore: permissionProcedure("docs.restore", docById("id"), {
+    module: "docs",
+  })
     .input(restoreDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -472,7 +499,9 @@ export const docsRouter = router({
 
       return restoredDoc;
     }),
-  getComments: moduleProcedure("docs")
+  getComments: permissionProcedure("docs.view", docById("docId"), {
+    module: "docs",
+  })
     .input(getDocCommentsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -502,7 +531,9 @@ export const docsRouter = router({
         )
         .orderBy(asc(docComments.createdAt));
     }),
-  createComment: authorizedModuleProcedure("docs", { doc: ["comment"] })
+  createComment: permissionProcedure("docs.comment", docById("docId"), {
+    module: "docs",
+  })
     .input(createDocCommentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -528,7 +559,9 @@ export const docsRouter = router({
 
       return comment;
     }),
-  resolveComment: authorizedModuleProcedure("docs", { doc: ["comment"] })
+  resolveComment: permissionProcedure("docs.comment", docByCommentId(), {
+    module: "docs",
+  })
     .input(resolveDocCommentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

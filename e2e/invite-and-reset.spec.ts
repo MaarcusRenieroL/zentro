@@ -10,6 +10,7 @@ import {
   registerUser,
   registerWithOrganization,
   signIn,
+  trpcMutation,
   uniqueName,
 } from "./helpers";
 
@@ -29,15 +30,7 @@ test("a user who already belongs to an organization accepts an invitation by lin
 
   await createOrganization(invitee.page, inviteeOrg);
 
-  const response = await page.request.post(
-    "/api/auth/organization/invite-member",
-    {
-      headers: { origin: "http://localhost:3000" },
-      data: { email, role: "member" },
-    },
-  );
-
-  expect(response.ok()).toBe(true);
+  await trpcMutation(page, "invitation.invite", { email, role: "member" });
 
   const invitationId = await readInvitationId(email);
 
@@ -142,15 +135,7 @@ test("a new user without an organization sees and accepts pending invitations", 
   const newcomer = await newContext(browser);
   const { email } = await registerUser(newcomer.page, "newcomer");
 
-  const response = await page.request.post(
-    "/api/auth/organization/invite-member",
-    {
-      headers: { origin: "http://localhost:3000" },
-      data: { email, role: "member" },
-    },
-  );
-
-  expect(response.ok()).toBe(true);
+  await trpcMutation(page, "invitation.invite", { email, role: "member" });
 
   await newcomer.page.goto("/auth/join-organization");
   await expect(newcomer.page.getByText(ownerOrg)).toBeVisible();

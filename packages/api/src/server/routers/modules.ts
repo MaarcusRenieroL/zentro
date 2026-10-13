@@ -1,16 +1,10 @@
 import { TRPCError } from "@trpc/server";
-import { hasOrganizationPermission, type OrganizationRole } from "@zentro/auth";
 import { organizationModules } from "@zentro/db/schema";
 import { canDisable, canEnable, getModule, listModules } from "@zentro/modules";
 import { z } from "zod";
 
 import { loadEnabledModules } from "../modules";
-import {
-  adminProcedure,
-  getCurrentMemberRole,
-  protectedProcedure,
-  router,
-} from "../trpc";
+import { permissionProcedure, router } from "../trpc";
 
 const setEnabledSchema = z.object({
   moduleId: z.string().trim().min(1),
@@ -18,20 +12,10 @@ const setEnabledSchema = z.object({
 });
 
 export const modulesRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const { db, user, activeOrganization } = ctx;
+  list: permissionProcedure("modules.view").query(async ({ ctx }) => {
+    const { db, activeOrganization } = ctx;
     const enabled = await loadEnabledModules(db, activeOrganization.id);
-    const role = getCurrentMemberRole(
-      activeOrganization as {
-        members?: { userId?: string | null; role?: string | null }[];
-      },
-      user.id,
-    );
-    const canManage =
-      !!role &&
-      hasOrganizationPermission(role as OrganizationRole, {
-        organization: ["update"],
-      });
+    const canManage = await ctx.permissions.can("modules.manage");
 
     return {
       canManage,
@@ -58,7 +42,7 @@ export const modulesRouter = router({
     };
   }),
 
-  setEnabled: adminProcedure
+  setEnabled: permissionProcedure("modules.manage")
     .input(setEnabledSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;

@@ -60,7 +60,7 @@ export const roleAssignments = pgTable(
 
     roleId: uuid("roleId")
       .notNull()
-      .references(() => roles.id, { onDelete: "restrict" }),
+      .references(() => roles.id),
 
     principalType: text("principalType").$type<"user" | "team">().notNull(),
     principalId: uuid("principalId").notNull(),

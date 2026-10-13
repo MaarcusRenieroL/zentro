@@ -1,5 +1,5 @@
 {
-  "id": "34535a76-34a3-4f4d-9cef-c63d4bb2ee5b",
+  "id": "85ba8dd3-9061-4cf0-a3e9-8d439256f8d5",
   "prevId": "879caa4d-318b-41e2-9031-4da7ca4af50c",
   "version": "7",
   "dialect": "postgresql",
@@ -2590,7 +2590,7 @@
           "tableTo": "role",
           "columnsFrom": ["roleId"],
           "columnsTo": ["id"],
-          "onDelete": "restrict",
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
         "roleAssignment_createdByUserId_user_id_fk": {

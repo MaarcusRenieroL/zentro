@@ -1,4 +1,5 @@
 import { db } from "@zentro/db";
+import { can, type PermissionSnapshot } from "@zentro/permissions";
 import {
   and,
   asc,
@@ -6,10 +7,12 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   isNull,
   lte,
   ne,
   or,
+  sql,
 } from "@zentro/db/drizzle";
 import {
   docs,
@@ -168,13 +171,49 @@ export async function getDashboardData({
   organizationId,
   userId,
   enabledModules,
+  snapshot,
 }: {
   organizationId: string;
   userId: string;
   enabledModules: ReadonlySet<string>;
+  snapshot: PermissionSnapshot;
 }): Promise<DashboardData> {
   const todayStart = startOfToday();
   const todayEnd = endOfToday();
+
+  // Everything below only counts what the caller is allowed to see: projects
+  // hidden from them, and the tasks and docs inside those projects, stay out.
+  const projectRows = await db
+    .select({
+      id: projects.id,
+      teamId: projects.teamId,
+      visibility: projects.visibility,
+    })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.organizationId, organizationId),
+        isNull(projects.deletedAt),
+      ),
+    );
+  const idsFor = (key: string) =>
+    projectRows
+      .filter((project) => can(snapshot, key, { project }))
+      .map((project) => project.id);
+  const projectIds = idsFor("projects.view");
+  const taskProjectIds = idsFor("tasks.view");
+  const docProjectIds = idsFor("docs.view");
+  const projectsVisible = projectIds.length
+    ? inArray(projects.id, projectIds)
+    : sql`false`;
+  const tasksVisible = taskProjectIds.length
+    ? inArray(tasks.projectId, taskProjectIds)
+    : sql`false`;
+  const docsVisible =
+    or(
+      can(snapshot, "docs.view") ? isNull(docs.projectId) : undefined,
+      docProjectIds.length ? inArray(docs.projectId, docProjectIds) : undefined,
+    ) ?? sql`false`;
 
   const [
     memberCount,
@@ -203,6 +242,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(projects.organizationId, organizationId),
+            projectsVisible,
             isNull(projects.deletedAt),
           ),
         ),
@@ -214,6 +254,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(projects.organizationId, organizationId),
+            projectsVisible,
             eq(projects.status, "active"),
             isNull(projects.deletedAt),
           ),
@@ -226,6 +267,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(tasks.organizationId, organizationId),
+            tasksVisible,
             isNull(tasks.deletedAt),
           ),
         ),
@@ -237,6 +279,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(tasks.organizationId, organizationId),
+            tasksVisible,
             ne(tasks.status, "done"),
             isNull(tasks.deletedAt),
           ),
@@ -249,6 +292,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(tasks.organizationId, organizationId),
+            tasksVisible,
             ne(tasks.status, "done"),
             isNull(tasks.deletedAt),
             gte(tasks.dueAt, todayStart),
@@ -261,7 +305,11 @@ export async function getDashboardData({
         .select({ count: count() })
         .from(docs)
         .where(
-          and(eq(docs.organizationId, organizationId), isNull(docs.deletedAt)),
+          and(
+            eq(docs.organizationId, organizationId),
+            docsVisible,
+            isNull(docs.deletedAt),
+          ),
         ),
     ),
     when(enabledModules.has("docs"), () =>
@@ -271,6 +319,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(docs.organizationId, organizationId),
+            docsVisible,
             isNull(docs.deletedAt),
             gte(docs.updatedAt, todayStart),
             lte(docs.updatedAt, todayEnd),
@@ -305,6 +354,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(projects.organizationId, organizationId),
+            projectsVisible,
             isNull(projects.deletedAt),
           ),
         )
@@ -321,7 +371,11 @@ export async function getDashboardData({
         })
         .from(docs)
         .where(
-          and(eq(docs.organizationId, organizationId), isNull(docs.deletedAt)),
+          and(
+            eq(docs.organizationId, organizationId),
+            docsVisible,
+            isNull(docs.deletedAt),
+          ),
         )
         .orderBy(desc(docs.updatedAt))
         .limit(3),
@@ -341,6 +395,7 @@ export async function getDashboardData({
         .where(
           and(
             eq(tasks.organizationId, organizationId),
+            tasksVisible,
             isNull(tasks.deletedAt),
           ),
         )
@@ -362,7 +417,12 @@ export async function getDashboardData({
         .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
         .leftJoin(members, eq(members.id, taskActivityEvents.actorMemberId))
         .leftJoin(users, eq(users.id, members.userId))
-        .where(eq(taskActivityEvents.organizationId, organizationId))
+        .where(
+          and(
+            eq(taskActivityEvents.organizationId, organizationId),
+            tasksVisible,
+          ),
+        )
         .orderBy(desc(taskActivityEvents.createdAt))
         .limit(6),
     ),
@@ -385,6 +445,7 @@ export async function getDashboardData({
           .where(
             and(
               eq(tasks.organizationId, organizationId),
+              tasksVisible,
               eq(tasks.assignedToMemberId, memberId),
               isNull(tasks.deletedAt),
               or(ne(tasks.status, "done"), isNull(tasks.completedAt)),

@@ -6,7 +6,8 @@ import {
   createTaskCommentSchema,
   getTaskCommentsSchema,
 } from "../../types/zod-schema";
-import { moduleProcedure, router } from "../trpc";
+import { permissionProcedure, router } from "../trpc";
+import { taskByKey } from "../resources";
 import {
   getCurrentMember,
   getTaskForActiveOrganization,
@@ -14,7 +15,9 @@ import {
 } from "./task-helpers";
 
 export const commentRouter = router({
-  getTaskComments: moduleProcedure("tasks")
+  getTaskComments: permissionProcedure("tasks.view", taskByKey("taskKey"), {
+    module: "tasks",
+  })
     .input(getTaskCommentsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -43,7 +46,11 @@ export const commentRouter = router({
         )
         .orderBy(asc(taskComments.createdAt));
     }),
-  createTaskComment: moduleProcedure("tasks")
+  createTaskComment: permissionProcedure(
+    "tasks.comment",
+    taskByKey("taskKey"),
+    { module: "tasks" },
+  )
     .input(createTaskCommentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

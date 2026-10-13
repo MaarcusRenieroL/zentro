@@ -5,9 +5,9 @@ import { GeneralSection } from "~/src/components/workspace/settings/general-sect
 import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
 
 export default async function GeneralSettingsPage(): Promise<JSX.Element> {
-  const { authorization, organization } = await getAuthorizedDashboardContext({
-    organization: ["update"],
-  });
+  const { authorization, organization } = await getAuthorizedDashboardContext(
+    "org.settings.update",
+  );
 
   return (
     <AuthorizationBoundary isAllowed={authorization.isAllowed}>

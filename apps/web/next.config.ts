@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
     "@zentro/db",
     "@zentro/auth",
     "@zentro/modules",
+    "@zentro/permissions",
     "@zentro/utils",
   ],
 };

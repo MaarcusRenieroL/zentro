@@ -435,3 +435,6 @@ export function effectivePermissions(
     keys.map((key) => [key, can(snapshot, key, resource)]),
   );
 }
+
+/** Keys the engine itself applies inside every project-scoped check. */
+export const engineEnforcedKeys = ["projects.view_private"] as const;

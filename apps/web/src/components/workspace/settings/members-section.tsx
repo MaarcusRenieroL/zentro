@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@zentro/auth/client";
+import { useTrpcClient } from "@zentro/api/react";
 import { type DataTableColumnDef } from "@zentro/ui/components/data-table";
 import { DataTable } from "@zentro/ui/components/data-table";
 import {
@@ -37,6 +37,8 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+import { trpcResult } from "~/src/lib/trpc-result";
 import { FC, useCallback, useMemo, useState } from "react";
 import { formatRelativeDate } from "~/src/lib/helpers";
 import { Member } from "~/src/lib/types";
@@ -117,6 +119,7 @@ export const MembersSection: FC<Props> = ({
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
 
   const router = useRouter();
+  const trpc = useTrpcClient();
 
   const currentUser = members.find((member) => member.userId === userId);
   const ownerCount = members.filter((member) => member.role === "owner").length;
@@ -129,11 +132,12 @@ export const MembersSection: FC<Props> = ({
         ),
       );
 
-      const { error } = await authClient.organization.updateMemberRole({
-        organizationId: orgId,
-        memberId: memberId,
-        role: role,
-      });
+      const { error } = await trpcResult(
+        trpc.member.updateRole.mutate({
+          memberId,
+          role: role === "owner" ? "admin" : role,
+        }),
+      );
 
       if (error) {
         toastError(error.statusText, error.message);
@@ -143,16 +147,15 @@ export const MembersSection: FC<Props> = ({
       toastSuccess("Success", "User role updated successfully");
       router.refresh();
     },
-    [orgId, router],
+    [router, trpc],
   );
 
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
 
-    const { error } = await authClient.organization.removeMember({
-      organizationId: orgId,
-      memberIdOrEmail: memberToRemove.user.email,
-    });
+    const { error } = await trpcResult(
+      trpc.member.remove.mutate({ memberId: memberToRemove.id }),
+    );
 
     if (error) {
       toastError(error.statusText, error.message);

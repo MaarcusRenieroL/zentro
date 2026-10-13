@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import {
   archiveProjectBySlugSchema,
   checkSlugSchema,
@@ -7,16 +8,20 @@ import {
   getProjectBySlugSchema,
   updateProjectBySlugSchema,
 } from "../../types/zod-schema";
-import { authorizedModuleProcedure, moduleProcedure, router } from "../trpc";
+import { listProcedure, permissionProcedure, router } from "../trpc";
+import { assignCreatorLeadRole, logPermissionChange } from "../access";
+import { projectBySlug } from "../resources";
 import {
   docs,
   members,
   projects,
+  roleAssignments,
+  roles,
   tasks,
   teams,
   users,
 } from "@zentro/db/schema";
-import { and, asc, count, eq } from "@zentro/db/drizzle";
+import { and, asc, count, eq, inArray, isNull, sql } from "@zentro/db/drizzle";
 
 const createTaskKeyPrefixBase = (slug: string) => {
   const parts = slug.split("-").filter(Boolean);
@@ -66,7 +71,9 @@ const createUniqueTaskKeyPrefix = async ({
 };
 
 export const projectRouter = router({
-  createProject: authorizedModuleProcedure("projects", { project: ["create"] })
+  createProject: permissionProcedure("projects.create", undefined, {
+    module: "projects",
+  })
     .input(createProjectSchema)
     .mutation(async ({ ctx, input }) => {
       const { name, slug, description } = input;
@@ -121,9 +128,20 @@ export const projectRouter = router({
         });
       }
 
+      // Whoever creates a project leads it.
+      await assignCreatorLeadRole(db, {
+        organizationId: activeOrganization.id,
+        userId: user.id,
+        systemKey: "project_lead",
+        scopeType: "project",
+        scopeId: project.id,
+      });
+
       return project;
     }),
-  checkSlug: authorizedModuleProcedure("projects", { project: ["create"] })
+  checkSlug: permissionProcedure("projects.create", undefined, {
+    module: "projects",
+  })
     .input(checkSlugSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -145,35 +163,54 @@ export const projectRouter = router({
         available: !project,
       };
     }),
-  getProjectsByOrgId: moduleProcedure("projects").query(async ({ ctx }) => {
-    const { activeOrganization, db } = ctx;
+  getProjectsByOrgId: listProcedure("projects.view", "projects").query(
+    async ({ ctx }) => {
+      const { activeOrganization, db } = ctx;
+      const visibleProjectIds =
+        await ctx.permissions.viewableProjectIds("projects.view");
 
-    const projectList = await db
-      .select({
-        id: projects.id,
-        organizationId: projects.organizationId,
-        name: projects.name,
-        slug: projects.slug,
-        taskKeyPrefix: projects.taskKeyPrefix,
-        description: projects.description,
-        teamId: projects.teamId,
-        teamName: teams.name,
-        teamColor: teams.color,
-        status: projects.status,
-        createdById: projects.createdById,
-        archivedAt: projects.archivedAt,
-        deletedAt: projects.deletedAt,
-        createdAt: projects.createdAt,
-        updatedAt: projects.updatedAt,
-      })
-      .from(projects)
-      .leftJoin(teams, eq(teams.id, projects.teamId))
-      .where(eq(projects.organizationId, activeOrganization.id))
-      .orderBy(asc(projects.name));
+      if (!visibleProjectIds.length) {
+        return [];
+      }
 
-    return projectList;
-  }),
-  getProjectBySlug: moduleProcedure("projects")
+      const projectList = await db
+        .select({
+          id: projects.id,
+          organizationId: projects.organizationId,
+          name: projects.name,
+          slug: projects.slug,
+          taskKeyPrefix: projects.taskKeyPrefix,
+          description: projects.description,
+          teamId: projects.teamId,
+          teamName: teams.name,
+          teamColor: teams.color,
+          status: projects.status,
+          createdById: projects.createdById,
+          archivedAt: projects.archivedAt,
+          deletedAt: projects.deletedAt,
+          createdAt: projects.createdAt,
+          updatedAt: projects.updatedAt,
+        })
+        .from(projects)
+        .leftJoin(teams, eq(teams.id, projects.teamId))
+        .where(
+          and(
+            eq(projects.organizationId, activeOrganization.id),
+            inArray(projects.id, visibleProjectIds),
+          ),
+        )
+        .orderBy(asc(projects.name));
+
+      return projectList;
+    },
+  ),
+  getProjectBySlug: permissionProcedure(
+    "projects.view",
+    projectBySlug("slug"),
+    {
+      module: "projects",
+    },
+  )
     .input(getProjectBySlugSchema)
     .query(async ({ ctx, input }) => {
       const { slug } = input;
@@ -215,18 +252,49 @@ export const projectRouter = router({
         .from(members)
         .where(eq(members.organizationId, activeOrganization.id));
 
+      const [taskCounts] = await db
+        .select({
+          total: count(),
+          open: sql<number>`count(*) filter (where ${tasks.status} <> 'done')`.mapWith(
+            Number,
+          ),
+        })
+        .from(tasks)
+        .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .where(
+          and(
+            eq(projects.slug, slug),
+            eq(tasks.organizationId, activeOrganization.id),
+            isNull(tasks.deletedAt),
+          ),
+        );
+
+      const [docCount] = await db
+        .select({ total: count() })
+        .from(docs)
+        .innerJoin(projects, eq(projects.id, docs.projectId))
+        .where(
+          and(
+            eq(projects.slug, slug),
+            eq(docs.organizationId, activeOrganization.id),
+            isNull(docs.deletedAt),
+          ),
+        );
+
       return {
         ...project,
         owner: project.owner ?? "Unknown owner",
-        openTasks: 0,
-        totalTasks: 0,
-        totalDocs: 0,
+        openTasks: taskCounts?.open ?? 0,
+        totalTasks: taskCounts?.total ?? 0,
+        totalDocs: docCount?.total ?? 0,
         totalMembers: memberCount?.count ?? 0,
       };
     }),
-  updateProjectBySlug: authorizedModuleProcedure("projects", {
-    project: ["update"],
-  })
+  updateProjectBySlug: permissionProcedure(
+    "projects.update",
+    projectBySlug("currentSlug"),
+    { module: "projects" },
+  )
     .input(updateProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -359,9 +427,173 @@ export const projectRouter = router({
 
       return updatedProject;
     }),
-  archiveProject: authorizedModuleProcedure("projects", {
-    project: ["archive"],
+  getAccess: permissionProcedure("projects.view", projectBySlug("slug"), {
+    module: "projects",
   })
+    .input(getProjectBySlugSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const [project] = await db
+        .select({
+          id: projects.id,
+          visibility: projects.visibility,
+          teamId: projects.teamId,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.slug, input.slug),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      const assignments = await db
+        .select({
+          id: roleAssignments.id,
+          roleId: roleAssignments.roleId,
+          roleName: roles.name,
+          principalType: roleAssignments.principalType,
+          principalId: roleAssignments.principalId,
+        })
+        .from(roleAssignments)
+        .innerJoin(roles, eq(roles.id, roleAssignments.roleId))
+        .where(
+          and(
+            eq(roleAssignments.organizationId, activeOrganization.id),
+            eq(roleAssignments.scopeType, "project"),
+            eq(roleAssignments.scopeId, project.id),
+          ),
+        );
+
+      const userIds = assignments
+        .filter((assignment) => assignment.principalType === "user")
+        .map((assignment) => assignment.principalId);
+      const teamIds = assignments
+        .filter((assignment) => assignment.principalType === "team")
+        .map((assignment) => assignment.principalId);
+      const [userRows, teamRows] = await Promise.all([
+        userIds.length
+          ? db
+              .select({ id: users.id, name: users.name, email: users.email })
+              .from(users)
+              .where(inArray(users.id, userIds))
+          : [],
+        teamIds.length
+          ? db
+              .select({ id: teams.id, name: teams.name })
+              .from(teams)
+              .where(inArray(teams.id, teamIds))
+          : [],
+      ]);
+
+      return {
+        projectId: project.id,
+        visibility: project.visibility,
+        teamId: project.teamId,
+        assignments: assignments.map((assignment) => ({
+          ...assignment,
+          principalName:
+            assignment.principalType === "user"
+              ? (userRows.find((user) => user.id === assignment.principalId)
+                  ?.name ?? "Unknown user")
+              : (teamRows.find((team) => team.id === assignment.principalId)
+                  ?.name ?? "Unknown team"),
+        })),
+      };
+    }),
+  updateAccess: permissionProcedure(
+    "projects.settings.manage",
+    projectBySlug("slug"),
+    { module: "projects" },
+  )
+    .input(
+      getProjectBySlugSchema.extend({
+        visibility: z.enum(["organization", "team", "private"]),
+        teamId: z.string().uuid().nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db, user, activeOrganization } = ctx;
+      const [existing] = await db
+        .select({
+          id: projects.id,
+          visibility: projects.visibility,
+          teamId: projects.teamId,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.slug, input.slug),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .limit(1);
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      if (input.teamId) {
+        const [team] = await db
+          .select({ id: teams.id })
+          .from(teams)
+          .where(
+            and(
+              eq(teams.id, input.teamId),
+              eq(teams.organizationId, activeOrganization.id),
+            ),
+          )
+          .limit(1);
+
+        if (!team) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
+        }
+      }
+
+      if (input.visibility === "team" && !input.teamId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Choose the team that can see this project.",
+        });
+      }
+
+      await db
+        .update(projects)
+        .set({
+          visibility: input.visibility,
+          teamId: input.teamId,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, existing.id));
+
+      await logPermissionChange(db, {
+        organizationId: activeOrganization.id,
+        actorUserId: user.id,
+        action: "project.access.updated",
+        targetType: "project",
+        targetId: existing.id,
+        before: { visibility: existing.visibility, teamId: existing.teamId },
+        after: { visibility: input.visibility, teamId: input.teamId },
+      });
+
+      return { projectId: existing.id };
+    }),
+  archiveProject: permissionProcedure(
+    "projects.archive",
+    projectBySlug("slug"),
+    { module: "projects" },
+  )
     .input(archiveProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -420,7 +652,9 @@ export const projectRouter = router({
 
       return updatedProject;
     }),
-  deleteProject: authorizedModuleProcedure("projects", { project: ["delete"] })
+  deleteProject: permissionProcedure("projects.delete", projectBySlug("slug"), {
+    module: "projects",
+  })
     .input(deleteProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

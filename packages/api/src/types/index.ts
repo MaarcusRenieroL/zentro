@@ -2,6 +2,8 @@ import type { auth } from "@zentro/auth";
 import type { db } from "@zentro/db";
 import type { ModuleId } from "@zentro/modules";
 
+import type { PermissionContext } from "../server/permissions";
+
 export type AuthSession = typeof auth.$Infer.Session;
 export type AuthUser = AuthSession["user"];
 
@@ -16,4 +18,8 @@ export type TRPCContext = {
   activeOrganization: ActiveOrganization | null;
   /** Enabled modules of the active organization, loaded once per request. */
   enabledModules: () => Promise<ReadonlySet<ModuleId>>;
+  /** What the caller may do in the active organization (loaded once per request). */
+  permissions: PermissionContext;
+  /** Headers of the request, for calling Better Auth on the caller's behalf. */
+  headers: Headers;
 };

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 
 import { db } from "@zentro/db";
 import { eq, inArray } from "@zentro/db/drizzle";
@@ -8,6 +8,10 @@ import {
   members,
   organizationModules,
   organizations,
+  permissionOverrides,
+  roleAssignments,
+  roles,
+  sessions,
   projects,
   taskActivityEvents,
   taskComments,
@@ -17,7 +21,9 @@ import {
   users,
 } from "@zentro/db/schema";
 
+import { ensureSystemRoles } from "@zentro/auth";
 import { appRouter } from "../../src/server/root";
+import { createPermissionContext } from "../../src/server/permissions";
 import { loadEnabledModules } from "../../src/server/modules";
 import type { TRPCContext } from "../../src/types";
 
@@ -165,6 +171,106 @@ export class World {
       });
   }
 
+  /** A real session for `user`, as the cookie header Better Auth reads. */
+  async sessionHeaders(user: TestUser, org?: TestOrg) {
+    const token = randomUUID().replace(/-/g, "");
+
+    await db.insert(sessions).values({
+      userId: user.id,
+      token,
+      expiresAt: new Date(Date.now() + 3_600_000),
+      activeOrganizationId: org?.id ?? null,
+    });
+
+    const signature = createHmac("sha256", process.env.BETTER_AUTH_SECRET!)
+      .update(token)
+      .digest("base64");
+
+    return new Headers({
+      cookie: `better-auth.session_token=${encodeURIComponent(`${token}.${signature}`)}`,
+      origin: "http://localhost:3000",
+    });
+  }
+
+  async systemRoleId(org: TestOrg, systemKey: string) {
+    await ensureSystemRoles(db, org.id);
+
+    const [role] = await db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(eq(roles.organizationId, org.id));
+    const all = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.organizationId, org.id));
+
+    return (all.find((item) => item.systemKey === systemKey) ?? role)!.id;
+  }
+
+  /** A custom role in `org`. */
+  async role(
+    org: TestOrg,
+    values: {
+      name: string;
+      scope?: "organization" | "team" | "project";
+      permissions: string[];
+    },
+  ) {
+    const [role] = await db
+      .insert(roles)
+      .values({
+        organizationId: org.id,
+        name: values.name,
+        scope: values.scope ?? "organization",
+        kind: "custom",
+        permissions: values.permissions,
+      })
+      .returning();
+
+    return role!;
+  }
+
+  async assign(
+    org: TestOrg,
+    roleId: string,
+    principal: { type: "user" | "team"; id: string },
+    scope: { type: "organization" | "team" | "project"; id: string },
+  ) {
+    const [assignment] = await db
+      .insert(roleAssignments)
+      .values({
+        organizationId: org.id,
+        roleId,
+        principalType: principal.type,
+        principalId: principal.id,
+        scopeType: scope.type,
+        scopeId: scope.id,
+      })
+      .returning();
+
+    return assignment!;
+  }
+
+  async override(
+    org: TestOrg,
+    user: TestUser,
+    permission: string,
+    effect: "allow" | "deny",
+    scope: { type: "organization" | "team" | "project"; id: string } = {
+      type: "organization",
+      id: org.id,
+    },
+  ) {
+    await db.insert(permissionOverrides).values({
+      organizationId: org.id,
+      userId: user.id,
+      permission,
+      effect,
+      scopeType: scope.type,
+      scopeId: scope.id,
+    });
+  }
+
   /**
    * A tRPC caller as the app builds it for a request: the session user plus
    * the active organization, whose `members` list comes back in whatever order
@@ -196,8 +302,12 @@ export class World {
       invitations: [],
     };
 
+    const headers = await this.sessionHeaders(user, org);
+
     return appRouter.createCaller({
       db,
+      headers,
+      permissions: createPermissionContext(db, org.id, user.id),
       session: {
         session: {
           id: randomUUID(),
@@ -224,6 +334,8 @@ export class World {
   sessionCaller(user: TestUser) {
     return appRouter.createCaller({
       db,
+      headers: new Headers(),
+      permissions: createPermissionContext(db, null, user.id),
       session: {
         session: {
           id: randomUUID(),
@@ -297,6 +409,8 @@ export class World {
 export function anonymousCaller() {
   return appRouter.createCaller({
     db,
+    headers: new Headers(),
+    permissions: createPermissionContext(db, null, null),
     session: null,
     user: null,
     activeOrganization: null,

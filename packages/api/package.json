@@ -20,6 +20,8 @@
     "@zentro/auth": "workspace:*",
     "@zentro/db": "workspace:*",
     "@zentro/modules": "workspace:*",
+    "@zentro/permissions": "workspace:*",
+    "better-auth": "^1.6.9",
     "superjson": "^2.2.6",
     "zod": "^4.3.6"
   },

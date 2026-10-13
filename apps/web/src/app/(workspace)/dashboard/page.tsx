@@ -6,11 +6,13 @@ import { getDashboardData } from "~/src/lib/dashboard-data";
 import { getDashboardContext } from "~/src/lib/dashboard-context";
 
 export default async function DashboardPage(): Promise<JSX.Element> {
-  const { organization, session, enabledModules } = await getDashboardContext();
+  const { organization, session, enabledModules, snapshot } =
+    await getDashboardContext();
   const dashboardData = await getDashboardData({
     organizationId: organization.id,
     userId: session.user.id,
     enabledModules: new Set(enabledModules),
+    snapshot,
   });
 
   return (

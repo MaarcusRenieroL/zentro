@@ -11,7 +11,8 @@ import {
   sendOrgInviteEmail,
 } from "./lib/email";
 import { validateProductionEnv } from "./lib/env";
-import { ac, member, owner, admin } from "./permissions";
+import { betterAuthAc, betterAuthRoles } from "./access-control";
+import { ensureSystemRoles, removeMemberAccess } from "./seed";
 import { userAdditionalFields } from "./additional-fields";
 
 validateProductionEnv();
@@ -23,7 +24,42 @@ const trustedOrigins = Array.from(
   new Set([new URL(baseURL).origin, "http://localhost:3000"]),
 );
 
+// Endpoints that read or change organization data are only reachable through
+// our tRPC procedures, which check permissions with @zentro/permissions. Better
+// Auth's own role check is wide open (see access-control.ts), so leaving these
+// reachable over HTTP would let any member call them directly.
+const disabledOrganizationPaths = [
+  "/organization/add-team-member",
+  "/organization/cancel-invitation",
+  "/organization/create-role",
+  "/organization/create-team",
+  "/organization/delete",
+  "/organization/delete-role",
+  "/organization/get-active-member",
+  "/organization/get-active-member-role",
+  "/organization/get-full-organization",
+  "/organization/get-invitation",
+  "/organization/get-role",
+  "/organization/invite-member",
+  "/organization/list-invitations",
+  "/organization/list-members",
+  "/organization/list-roles",
+  "/organization/list-team-members",
+  "/organization/list-teams",
+  "/organization/list-user-invitations",
+  "/organization/list-user-teams",
+  "/organization/remove-member",
+  "/organization/remove-team",
+  "/organization/remove-team-member",
+  "/organization/set-active-team",
+  "/organization/update",
+  "/organization/update-member-role",
+  "/organization/update-role",
+  "/organization/update-team",
+];
+
 export const auth = betterAuth({
+  disabledPaths: disabledOrganizationPaths,
   baseURL,
   secret,
   trustedOrigins,
@@ -86,17 +122,23 @@ export const auth = betterAuth({
 
   plugins: [
     organization({
-      ac,
-      roles: {
-        owner,
-        admin,
-        member,
-      },
+      ac: betterAuthAc,
+      roles: betterAuthRoles,
       requireEmailVerificationOnInvitation: true,
       sendInvitationEmail: async ({ invitation, organization, inviter }) => {
         await sendOrgInviteEmail(invitation, organization, inviter);
       },
       invitationExpiresIn: 60 * 60 * 24 * 7,
+      organizationHooks: {
+        // Every organization starts with its system roles in place.
+        afterCreateOrganization: async ({ organization }) => {
+          await ensureSystemRoles(db, organization.id);
+        },
+        // Whatever access a member had in the organization goes with them.
+        afterRemoveMember: async ({ member, organization }) => {
+          await removeMemberAccess(db, organization.id, member.userId);
+        },
+      },
     }),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
@@ -108,4 +150,5 @@ export const auth = betterAuth({
   ],
 });
 
-export * from "./authorization";
+export { ensureSystemRoles, removeMemberAccess } from "./seed";
+export { disabledOrganizationPaths };

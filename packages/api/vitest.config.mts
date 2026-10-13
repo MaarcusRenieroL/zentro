@@ -28,6 +28,8 @@ export default defineConfig({
       BETTER_AUTH_URL: "http://localhost:3000",
       NEXT_PUBLIC_BASE_URL: "http://localhost:3000",
       RESEND_API_KEY: "re_test_placeholder",
+      // Mail goes nowhere in tests.
+      RESEND_BASE_URL: "http://127.0.0.1:9",
     },
   },
 });

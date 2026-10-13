@@ -6,6 +6,7 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   isNotNull,
   isNull,
   lt,
@@ -29,7 +30,13 @@ import {
   getTasksSchema,
   updateTaskByKeySchema,
 } from "../../types/zod-schema";
-import { moduleProcedure, router } from "../trpc";
+import {
+  assertAnyPermission,
+  listProcedure,
+  permissionProcedure,
+  router,
+} from "../trpc";
+import { loadProjectById, projectFromInput, taskByKey } from "../resources";
 import {
   getChangedTaskFields,
   getCurrentMember,
@@ -46,10 +53,19 @@ function isUniqueViolation(error: unknown) {
 }
 
 export const taskRouter = router({
-  createTask: moduleProcedure("tasks")
+  createTask: permissionProcedure("tasks.create", projectFromInput, {
+    module: "tasks",
+    also: ["tasks.assign"],
+  })
     .input(createTaskSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
+
+      if (input.assignedToMemberId) {
+        await assertAnyPermission(ctx, ["tasks.assign"], {
+          project: (await loadProjectById(ctx, input.projectId)) ?? null,
+        });
+      }
 
       const create = () =>
         db.transaction(async (tx) => {
@@ -179,13 +195,21 @@ export const taskRouter = router({
         return create();
       }
     }),
-  getTasksByOrgId: moduleProcedure("tasks")
+  getTasksByOrgId: listProcedure("tasks.view", "tasks")
     .input(getTasksSchema.optional().default({}))
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
+      const viewableProjectIds =
+        await ctx.permissions.viewableProjectIds("tasks.view");
+
+      if (!viewableProjectIds.length) {
+        return [];
+      }
+
       const conditions = [
         eq(tasks.organizationId, activeOrganization.id),
         isNull(tasks.deletedAt),
+        inArray(tasks.projectId, viewableProjectIds),
       ];
 
       if (input.teamId) {
@@ -219,7 +243,9 @@ export const taskRouter = router({
 
       return allTasks;
     }),
-  getTaskByKey: moduleProcedure("tasks")
+  getTaskByKey: permissionProcedure("tasks.view", taskByKey("key"), {
+    module: "tasks",
+  })
     .input(getTaskByKeySchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -283,15 +309,37 @@ export const taskRouter = router({
 
       return { ...task, reporter: reporter?.name ?? reporter?.email ?? null };
     }),
-  getOverview: moduleProcedure("tasks").query(async ({ ctx }) => {
+  getOverview: listProcedure("tasks.view", "tasks").query(async ({ ctx }) => {
     const { db, user, activeOrganization } = ctx;
     const organizationId = activeOrganization.id;
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const viewableProjectIds =
+      await ctx.permissions.viewableProjectIds("tasks.view");
+
+    if (!viewableProjectIds.length) {
+      return {
+        counts: {
+          createdLast7Days: 0,
+          updatedLast7Days: 0,
+          completedLast7Days: 0,
+          dueNext7Days: 0,
+          overdue: 0,
+        },
+        byStatus: [] as { status: string; count: number }[],
+        byPriority: [] as { priority: string; count: number }[],
+        assignedToMe: [],
+        overdue: [],
+        recentlyUpdated: [],
+        activity: [],
+      };
+    }
+
     const active = and(
       eq(tasks.organizationId, organizationId),
       isNull(tasks.deletedAt),
+      inArray(tasks.projectId, viewableProjectIds),
     );
     const open = and(active, ne(tasks.status, "done"));
     const taskColumns = {
@@ -351,8 +399,10 @@ export const taskRouter = router({
       db
         .select({ count: count() })
         .from(taskActivityEvents)
+        .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
         .where(
           and(
+            active,
             eq(taskActivityEvents.organizationId, organizationId),
             eq(taskActivityEvents.field, "status"),
             eq(taskActivityEvents.toValue, "done"),
@@ -405,6 +455,7 @@ export const taskRouter = router({
           and(
             eq(taskActivityEvents.organizationId, organizationId),
             isNull(tasks.deletedAt),
+            inArray(tasks.projectId, viewableProjectIds),
           ),
         )
         .orderBy(desc(taskActivityEvents.createdAt))
@@ -432,12 +483,23 @@ export const taskRouter = router({
       activity,
     };
   }),
-  updateTaskByKey: moduleProcedure("tasks")
+  updateTaskByKey: permissionProcedure("tasks.update_own", taskByKey("key"), {
+    module: "tasks",
+    also: ["tasks.assign"],
+  })
     .input(updateTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
       const { key, ...values } = input;
       const previousTask = await getTaskForActiveOrganization(ctx, key);
+
+      // Changing the assignee is its own permission on top of editing.
+      if (values.assignedToMemberId !== undefined) {
+        await assertAnyPermission(ctx, ["tasks.assign"], {
+          project: (await loadProjectById(ctx, previousTask.projectId)) ?? null,
+          teamId: previousTask.teamId,
+        });
+      }
       const actorMember = await getCurrentMember(ctx);
 
       if (values.assignedToMemberId) {
@@ -563,7 +625,9 @@ export const taskRouter = router({
 
       return task;
     }),
-  deleteTaskByKey: moduleProcedure("tasks")
+  deleteTaskByKey: permissionProcedure("tasks.delete_own", taskByKey("key"), {
+    module: "tasks",
+  })
     .input(deleteTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

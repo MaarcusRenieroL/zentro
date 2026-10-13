@@ -2,41 +2,53 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import {
-  auth,
-  getOrganizationPermissions,
-  hasOrganizationPermission,
-  type OrganizationRole,
-  type PermissionRequest,
-} from "@zentro/auth";
-
-import { loadEnabledModules } from "@zentro/api/server";
+import { auth } from "@zentro/auth";
+import { loadEnabledModules, loadPermissionSnapshot } from "@zentro/api/server";
 import { db } from "@zentro/db";
 import type { ModuleId } from "@zentro/modules";
+import {
+  can as engineCan,
+  type PermissionSnapshot,
+  type ResourceContext,
+} from "@zentro/permissions";
 
 import { paths } from "~/src/lib/paths";
 
 const defaultRole = "member";
 
-export function canAccessOrganizationPermission(
-  role: OrganizationRole,
-  permission: PermissionRequest,
-) {
-  return hasOrganizationPermission(role, permission);
+/** Booleans the settings screens read; each one is a permission check. */
+function toPermissionFlags(snapshot: PermissionSnapshot) {
+  const has = (key: string) => engineCan(snapshot, key);
+
+  return {
+    canUpdateOrganization: has("org.settings.update"),
+    canDeleteOrganization: has("org.delete"),
+    canInviteMembers: has("members.invite"),
+    canRemoveMembers: has("members.remove"),
+    canUpdateMemberRoles: has("members.role.update"),
+    canCreateProjects: has("projects.create"),
+    canUpdateProjects: has("projects.update"),
+    canArchiveProjects: has("projects.archive"),
+    canDeleteProjects: has("projects.delete"),
+    canCreateDocs: has("docs.create"),
+    canUpdateDocs: has("docs.update_any"),
+    canDeleteDocs: has("docs.trash_any"),
+    canRestoreDocs: has("docs.restore"),
+    canCommentOnDocs: has("docs.comment"),
+    canCreateTeams: has("teams.create"),
+    canUpdateTeams: has("teams.update"),
+    canDeleteTeams: has("teams.delete"),
+    canManageTeamMembers: has("teams.members.manage"),
+  };
 }
 
-export async function getAuthorizedDashboardContext(
-  permission: PermissionRequest,
-) {
+export async function getAuthorizedDashboardContext(permission: string) {
   const context = await getDashboardContext();
 
   return {
     ...context,
     authorization: {
-      isAllowed: canAccessOrganizationPermission(
-        context.roles.organization,
-        permission,
-      ),
+      isAllowed: context.can(permission),
       permission,
     },
   };
@@ -88,14 +100,12 @@ export const getDashboardContext = cache(async () => {
     organization = fallbackOrganization;
   }
 
-  const organizationRole = await auth.api.getActiveMemberRole({
-    headers: requestHeaders,
-    query: {
-      organizationId: organization.id,
-    },
-  });
-
-  const role = (organizationRole.role ?? defaultRole) as OrganizationRole;
+  const snapshot = await loadPermissionSnapshot(
+    db,
+    organization.id,
+    sessionWithUser.user.id,
+  );
+  const role = snapshot.baseRole ?? defaultRole;
 
   const enabledModules = [
     ...(await loadEnabledModules(db, organization.id)),
@@ -110,7 +120,10 @@ export const getDashboardContext = cache(async () => {
       organization: role,
     },
     session: sessionWithUser,
-    permissions: getOrganizationPermissions(role),
+    permissions: toPermissionFlags(snapshot),
+    snapshot,
+    can: (key: string, resource?: ResourceContext) =>
+      engineCan(snapshot, key, resource),
   };
 });
 

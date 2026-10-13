@@ -7,9 +7,8 @@ import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
 import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
 
 export default async function InvitationsSettingsPage(): Promise<JSX.Element> {
-  const { authorization, organization } = await getAuthorizedDashboardContext({
-    members: ["invite"],
-  });
+  const { authorization, organization } =
+    await getAuthorizedDashboardContext("invitations.view");
 
   const invitations = await auth.api.listInvitations({
     headers: await headers(),

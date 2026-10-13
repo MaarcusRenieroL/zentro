@@ -9,7 +9,9 @@ import {
   updateTeamMembersSchema,
   updateTeamSchema,
 } from "../../types/zod-schema";
-import { authorizedProcedure, organizationProcedure, router } from "../trpc";
+import { permissionProcedure, router } from "../trpc";
+import { assignCreatorLeadRole } from "../access";
+import { teamById } from "../resources";
 
 type TeamDbClient = Pick<
   typeof import("@zentro/db").db,
@@ -145,7 +147,7 @@ async function replaceTeamMembers({
 }
 
 export const teamRouter = router({
-  getAll: organizationProcedure.query(async ({ ctx }) => {
+  getAll: permissionProcedure("teams.view").query(async ({ ctx }) => {
     const { activeOrganization, db } = ctx;
 
     const teamRows = await db
@@ -193,7 +195,7 @@ export const teamRouter = router({
     }));
   }),
 
-  getById: organizationProcedure
+  getById: permissionProcedure("teams.view", teamById("id"))
     .input(getTeamByIdSchema)
     .query(async ({ ctx, input }) => {
       const { activeOrganization, db } = ctx;
@@ -254,30 +256,32 @@ export const teamRouter = router({
       };
     }),
 
-  getAvailableMembers: organizationProcedure.query(async ({ ctx }) => {
-    const { activeOrganization, db } = ctx;
+  getAvailableMembers: permissionProcedure("teams.view").query(
+    async ({ ctx }) => {
+      const { activeOrganization, db } = ctx;
 
-    return db
-      .select({
-        id: members.id,
-        role: members.role,
-        userId: users.id,
-        name: users.name,
-        email: users.email,
-        image: users.image,
-      })
-      .from(members)
-      .innerJoin(users, eq(users.id, members.userId))
-      .where(eq(members.organizationId, activeOrganization.id))
-      .orderBy(asc(users.name), asc(users.email));
-  }),
+      return db
+        .select({
+          id: members.id,
+          role: members.role,
+          userId: users.id,
+          name: users.name,
+          email: users.email,
+          image: users.image,
+        })
+        .from(members)
+        .innerJoin(users, eq(users.id, members.userId))
+        .where(eq(members.organizationId, activeOrganization.id))
+        .orderBy(asc(users.name), asc(users.email));
+    },
+  ),
 
-  create: authorizedProcedure({ team: ["create"] })
+  create: permissionProcedure("teams.create")
     .input(createTeamSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db, user } = ctx;
 
-      return db.transaction(async (tx) => {
+      const created = await db.transaction(async (tx) => {
         const createdByMemberId = await getCurrentMemberId({
           db: tx,
           organizationId: activeOrganization.id,
@@ -330,9 +334,20 @@ export const teamRouter = router({
 
         return team;
       });
+
+      // Whoever creates a team leads it.
+      await assignCreatorLeadRole(db, {
+        organizationId: activeOrganization.id,
+        userId: user.id,
+        systemKey: "team_lead",
+        scopeType: "team",
+        scopeId: created.id,
+      });
+
+      return created;
     }),
 
-  update: authorizedProcedure({ team: ["update"] })
+  update: permissionProcedure("teams.update", teamById("id"))
     .input(updateTeamSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db } = ctx;
@@ -390,7 +405,7 @@ export const teamRouter = router({
       return team;
     }),
 
-  updateMembers: authorizedProcedure({ team: ["manage-members"] })
+  updateMembers: permissionProcedure("teams.members.manage", teamById("teamId"))
     .input(updateTeamMembersSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db } = ctx;
@@ -416,7 +431,7 @@ export const teamRouter = router({
       return { memberIds };
     }),
 
-  delete: authorizedProcedure({ team: ["delete"] })
+  delete: permissionProcedure("teams.delete", teamById("id"))
     .input(deleteTeamSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db } = ctx;

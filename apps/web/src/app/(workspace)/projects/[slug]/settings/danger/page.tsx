@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 
 import { DangerSection } from "~/src/components/project-detail/settings/danger-section";
 import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
-import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
+import { getDashboardContext } from "~/src/lib/dashboard-context";
 
 type ProjectStatus = "active" | "archived";
 
@@ -25,12 +25,13 @@ export default async function DangerSettingsPage({
   params,
 }: Props): Promise<JSX.Element> {
   const { slug } = await params;
-  const { authorization, organization } = await getAuthorizedDashboardContext({
-    project: ["archive", "delete"],
-  });
+  const { organization, can } = await getDashboardContext();
 
   const [project] = await db
     .select({
+      id: projects.id,
+      visibility: projects.visibility,
+      teamIdForAccess: projects.teamId,
       name: projects.name,
       slug: projects.slug,
       status: projects.status,
@@ -43,6 +44,22 @@ export default async function DangerSettingsPage({
       ),
     )
     .limit(1);
+
+  const scope = project
+    ? {
+        project: {
+          id: project.id,
+          teamId: project.teamIdForAccess,
+          visibility: project.visibility,
+        },
+      }
+    : undefined;
+  const authorization = {
+    isAllowed:
+      Boolean(scope) &&
+      can("projects.archive", scope) &&
+      can("projects.delete", scope),
+  };
 
   if (!project) {
     redirect(paths.projects());

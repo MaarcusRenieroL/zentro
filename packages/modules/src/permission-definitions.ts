@@ -24,6 +24,9 @@ export const settingsPermissions: PermissionDefinition[] = [
     "Open the organization settings pages.",
     "Organization",
     org,
+    {
+      uiOnly: "Gates the settings pages in the UI; there is no API of its own.",
+    },
   ),
   definePermission(
     "org.settings.update",

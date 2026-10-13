@@ -160,6 +160,9 @@ importers:
       '@zentro/modules':
         specifier: workspace:*
         version: link:../../packages/modules
+      '@zentro/permissions':
+        specifier: workspace:*
+        version: link:../../packages/permissions
       '@zentro/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -224,6 +227,12 @@ importers:
       '@zentro/modules':
         specifier: workspace:*
         version: link:../modules
+      '@zentro/permissions':
+        specifier: workspace:*
+        version: link:../permissions
+      better-auth:
+        specifier: ^1.6.9
+        version: 1.6.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.20.0)(kysely@0.28.16)(pg@8.20.0))(next@16.2.4(@playwright/test@1.64.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@5.0.3(@types/node@20.19.39)(msw@2.13.5(@types/node@20.19.39)(typescript@5.9.2))(vite@8.3.4(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)))
       superjson:
         specifier: ^2.2.6
         version: 2.2.6
@@ -249,6 +258,9 @@ importers:
       '@zentro/db':
         specifier: workspace:*
         version: link:../db
+      '@zentro/permissions':
+        specifier: workspace:*
+        version: link:../permissions
       better-auth:
         specifier: ^1.6.9
         version: 1.6.9(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.20.0)(kysely@0.28.16)(pg@8.20.0))(next@16.2.4(@playwright/test@1.64.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@5.0.3(@types/node@20.19.39)(msw@2.13.5(@types/node@20.19.39)(typescript@5.9.2))(vite@8.3.4(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)))

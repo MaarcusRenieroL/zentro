@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 
 import { GeneralSection } from "~/src/components/project-detail/settings/general-section";
 import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
-import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
+import { getDashboardContext } from "~/src/lib/dashboard-context";
 
 type Props = {
   params: Promise<{
@@ -19,12 +19,13 @@ export default async function GeneralSettingsPage({
   params,
 }: Props): Promise<JSX.Element> {
   const { slug } = await params;
-  const { authorization, organization } = await getAuthorizedDashboardContext({
-    project: ["update"],
-  });
+  const { organization, can } = await getDashboardContext();
 
   const [project] = await db
     .select({
+      id: projects.id,
+      visibility: projects.visibility,
+      teamIdForAccess: projects.teamId,
       name: projects.name,
       description: projects.description,
       slug: projects.slug,
@@ -46,6 +47,19 @@ export default async function GeneralSettingsPage({
       ),
     )
     .limit(1);
+
+  const scope = project
+    ? {
+        project: {
+          id: project.id,
+          teamId: project.teamIdForAccess,
+          visibility: project.visibility,
+        },
+      }
+    : undefined;
+  const authorization = {
+    isAllowed: Boolean(scope) && can("projects.update", scope),
+  };
 
   if (!project) {
     redirect(paths.projects());

@@ -13,7 +13,8 @@ import {
   GeneralSectionFormValues,
   generalSectionSchema,
 } from "~/src/lib/zod-schema";
-import { authClient } from "@zentro/auth/client";
+import { useTrpcClient } from "@zentro/api/react";
+import { trpcResult } from "~/src/lib/trpc-result";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 
 type Props = {
@@ -26,6 +27,7 @@ type Props = {
 
 export const GeneralSection: FC<Props> = ({ organization }) => {
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
+  const trpc = useTrpcClient();
 
   const {
     control,
@@ -49,12 +51,9 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
   };
 
   const handleSave = async (values: GeneralSectionFormValues) => {
-    const { error } = await authClient.organization.update({
-      data: {
-        name: values.name,
-      },
-      organizationId: organization.id,
-    });
+    const { error } = await trpcResult(
+      trpc.organization.update.mutate({ name: values.name }),
+    );
 
     if (error) {
       toastError(error.statusText, error.message);

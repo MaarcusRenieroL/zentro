@@ -1,6 +1,8 @@
 "use client";
 
 import { authClient } from "@zentro/auth/client";
+import { useTrpcClient } from "@zentro/api/react";
+import { trpcResult } from "~/src/lib/trpc-result";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +42,7 @@ export const DangerZoneSection: FC<Props> = ({
   const [typedConfirmation, setTypedConfirmation] = useState("");
 
   const router = useRouter();
+  const trpc = useTrpcClient();
 
   const isOwner = organizationRole === "owner";
 
@@ -58,9 +61,7 @@ export const DangerZoneSection: FC<Props> = ({
   };
 
   const deleteOrganization = async () => {
-    const { error } = await authClient.organization.delete({
-      organizationId: organization.id,
-    });
+    const { error } = await trpcResult(trpc.organization.delete.mutate());
 
     if (error) {
       toastError(error.statusText, error.message);

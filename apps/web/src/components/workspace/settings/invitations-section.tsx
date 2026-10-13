@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { authClient } from "@zentro/auth/client";
+import { useTrpcClient } from "@zentro/api/react";
 import { Button } from "@zentro/ui/components/shadcn/button";
 import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
 import { Field, FieldLabel } from "@zentro/ui/components/shadcn/field";
@@ -29,6 +29,8 @@ import {
 } from "~/src/lib/zod-schema";
 import { NewInvitation } from "@zentro/db/schema";
 import { useRouter } from "next/navigation";
+
+import { trpcResult } from "~/src/lib/trpc-result";
 import { formatRelativeDate } from "~/src/lib/helpers";
 
 type Props = {
@@ -48,6 +50,7 @@ export const InvitationsSection: FC<Props> = ({
   );
 
   const router = useRouter();
+  const trpc = useTrpcClient();
 
   const {
     handleSubmit,
@@ -70,11 +73,12 @@ export const InvitationsSection: FC<Props> = ({
   });
 
   const handleSendInvite = async (formValues: InviteMemberFormValues) => {
-    const { error } = await authClient.organization.inviteMember({
-      email: formValues.email,
-      role: formValues.role,
-      organizationId: organizationId,
-    });
+    const { error } = await trpcResult(
+      trpc.invitation.invite.mutate({
+        email: formValues.email,
+        role: formValues.role,
+      }),
+    );
 
     if (error) {
       toastError(error.statusText, error.message);
@@ -102,12 +106,9 @@ export const InvitationsSection: FC<Props> = ({
     setResendingInviteId(id);
 
     try {
-      const { error } = await authClient.organization.inviteMember({
-        email: invitation.email,
-        role: invitation.role as "member" | "admin" | "owner",
-        organizationId,
-        resend: true,
-      });
+      const { error } = await trpcResult(
+        trpc.invitation.resend.mutate({ invitationId: id }),
+      );
 
       if (error) {
         toastError(error.statusText, error.message);
@@ -125,9 +126,9 @@ export const InvitationsSection: FC<Props> = ({
     setCancelingInviteId(id);
 
     try {
-      const { error } = await authClient.organization.cancelInvitation({
-        invitationId: id,
-      });
+      const { error } = await trpcResult(
+        trpc.invitation.cancel.mutate({ invitationId: id }),
+      );
 
       if (error) {
         toastError(error.statusText, error.message);
