@@ -4,11 +4,12 @@ import { auth } from "@zentro/auth";
 
 import { paths } from "~/src/lib/paths";
 
-const onboardingRoutes = ["/auth/join-organization", "/auth/invite"];
+// Invitation links stay open to users who already belong to an organization.
+const onboardingRoute = "/auth/join-organization";
 
-function isRoute(pathname: string, routes: string[]) {
-  return routes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
+function isOnboardingRoute(pathname: string) {
+  return (
+    pathname === onboardingRoute || pathname.startsWith(`${onboardingRoute}/`)
   );
 }
 
@@ -36,7 +37,7 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  if (isRoute(pathname, onboardingRoutes)) {
+  if (isOnboardingRoute(pathname)) {
     const organizations = await auth.api.listOrganizations({
       headers: request.headers,
     });

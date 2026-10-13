@@ -13,7 +13,6 @@ function getAppUrl() {
 }
 
 export async function sendVerificationEmail(email: string, otp: string) {
-  console.log(otp);
   await resend.emails.send({
     from: "Zentro <onboarding@resend.dev>",
     to: email,

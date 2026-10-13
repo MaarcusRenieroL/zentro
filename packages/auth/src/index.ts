@@ -35,17 +35,8 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       sendForgotPasswordEmail(user.email, url);
     },
-    resetPasswordTokenExpiresIn: 60,
+    resetPasswordTokenExpiresIn: 60 * 60,
   },
-  emailVerification: {
-    afterEmailVerification: async ({ email, id, name, emailVerified }) => {
-      console.log("id:", id);
-      console.log("email:", email);
-      console.log("name:", name);
-      console.log("emailVerified:", emailVerified);
-    },
-  },
-
   databaseHooks: {
     session: {
       create: {
@@ -105,20 +96,7 @@ export const auth = betterAuth({
       sendInvitationEmail: async ({ invitation, organization, inviter }) => {
         await sendOrgInviteEmail(invitation, organization, inviter);
       },
-      organizationHooks: {
-        beforeCreateInvitation: async ({ invitation }) => {
-          const customExpiryDate = new Date(
-            Date.now() + 1000 * 60 * 60 * 24 * 7,
-          );
-
-          return {
-            data: {
-              ...invitation,
-              expiryDate: customExpiryDate,
-            },
-          };
-        },
-      },
+      invitationExpiresIn: 60 * 60 * 24 * 7,
     }),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
