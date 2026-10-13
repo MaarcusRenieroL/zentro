@@ -10,6 +10,10 @@ import {
   type PermissionRequest,
 } from "@zentro/auth";
 
+import { loadEnabledModules } from "@zentro/api/server";
+import { db } from "@zentro/db";
+import type { ModuleId } from "@zentro/modules";
+
 import { paths } from "~/src/lib/paths";
 
 const defaultRole = "member";
@@ -93,9 +97,14 @@ export const getDashboardContext = cache(async () => {
 
   const role = (organizationRole.role ?? defaultRole) as OrganizationRole;
 
+  const enabledModules = [
+    ...(await loadEnabledModules(db, organization.id)),
+  ] as ModuleId[];
+
   return {
     organization,
     organizations,
+    enabledModules,
     roles: {
       user: sessionWithUser.user.role ?? defaultRole,
       organization: role,
@@ -104,3 +113,15 @@ export const getDashboardContext = cache(async () => {
     permissions: getOrganizationPermissions(role),
   };
 });
+
+/**
+ * Route guard for toggleable modules. A turned-off module never renders; the
+ * caller is sent to a short explanation instead.
+ */
+export async function requireModule(moduleId: ModuleId) {
+  const { enabledModules } = await getDashboardContext();
+
+  if (!enabledModules.includes(moduleId)) {
+    redirect(paths.moduleDisabled(moduleId));
+  }
+}

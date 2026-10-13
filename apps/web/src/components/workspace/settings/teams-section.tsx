@@ -355,9 +355,10 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
         trpc.team.getAvailableMembers.query(),
       ]);
       const [projectList, taskList, docList] = await Promise.all([
-        trpc.project.getProjectsByOrgId.query(),
-        trpc.task.getTasksByOrgId.query({}),
-        trpc.docs.getAll.query({}),
+        // Turned-off modules reject these calls; they simply count as zero.
+        trpc.project.getProjectsByOrgId.query().catch(() => []),
+        trpc.task.getTasksByOrgId.query({}).catch(() => []),
+        trpc.docs.getAll.query({}).catch(() => []),
       ]);
       const nextScopeCounts: TeamScopeCounts = {};
 

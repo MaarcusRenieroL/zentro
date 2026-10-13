@@ -7,11 +7,11 @@ import {
 } from "@zentro/db/schema";
 
 import { getTaskActivityEventsSchema } from "../../types/zod-schema";
-import { organizationProcedure, router } from "../trpc";
+import { moduleProcedure, router } from "../trpc";
 import { getTaskForActiveOrganization } from "./task-helpers";
 
 export const activityRouter = router({
-  getTaskActivityEvents: organizationProcedure
+  getTaskActivityEvents: moduleProcedure("tasks")
     .input(getTaskActivityEventsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

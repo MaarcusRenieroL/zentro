@@ -16,8 +16,9 @@
     "@trpc/client": "^11.17.0",
     "@trpc/server": "^11.17.0",
     "@trpc/tanstack-react-query": "^11.17.0",
-    "@zentro/db": "workspace:*",
     "@zentro/auth": "workspace:*",
+    "@zentro/db": "workspace:*",
+    "@zentro/modules": "workspace:*",
     "superjson": "^2.2.6",
     "zod": "^4.3.6"
   },

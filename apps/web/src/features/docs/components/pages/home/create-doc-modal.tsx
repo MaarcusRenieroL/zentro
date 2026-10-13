@@ -63,7 +63,8 @@ export function CreateDocModal({
     async function fetchOptions() {
       try {
         const [projectList, teamList] = await Promise.all([
-          trpc.project.getProjectsByOrgId.query(),
+          // Docs work without the Projects module.
+          trpc.project.getProjectsByOrgId.query().catch(() => []),
           trpc.team.getAll.query(),
         ]);
 

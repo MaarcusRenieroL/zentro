@@ -16,7 +16,7 @@ import {
   getTasksSchema,
   updateTaskByKeySchema,
 } from "../../types/zod-schema";
-import { organizationProcedure, protectedProcedure, router } from "../trpc";
+import { moduleProcedure, router } from "../trpc";
 import {
   getChangedTaskFields,
   getCurrentMember,
@@ -24,7 +24,7 @@ import {
 } from "./task-helpers";
 
 export const taskRouter = router({
-  createTask: organizationProcedure
+  createTask: moduleProcedure("tasks")
     .input(createTaskSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -138,7 +138,7 @@ export const taskRouter = router({
         return task;
       });
     }),
-  getTasksByOrgId: protectedProcedure
+  getTasksByOrgId: moduleProcedure("tasks")
     .input(getTasksSchema.optional().default({}))
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -178,7 +178,7 @@ export const taskRouter = router({
 
       return allTasks;
     }),
-  getTaskByKey: protectedProcedure
+  getTaskByKey: moduleProcedure("tasks")
     .input(getTaskByKeySchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -222,7 +222,7 @@ export const taskRouter = router({
 
       return task;
     }),
-  updateTaskByKey: organizationProcedure
+  updateTaskByKey: moduleProcedure("tasks")
     .input(updateTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -353,7 +353,7 @@ export const taskRouter = router({
 
       return task;
     }),
-  deleteTaskByKey: organizationProcedure
+  deleteTaskByKey: moduleProcedure("tasks")
     .input(deleteTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

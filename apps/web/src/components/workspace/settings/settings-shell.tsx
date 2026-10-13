@@ -4,6 +4,7 @@ import { paths } from "~/src/lib/paths";
 import { cn } from "@zentro/ui";
 import {
   AlertTriangleIcon,
+  BlocksIcon,
   Building2Icon,
   MailIcon,
   SettingsIcon,
@@ -34,6 +35,11 @@ const settingsNavItems = [
     href: paths.invitationsSettings(),
     label: "Invitations",
     icon: MailIcon,
+  },
+  {
+    href: paths.modulesSettings(),
+    label: "Modules",
+    icon: BlocksIcon,
   },
   {
     href: paths.dangerSettings(),

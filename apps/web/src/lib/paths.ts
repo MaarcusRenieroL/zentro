@@ -41,12 +41,16 @@ export const paths = {
   trashedDocs: () => "/docs/trash",
   searchDocs: (query?: string) => withQuery("/docs/search", { q: query }),
 
+  moduleDisabled: (moduleId: string) =>
+    withQuery("/module-disabled", { module: moduleId }),
+
   settings: () => "/settings",
   organizationSettings: () => "/settings/organization",
   generalSettings: () => "/settings/organization/general",
   membersSettings: () => "/settings/organization/members",
   teamsSettings: () => "/settings/organization/teams",
   invitationsSettings: () => "/settings/organization/invitations",
+  modulesSettings: () => "/settings/organization/modules",
   dangerSettings: () => "/settings/organization/danger",
 
   auth: {

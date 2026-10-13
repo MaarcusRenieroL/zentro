@@ -40,7 +40,9 @@ export function ProjectDocsPage() {
     async function fetchProjectDocs() {
       try {
         const [projectList, docsList] = await Promise.all([
-          trpc.project.getProjectsByOrgId.query(),
+          // The Projects module may be turned off; docs then fall back to the
+          // workspace group.
+          trpc.project.getProjectsByOrgId.query().catch(() => []),
           trpc.docs.getAll.query({}),
         ]);
 
@@ -69,7 +71,10 @@ export function ProjectDocsPage() {
       teamName: project.teamName,
       docs: docs.filter((doc) => doc.projectId === project.id),
     }));
-    const workspaceDocs = docs.filter((doc) => !doc.projectId);
+    const projectIds = new Set(projects.map((project) => project.id));
+    const workspaceDocs = docs.filter(
+      (doc) => !doc.projectId || !projectIds.has(doc.projectId),
+    );
 
     return [
       ...projectGroups,

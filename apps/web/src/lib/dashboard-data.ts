@@ -76,12 +76,18 @@ export type DashboardData = {
   recentActivity: DashboardActivityItem[];
   tasks: DashboardTaskItem[];
   schedule: DashboardScheduleItem[];
+  modules: {
+    projects: boolean;
+    tasks: boolean;
+    docs: boolean;
+  };
+  // Links to disabled modules are left out.
   links: {
-    docs: string;
-    projects: string;
-    tasks: string;
-    newDoc: string;
-    newTask: string;
+    docs?: string;
+    projects?: string;
+    tasks?: string;
+    newDoc?: string;
+    newTask?: string;
   };
 };
 
@@ -162,12 +168,19 @@ function formatActivityKind(
   return "updated";
 }
 
+// Disabled modules are not queried; their widgets stay empty.
+function when<T>(enabled: boolean, query: () => PromiseLike<T[]>) {
+  return enabled ? query() : Promise.resolve<T[]>([]);
+}
+
 export async function getDashboardData({
   organizationId,
   userId,
+  enabledModules,
 }: {
   organizationId: string;
   userId: string;
+  enabledModules: ReadonlySet<string>;
 }): Promise<DashboardData> {
   const todayStart = startOfToday();
   const todayEnd = endOfToday();
@@ -192,70 +205,87 @@ export async function getDashboardData({
       .select({ count: count() })
       .from(members)
       .where(eq(members.organizationId, organizationId)),
-    db
-      .select({ count: count() })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.organizationId, organizationId),
-          isNull(projects.deletedAt),
+    when(enabledModules.has("projects"), () =>
+      db
+        .select({ count: count() })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.organizationId, organizationId),
+            isNull(projects.deletedAt),
+          ),
         ),
-      ),
-    db
-      .select({ count: count() })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.organizationId, organizationId),
-          eq(projects.status, "active"),
-          isNull(projects.deletedAt),
+    ),
+    when(enabledModules.has("projects"), () =>
+      db
+        .select({ count: count() })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.organizationId, organizationId),
+            eq(projects.status, "active"),
+            isNull(projects.deletedAt),
+          ),
         ),
-      ),
-    db
-      .select({ count: count() })
-      .from(tasks)
-      .where(
-        and(eq(tasks.organizationId, organizationId), isNull(tasks.deletedAt)),
-      ),
-    db
-      .select({ count: count() })
-      .from(tasks)
-      .where(
-        and(
-          eq(tasks.organizationId, organizationId),
-          ne(tasks.status, "done"),
-          isNull(tasks.deletedAt),
+    ),
+    when(enabledModules.has("tasks"), () =>
+      db
+        .select({ count: count() })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.organizationId, organizationId),
+            isNull(tasks.deletedAt),
+          ),
         ),
-      ),
-    db
-      .select({ count: count() })
-      .from(tasks)
-      .where(
-        and(
-          eq(tasks.organizationId, organizationId),
-          ne(tasks.status, "done"),
-          isNull(tasks.deletedAt),
-          gte(tasks.dueAt, todayStart),
-          lte(tasks.dueAt, todayEnd),
+    ),
+    when(enabledModules.has("tasks"), () =>
+      db
+        .select({ count: count() })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.organizationId, organizationId),
+            ne(tasks.status, "done"),
+            isNull(tasks.deletedAt),
+          ),
         ),
-      ),
-    db
-      .select({ count: count() })
-      .from(docs)
-      .where(
-        and(eq(docs.organizationId, organizationId), isNull(docs.deletedAt)),
-      ),
-    db
-      .select({ count: count() })
-      .from(docs)
-      .where(
-        and(
-          eq(docs.organizationId, organizationId),
-          isNull(docs.deletedAt),
-          gte(docs.updatedAt, todayStart),
-          lte(docs.updatedAt, todayEnd),
+    ),
+    when(enabledModules.has("tasks"), () =>
+      db
+        .select({ count: count() })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.organizationId, organizationId),
+            ne(tasks.status, "done"),
+            isNull(tasks.deletedAt),
+            gte(tasks.dueAt, todayStart),
+            lte(tasks.dueAt, todayEnd),
+          ),
         ),
-      ),
+    ),
+    when(enabledModules.has("docs"), () =>
+      db
+        .select({ count: count() })
+        .from(docs)
+        .where(
+          and(eq(docs.organizationId, organizationId), isNull(docs.deletedAt)),
+        ),
+    ),
+    when(enabledModules.has("docs"), () =>
+      db
+        .select({ count: count() })
+        .from(docs)
+        .where(
+          and(
+            eq(docs.organizationId, organizationId),
+            isNull(docs.deletedAt),
+            gte(docs.updatedAt, todayStart),
+            lte(docs.updatedAt, todayEnd),
+          ),
+        ),
+    ),
     db
       .select({ count: count() })
       .from(teams)
@@ -272,73 +302,41 @@ export async function getDashboardData({
         ),
       )
       .limit(1),
-    db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        slug: projects.slug,
-        updatedAt: projects.updatedAt,
-      })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.organizationId, organizationId),
-          isNull(projects.deletedAt),
-        ),
-      )
-      .orderBy(desc(projects.updatedAt))
-      .limit(3),
-    db
-      .select({
-        id: docs.id,
-        title: docs.title,
-        slug: docs.slug,
-        updatedAt: docs.updatedAt,
-      })
-      .from(docs)
-      .where(
-        and(eq(docs.organizationId, organizationId), isNull(docs.deletedAt)),
-      )
-      .orderBy(desc(docs.updatedAt))
-      .limit(3),
-    db
-      .select({
-        id: tasks.id,
-        key: tasks.key,
-        name: tasks.name,
-        status: tasks.status,
-        priority: tasks.priority,
-        dueAt: tasks.dueAt,
-        updatedAt: tasks.updatedAt,
-      })
-      .from(tasks)
-      .where(
-        and(eq(tasks.organizationId, organizationId), isNull(tasks.deletedAt)),
-      )
-      .orderBy(desc(tasks.updatedAt))
-      .limit(5),
-    db
-      .select({
-        id: taskActivityEvents.id,
-        type: taskActivityEvents.type,
-        createdAt: taskActivityEvents.createdAt,
-        actorName: users.name,
-        taskKey: tasks.key,
-        taskName: tasks.name,
-        taskStatus: tasks.status,
-      })
-      .from(taskActivityEvents)
-      .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
-      .leftJoin(members, eq(members.id, taskActivityEvents.actorMemberId))
-      .leftJoin(users, eq(users.id, members.userId))
-      .where(eq(taskActivityEvents.organizationId, organizationId))
-      .orderBy(desc(taskActivityEvents.createdAt))
-      .limit(6),
-  ]);
-
-  const memberId = currentMember[0]?.id;
-  const assignedTasks = memberId
-    ? await db
+    when(enabledModules.has("projects"), () =>
+      db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          slug: projects.slug,
+          updatedAt: projects.updatedAt,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.organizationId, organizationId),
+            isNull(projects.deletedAt),
+          ),
+        )
+        .orderBy(desc(projects.updatedAt))
+        .limit(3),
+    ),
+    when(enabledModules.has("docs"), () =>
+      db
+        .select({
+          id: docs.id,
+          title: docs.title,
+          slug: docs.slug,
+          updatedAt: docs.updatedAt,
+        })
+        .from(docs)
+        .where(
+          and(eq(docs.organizationId, organizationId), isNull(docs.deletedAt)),
+        )
+        .orderBy(desc(docs.updatedAt))
+        .limit(3),
+    ),
+    when(enabledModules.has("tasks"), () =>
+      db
         .select({
           id: tasks.id,
           key: tasks.key,
@@ -352,14 +350,58 @@ export async function getDashboardData({
         .where(
           and(
             eq(tasks.organizationId, organizationId),
-            eq(tasks.assignedToMemberId, memberId),
             isNull(tasks.deletedAt),
-            or(ne(tasks.status, "done"), isNull(tasks.completedAt)),
           ),
         )
-        .orderBy(asc(tasks.dueAt), desc(tasks.updatedAt))
-        .limit(4)
-    : [];
+        .orderBy(desc(tasks.updatedAt))
+        .limit(5),
+    ),
+    when(enabledModules.has("tasks"), () =>
+      db
+        .select({
+          id: taskActivityEvents.id,
+          type: taskActivityEvents.type,
+          createdAt: taskActivityEvents.createdAt,
+          actorName: users.name,
+          taskKey: tasks.key,
+          taskName: tasks.name,
+          taskStatus: tasks.status,
+        })
+        .from(taskActivityEvents)
+        .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
+        .leftJoin(members, eq(members.id, taskActivityEvents.actorMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .where(eq(taskActivityEvents.organizationId, organizationId))
+        .orderBy(desc(taskActivityEvents.createdAt))
+        .limit(6),
+    ),
+  ]);
+
+  const memberId = currentMember[0]?.id;
+  const assignedTasks =
+    memberId && enabledModules.has("tasks")
+      ? await db
+          .select({
+            id: tasks.id,
+            key: tasks.key,
+            name: tasks.name,
+            status: tasks.status,
+            priority: tasks.priority,
+            dueAt: tasks.dueAt,
+            updatedAt: tasks.updatedAt,
+          })
+          .from(tasks)
+          .where(
+            and(
+              eq(tasks.organizationId, organizationId),
+              eq(tasks.assignedToMemberId, memberId),
+              isNull(tasks.deletedAt),
+              or(ne(tasks.status, "done"), isNull(tasks.completedAt)),
+            ),
+          )
+          .orderBy(asc(tasks.dueAt), desc(tasks.updatedAt))
+          .limit(4)
+      : [];
 
   const taskItems = (assignedTasks.length ? assignedTasks : recentTasks)
     .slice(0, 4)
@@ -410,56 +452,82 @@ export async function getDashboardData({
     href: paths.task(event.taskKey),
   }));
 
+  const modules = {
+    projects: enabledModules.has("projects"),
+    tasks: enabledModules.has("tasks"),
+    docs: enabledModules.has("docs"),
+  };
+
   return {
     activityPills: [
+      ...(modules.tasks
+        ? [
+            {
+              kind: "tasks" as const,
+              label: pluralize(
+                dueTodayTaskCount[0]?.count ?? 0,
+                "task due",
+                "tasks due",
+              ),
+            },
+            {
+              kind: "calendar" as const,
+              label: "0 events today",
+            },
+          ]
+        : []),
+      ...(modules.docs
+        ? [
+            {
+              kind: "docs" as const,
+              label: pluralize(
+                docsUpdatedTodayCount[0]?.count ?? 0,
+                "doc updated",
+                "docs updated",
+              ),
+            },
+          ]
+        : []),
       {
-        kind: "tasks",
-        label: pluralize(
-          dueTodayTaskCount[0]?.count ?? 0,
-          "task due",
-          "tasks due",
-        ),
-      },
-      {
-        kind: "calendar",
-        label: "0 events today",
-      },
-      {
-        kind: "docs",
-        label: pluralize(
-          docsUpdatedTodayCount[0]?.count ?? 0,
-          "doc updated",
-          "docs updated",
-        ),
-      },
-      {
-        kind: "mentions",
+        kind: "mentions" as const,
         label: "0 mentions",
       },
     ],
     workspaceStats: [
       { value: memberCount[0]?.count ?? 0, label: "Members" },
-      {
-        value: activeProjectCount[0]?.count ?? projectCount[0]?.count ?? 0,
-        label: "Projects",
-      },
-      {
-        value: openTaskCount[0]?.count ?? taskCount[0]?.count ?? 0,
-        label: "Open tasks",
-      },
-      { value: docCount[0]?.count ?? 0, label: "Docs" },
+      ...(modules.projects
+        ? [
+            {
+              value:
+                activeProjectCount[0]?.count ?? projectCount[0]?.count ?? 0,
+              label: "Projects",
+            },
+          ]
+        : []),
+      ...(modules.tasks
+        ? [
+            {
+              value: openTaskCount[0]?.count ?? taskCount[0]?.count ?? 0,
+              label: "Open tasks",
+            },
+          ]
+        : []),
+      ...(modules.docs
+        ? [{ value: docCount[0]?.count ?? 0, label: "Docs" }]
+        : []),
       { value: teamCount[0]?.count ?? 0, label: "Teams" },
     ],
     recentWork,
     recentActivity,
     tasks: taskItems,
     schedule: [],
+    modules,
     links: {
-      docs: paths.docs(),
-      projects: paths.projects(),
-      tasks: paths.tasks(),
-      newDoc: paths.docs(),
-      newTask: paths.tasks(),
+      ...(modules.docs ? { docs: paths.docs(), newDoc: paths.docs() } : {}),
+      ...(modules.projects ? { projects: paths.projects() } : {}),
+      ...(modules.tasks
+        ? { tasks: paths.tasks(), newTask: paths.tasks() }
+        : {}),
     },
   };
 }

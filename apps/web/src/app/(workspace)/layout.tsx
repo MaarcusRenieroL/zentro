@@ -1,6 +1,8 @@
 import { JSX } from "react";
 import { DashboardNavbar } from "~/src/components/layout/dashboard-navbar";
 
+import { buildNavSections } from "@zentro/modules";
+
 import { paths } from "~/src/lib/paths";
 import { getDashboardContext } from "~/src/lib/dashboard-context";
 import {
@@ -15,12 +17,15 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>): Promise<JSX.Element> {
-  const { organization, organizations, session } = await getDashboardContext();
+  const { organization, organizations, session, enabledModules } =
+    await getDashboardContext();
 
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen>
-        <WorkspaceSidebar />
+        <WorkspaceSidebar
+          sections={buildNavSections(new Set(enabledModules))}
+        />
 
         <SidebarInset>
           <div className="min-h-screen bg-background text-foreground">

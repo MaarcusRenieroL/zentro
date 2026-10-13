@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "@zentro/ui",
     "@zentro/db",
     "@zentro/auth",
+    "@zentro/modules",
     "@zentro/utils",
   ],
 };

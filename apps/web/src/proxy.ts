@@ -57,6 +57,7 @@ export const config = {
     "/settings/:path*",
     "/docs/:path*",
     "/tasks/:path*",
+    "/module-disabled",
     "/auth/create-organization/:path*",
     "/auth/join-organization/:path*",
     "/auth/invite/:path*",

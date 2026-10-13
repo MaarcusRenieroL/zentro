@@ -29,7 +29,13 @@ export const QuickActions: FC<Props> = ({ links }) => {
       icon: FolderIcon,
       className: "text-pink-500",
     },
-  ];
+  ].filter(
+    (action): action is typeof action & { href: string } => !!action.href,
+  );
+
+  if (!actions.length) {
+    return null;
+  }
 
   return (
     <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">

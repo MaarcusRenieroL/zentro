@@ -1,5 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "@zentro/api/server";
+import { appRouter, createEnabledModulesLoader } from "@zentro/api/server";
 import { auth } from "@zentro/auth";
 import { db } from "@zentro/db";
 
@@ -19,6 +19,7 @@ const handler = (request: Request) => {
           session: null,
           user: null,
           activeOrganization: null,
+          enabledModules: createEnabledModulesLoader(db, null),
         };
       }
 
@@ -32,6 +33,10 @@ const handler = (request: Request) => {
         session,
         user: session.user,
         activeOrganization,
+        enabledModules: createEnabledModulesLoader(
+          db,
+          activeOrganization?.id ?? null,
+        ),
       };
     },
   });

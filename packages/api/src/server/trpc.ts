@@ -7,6 +7,8 @@ import {
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import type { ModuleId } from "@zentro/modules";
+
 import type { TRPCContext } from "../types";
 
 const trpc = initTRPC.context<TRPCContext>().create({
@@ -75,7 +77,7 @@ type ActiveOrganizationWithMembers = {
 
 // getFullOrganization returns every member, so the role must come from the
 // member that belongs to the current user. No matching member means no access.
-function getCurrentMemberRole(
+export function getCurrentMemberRole(
   activeOrganization: ActiveOrganizationWithMembers,
   userId: string,
 ): OrganizationRole | null {
@@ -84,6 +86,28 @@ function getCurrentMemberRole(
   );
 
   return member?.role ? (member.role as OrganizationRole) : null;
+}
+
+type PermissionContext = {
+  user: { id: string };
+  activeOrganization: object;
+};
+
+function assertPermission(
+  ctx: PermissionContext,
+  permission: PermissionRequest,
+) {
+  const role = getCurrentMemberRole(
+    ctx.activeOrganization as ActiveOrganizationWithMembers,
+    ctx.user.id,
+  );
+
+  if (!role || !hasOrganizationPermission(role, permission)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You do not have permission to perform this action",
+    });
+  }
 }
 
 export const adminProcedure = organizationProcedure.use(({ ctx, next }) => {
@@ -111,17 +135,37 @@ export const adminProcedure = organizationProcedure.use(({ ctx, next }) => {
 
 export const authorizedProcedure = (permission: PermissionRequest) =>
   organizationProcedure.use(({ ctx, next }) => {
-    const activeOrganization =
-      ctx.activeOrganization as ActiveOrganizationWithMembers;
+    assertPermission(ctx, permission);
 
-    const role = getCurrentMemberRole(activeOrganization, ctx.user.id);
+    return next({
+      ctx,
+    });
+  });
 
-    if (!role || !hasOrganizationPermission(role, permission)) {
+/**
+ * Rejects the call when the module is turned off for the caller's active
+ * organization. The enabled set is loaded once per request by the context.
+ */
+export const moduleProcedure = (moduleId: ModuleId) =>
+  protectedProcedure.use(async ({ ctx, next }) => {
+    const enabledModules = await ctx.enabledModules();
+
+    if (!enabledModules.has(moduleId)) {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "You do not have permission to perform this action",
+        message: "Module disabled",
       });
     }
+
+    return next({ ctx });
+  });
+
+export const authorizedModuleProcedure = (
+  moduleId: ModuleId,
+  permission: PermissionRequest,
+) =>
+  moduleProcedure(moduleId).use(({ ctx, next }) => {
+    assertPermission(ctx, permission);
 
     return next({
       ctx,

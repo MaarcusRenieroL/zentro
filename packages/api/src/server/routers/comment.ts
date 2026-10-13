@@ -6,7 +6,7 @@ import {
   createTaskCommentSchema,
   getTaskCommentsSchema,
 } from "../../types/zod-schema";
-import { organizationProcedure, router } from "../trpc";
+import { moduleProcedure, router } from "../trpc";
 import {
   getCurrentMember,
   getTaskForActiveOrganization,
@@ -14,7 +14,7 @@ import {
 } from "./task-helpers";
 
 export const commentRouter = router({
-  getTaskComments: organizationProcedure
+  getTaskComments: moduleProcedure("tasks")
     .input(getTaskCommentsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -43,7 +43,7 @@ export const commentRouter = router({
         )
         .orderBy(asc(taskComments.createdAt));
     }),
-  createTaskComment: organizationProcedure
+  createTaskComment: moduleProcedure("tasks")
     .input(createTaskCommentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

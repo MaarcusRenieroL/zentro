@@ -33,7 +33,7 @@ import {
   updateDocTitleSchema,
 } from "../../types/zod-schema";
 import type { TRPCContext } from "../../types";
-import { authorizedProcedure, protectedProcedure, router } from "../trpc";
+import { authorizedModuleProcedure, moduleProcedure, router } from "../trpc";
 import { getCurrentMember } from "./task-helpers";
 
 async function getDocForActiveOrganization({
@@ -68,7 +68,7 @@ async function getDocForActiveOrganization({
 }
 
 export const docsRouter = router({
-  getAll: protectedProcedure
+  getAll: moduleProcedure("docs")
     .input(getDocsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -111,7 +111,7 @@ export const docsRouter = router({
 
       return docsList;
     }),
-  search: protectedProcedure
+  search: moduleProcedure("docs")
     .input(searchDocsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -168,7 +168,7 @@ export const docsRouter = router({
         .orderBy(desc(docs.updatedAt))
         .limit(50);
     }),
-  getById: protectedProcedure
+  getById: moduleProcedure("docs")
     .input(getDocByIdSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -213,7 +213,7 @@ export const docsRouter = router({
 
       return doc;
     }),
-  getBySlug: protectedProcedure
+  getBySlug: moduleProcedure("docs")
     .input(getDocBySlugSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -258,7 +258,7 @@ export const docsRouter = router({
 
       return doc;
     }),
-  create: authorizedProcedure({ doc: ["create"] })
+  create: authorizedModuleProcedure("docs", { doc: ["create"] })
     .input(createDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -352,7 +352,7 @@ export const docsRouter = router({
         return doc;
       });
     }),
-  updateDocTitle: authorizedProcedure({ doc: ["update"] })
+  updateDocTitle: authorizedModuleProcedure("docs", { doc: ["update"] })
     .input(updateDocTitleSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -382,7 +382,7 @@ export const docsRouter = router({
 
       return updatedDoc;
     }),
-  updateDocContent: authorizedProcedure({ doc: ["update"] })
+  updateDocContent: authorizedModuleProcedure("docs", { doc: ["update"] })
     .input(updateDocContentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -412,7 +412,7 @@ export const docsRouter = router({
 
       return updatedDoc;
     }),
-  delete: authorizedProcedure({ doc: ["delete"] })
+  delete: authorizedModuleProcedure("docs", { doc: ["delete"] })
     .input(deleteDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -442,7 +442,7 @@ export const docsRouter = router({
 
       return deletedDoc;
     }),
-  restore: authorizedProcedure({ doc: ["restore"] })
+  restore: authorizedModuleProcedure("docs", { doc: ["restore"] })
     .input(restoreDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -472,7 +472,7 @@ export const docsRouter = router({
 
       return restoredDoc;
     }),
-  getComments: protectedProcedure
+  getComments: moduleProcedure("docs")
     .input(getDocCommentsSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -502,7 +502,7 @@ export const docsRouter = router({
         )
         .orderBy(asc(docComments.createdAt));
     }),
-  createComment: authorizedProcedure({ doc: ["comment"] })
+  createComment: authorizedModuleProcedure("docs", { doc: ["comment"] })
     .input(createDocCommentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -528,7 +528,7 @@ export const docsRouter = router({
 
       return comment;
     }),
-  resolveComment: authorizedProcedure({ doc: ["comment"] })
+  resolveComment: authorizedModuleProcedure("docs", { doc: ["comment"] })
     .input(resolveDocCommentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

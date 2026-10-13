@@ -1,5 +1,6 @@
 import type { auth } from "@zentro/auth";
 import type { db } from "@zentro/db";
+import type { ModuleId } from "@zentro/modules";
 
 export type AuthSession = typeof auth.$Infer.Session;
 export type AuthUser = AuthSession["user"];
@@ -13,4 +14,6 @@ export type TRPCContext = {
   session: AuthSession | null;
   user: AuthUser | null;
   activeOrganization: ActiveOrganization | null;
+  /** Enabled modules of the active organization, loaded once per request. */
+  enabledModules: () => Promise<ReadonlySet<ModuleId>>;
 };

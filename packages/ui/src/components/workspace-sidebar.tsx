@@ -1,27 +1,7 @@
 "use client";
 
 import { ComponentType, FC, ReactNode } from "react";
-import {
-  ArchiveIcon,
-  BellIcon,
-  BookOpenIcon,
-  CalendarIcon,
-  CheckCircle2Icon,
-  ChevronRightIcon,
-  CreditCardIcon,
-  FileTextIcon,
-  FolderIcon,
-  GaugeIcon,
-  InboxIcon,
-  LayoutDashboardIcon,
-  ListChecksIcon,
-  StarIcon,
-  SettingsIcon,
-  ShieldIcon,
-  Trash2Icon,
-  UserPlusIcon,
-  UsersIcon,
-} from "lucide-react";
+import { ChevronRightIcon } from "lucide-react";
 
 import {
   Collapsible,
@@ -77,178 +57,11 @@ export type WorkspaceSidebarBrand = {
 export type WorkspaceSidebarProps = {
   pathname: string;
   LinkComponent: ComponentType<WorkspaceSidebarLinkComponentProps>;
-  sections?: WorkspaceSidebarSection[];
+  sections: WorkspaceSidebarSection[];
   brand?: WorkspaceSidebarBrand;
   soonLabel?: string;
   isActivePath?: (pathname: string, href: string) => boolean;
 };
-
-export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
-  {
-    label: "Workspace",
-    items: [
-      {
-        label: "Dashboard",
-        href: "/dashboard",
-        icon: LayoutDashboardIcon,
-      },
-      {
-        label: "Inbox",
-        href: "/inbox",
-        icon: InboxIcon,
-        disabled: true,
-      },
-      {
-        label: "Notifications",
-        href: "/notifications",
-        icon: BellIcon,
-        disabled: true,
-      },
-    ],
-  },
-  {
-    label: "Work",
-    items: [
-      {
-        label: "Projects",
-        href: "/projects",
-        icon: FolderIcon,
-        children: [
-          {
-            label: "All projects",
-            href: "/projects",
-            icon: GaugeIcon,
-          },
-          {
-            label: "Active projects",
-            href: "/projects?status=active",
-            icon: CheckCircle2Icon,
-          },
-          {
-            label: "Archived projects",
-            href: "/projects?status=archived",
-            icon: ArchiveIcon,
-          },
-        ],
-      },
-      {
-        label: "Tasks",
-        href: "/tasks",
-        icon: ListChecksIcon,
-        children: [
-          {
-            label: "My tasks",
-            href: "/tasks",
-            icon: UsersIcon,
-          },
-          {
-            label: "Due today",
-            href: "/tasks?due=today",
-            icon: CalendarIcon,
-            disabled: true,
-          },
-          {
-            label: "Upcoming",
-            href: "/tasks?due=upcoming",
-            icon: CalendarIcon,
-            disabled: true,
-          },
-          {
-            label: "Completed",
-            href: "/tasks?status=completed",
-            icon: CheckCircle2Icon,
-            disabled: true,
-          },
-        ],
-      },
-      {
-        label: "Calendar",
-        href: "/calendar",
-        icon: CalendarIcon,
-        disabled: true,
-      },
-      {
-        label: "Docs",
-        href: "/docs",
-        icon: BookOpenIcon,
-        children: [
-          {
-            label: "All docs",
-            href: "/docs",
-            icon: FileTextIcon,
-          },
-          {
-            label: "My docs",
-            href: "/docs/my-docs",
-            icon: StarIcon,
-          },
-          {
-            label: "Recent",
-            href: "/docs/recent",
-            icon: CalendarIcon,
-          },
-          {
-            label: "Project docs",
-            href: "/docs/projects",
-            icon: FolderIcon,
-          },
-          {
-            label: "Trash",
-            href: "/docs/trash",
-            icon: Trash2Icon,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: "Organization",
-    items: [
-      {
-        label: "Members",
-        href: "/settings/organization/members",
-        icon: UsersIcon,
-      },
-      {
-        label: "Teams",
-        href: "/settings/organization/teams",
-        icon: ShieldIcon,
-      },
-      {
-        label: "Invitations",
-        href: "/settings/organization/invitations",
-        icon: UserPlusIcon,
-      },
-      {
-        label: "Roles & permissions",
-        href: "/settings/organization/roles",
-        icon: ShieldIcon,
-        disabled: true,
-      },
-    ],
-  },
-  {
-    label: "Settings",
-    items: [
-      {
-        label: "General",
-        href: "/settings/organization/general",
-        icon: SettingsIcon,
-      },
-      {
-        label: "Billing",
-        href: "/settings/billing",
-        icon: CreditCardIcon,
-        disabled: true,
-      },
-      {
-        label: "Danger zone",
-        href: "/settings/organization/danger",
-        icon: Trash2Icon,
-      },
-    ],
-  },
-];
 
 function getHrefPathname(href: string) {
   return new URL(href, "http://zentro.local").pathname;
@@ -263,7 +76,7 @@ function defaultIsActivePath(pathname: string, href: string) {
 export const WorkspaceSidebar: FC<WorkspaceSidebarProps> = ({
   pathname,
   LinkComponent,
-  sections = zentroWorkspaceSidebarSections,
+  sections,
   brand = {},
   soonLabel = "Soon",
   isActivePath = defaultIsActivePath,

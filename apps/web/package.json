@@ -28,6 +28,7 @@
     "@zentro/api": "workspace:*",
     "@zentro/auth": "workspace:*",
     "@zentro/db": "workspace:*",
+    "@zentro/modules": "workspace:*",
     "@zentro/ui": "workspace:*",
     "@zentro/utils": "workspace:*",
     "better-auth": "^1.6.9",

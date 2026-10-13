@@ -7,7 +7,7 @@ import {
   getProjectBySlugSchema,
   updateProjectBySlugSchema,
 } from "../../types/zod-schema";
-import { authorizedProcedure, organizationProcedure, router } from "../trpc";
+import { authorizedModuleProcedure, moduleProcedure, router } from "../trpc";
 import {
   docs,
   members,
@@ -66,7 +66,7 @@ const createUniqueTaskKeyPrefix = async ({
 };
 
 export const projectRouter = router({
-  createProject: authorizedProcedure({ project: ["create"] })
+  createProject: authorizedModuleProcedure("projects", { project: ["create"] })
     .input(createProjectSchema)
     .mutation(async ({ ctx, input }) => {
       const { name, slug, description } = input;
@@ -123,7 +123,7 @@ export const projectRouter = router({
 
       return project;
     }),
-  checkSlug: authorizedProcedure({ project: ["create"] })
+  checkSlug: authorizedModuleProcedure("projects", { project: ["create"] })
     .input(checkSlugSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -145,7 +145,7 @@ export const projectRouter = router({
         available: !project,
       };
     }),
-  getProjectsByOrgId: organizationProcedure.query(async ({ ctx }) => {
+  getProjectsByOrgId: moduleProcedure("projects").query(async ({ ctx }) => {
     const { activeOrganization, db } = ctx;
 
     const projectList = await db
@@ -173,7 +173,7 @@ export const projectRouter = router({
 
     return projectList;
   }),
-  getProjectBySlug: organizationProcedure
+  getProjectBySlug: moduleProcedure("projects")
     .input(getProjectBySlugSchema)
     .query(async ({ ctx, input }) => {
       const { slug } = input;
@@ -224,7 +224,9 @@ export const projectRouter = router({
         totalMembers: memberCount?.count ?? 0,
       };
     }),
-  updateProjectBySlug: authorizedProcedure({ project: ["update"] })
+  updateProjectBySlug: authorizedModuleProcedure("projects", {
+    project: ["update"],
+  })
     .input(updateProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -357,7 +359,9 @@ export const projectRouter = router({
 
       return updatedProject;
     }),
-  archiveProject: authorizedProcedure({ project: ["archive"] })
+  archiveProject: authorizedModuleProcedure("projects", {
+    project: ["archive"],
+  })
     .input(archiveProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -416,7 +420,7 @@ export const projectRouter = router({
 
       return updatedProject;
     }),
-  deleteProject: authorizedProcedure({ project: ["delete"] })
+  deleteProject: authorizedModuleProcedure("projects", { project: ["delete"] })
     .input(deleteProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

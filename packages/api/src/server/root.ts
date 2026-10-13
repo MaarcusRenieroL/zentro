@@ -6,6 +6,7 @@ import { commentRouter } from "./routers/comment";
 import { docsRouter } from "./routers/doc";
 import { fileRouter } from "./routers/file";
 import { memberRouter } from "./routers/member";
+import { modulesRouter } from "./routers/modules";
 import { projectRouter } from "./routers/project";
 import { searchRouter } from "./routers/search";
 import { taskRouter } from "./routers/task";
@@ -23,6 +24,7 @@ export const appRouter = router({
   docs: docsRouter,
   file: fileRouter,
   member: memberRouter,
+  modules: modulesRouter,
   organization: organizationRouter,
   project: projectRouter,
   search: searchRouter,
