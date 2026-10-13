@@ -1,3 +1,9 @@
+import {
+  docsPermissions,
+  projectsPermissions,
+  settingsPermissions,
+  tasksPermissions,
+} from "./permission-definitions";
 import type { ModuleManifest } from "./types";
 
 // Registration order decides the order of items inside a nav section.
@@ -11,6 +17,8 @@ export const moduleRegistry: readonly ModuleManifest[] = [
     core: true,
     defaultEnabled: true,
     dependsOn: [],
+    permissionNamespaces: [],
+    permissions: [],
     nav: [
       {
         id: "workspace",
@@ -31,6 +39,15 @@ export const moduleRegistry: readonly ModuleManifest[] = [
     core: true,
     defaultEnabled: true,
     dependsOn: [],
+    permissionNamespaces: [
+      "org",
+      "members",
+      "invitations",
+      "teams",
+      "roles",
+      "permissions",
+    ],
+    permissions: settingsPermissions,
     nav: [
       {
         id: "organization",
@@ -87,6 +104,8 @@ export const moduleRegistry: readonly ModuleManifest[] = [
     core: false,
     defaultEnabled: true,
     dependsOn: [],
+    permissionNamespaces: ["projects"],
+    permissions: projectsPermissions,
     nav: [
       {
         id: "work",
@@ -125,6 +144,8 @@ export const moduleRegistry: readonly ModuleManifest[] = [
     core: false,
     defaultEnabled: true,
     dependsOn: ["projects"],
+    permissionNamespaces: ["tasks"],
+    permissions: tasksPermissions,
     nav: [
       {
         id: "work",
@@ -162,6 +183,8 @@ export const moduleRegistry: readonly ModuleManifest[] = [
     core: false,
     defaultEnabled: true,
     dependsOn: [],
+    permissionNamespaces: ["docs"],
+    permissions: docsPermissions,
     nav: [
       {
         id: "work",

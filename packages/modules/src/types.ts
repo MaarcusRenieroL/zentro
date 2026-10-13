@@ -22,6 +22,23 @@ export type ModuleNavSection = {
   items: ModuleNavItem[];
 };
 
+export type PermissionScope = "organization" | "team" | "project";
+
+export type PermissionDefinition = {
+  /** `module.resource.action`, for example `tasks.update_any`. */
+  key: string;
+  label: string;
+  description: string;
+  /** Heading the permission is listed under in the role editor. */
+  group: string;
+  /** Scopes the permission can be granted at. */
+  scopes: PermissionScope[];
+  /** Only organization owners can hold or use it. */
+  ownerOnly?: boolean;
+  /** Set when no procedure enforces the key yet; the reason says why. */
+  uiOnly?: string;
+};
+
 export type ModuleManifest = {
   id: ModuleId;
   name: string;
@@ -34,6 +51,9 @@ export type ModuleManifest = {
   defaultEnabled: boolean;
   dependsOn: ModuleId[];
   nav: ModuleNavSection[];
+  /** Key prefixes this module owns (for example `tasks`). */
+  permissionNamespaces: string[];
+  permissions: PermissionDefinition[];
 };
 
 /** The part of an `organization_module` row the helpers need. */

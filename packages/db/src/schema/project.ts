@@ -30,6 +30,13 @@ export const projects = pgTable(
 
     status: text("status").notNull().default("active"),
 
+    // Who can see the project: everyone in the organization, only the owning
+    // team, or only people with an explicit project role.
+    visibility: text("visibility")
+      .$type<"organization" | "team" | "private">()
+      .notNull()
+      .default("organization"),
+
     createdById: uuid("createdById").references(() => users.id, {
       onDelete: "set null",
     }),

@@ -327,6 +327,16 @@ importers:
         specifier: workspace:*
         version: link:../typescript-config
 
+  packages/permissions:
+    dependencies:
+      '@zentro/modules':
+        specifier: workspace:*
+        version: link:../modules
+    devDependencies:
+      '@zentro/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+
   packages/test-utils:
     dependencies:
       drizzle-orm:
