@@ -43,3 +43,7 @@ __MACOSX/
 *.pem
 
 .idea
+
+# local notes
+REFACTOR_NOTES.md
+AUDIT_REPORT.md
