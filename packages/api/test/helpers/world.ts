@@ -44,6 +44,15 @@ export class World {
   private userIds: string[] = [];
   private orgIds: string[] = [];
 
+  /** Cleans up an organization that was created outside the world (over HTTP). */
+  trackOrg(id: string) {
+    this.orgIds.push(id);
+  }
+
+  trackUser(id: string) {
+    this.userIds.push(id);
+  }
+
   async user(name = "Test User"): Promise<TestUser> {
     const id = randomUUID();
     const [user] = await db

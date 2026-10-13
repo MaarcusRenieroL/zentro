@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { emailOTP, organization } from "better-auth/plugins";
 
@@ -40,6 +41,7 @@ const disabledOrganizationPaths = [
   "/organization/get-full-organization",
   "/organization/get-invitation",
   "/organization/get-role",
+  "/organization/has-permission",
   "/organization/invite-member",
   "/organization/list-invitations",
   "/organization/list-members",
@@ -56,10 +58,30 @@ const disabledOrganizationPaths = [
   "/organization/update-member-role",
   "/organization/update-role",
   "/organization/update-team",
+  // Accepts any session field, including `activeOrganizationId`, so a session
+  // could be pointed at an organization the user does not belong to.
+  "/update-session",
 ];
 
 export const auth = betterAuth({
   disabledPaths: disabledOrganizationPaths,
+  hooks: {
+    // Leaving an organization deletes the member row directly and skips the
+    // organization hooks, so the access that came with it is cleared here.
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/organization/leave") {
+        return;
+      }
+
+      const left = ctx.context.returned as
+        | { organizationId?: string; userId?: string }
+        | undefined;
+
+      if (left?.organizationId && left.userId) {
+        await removeMemberAccess(db, left.organizationId, left.userId);
+      }
+    }),
+  },
   baseURL,
   secret,
   trustedOrigins,
