@@ -19,7 +19,6 @@ WORKDIR /repo
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/authenticator/package.json apps/authenticator/package.json
-COPY apps/docs/package.json apps/docs/package.json
 COPY apps/tasks/package.json apps/tasks/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/api/package.json packages/api/package.json
@@ -56,7 +55,7 @@ ENV AUTHENTICATOR_INTERNAL_URL=$AUTHENTICATOR_INTERNAL_URL \
     DATABASE_URL=postgres://build:build@build.invalid:5432/build \
     RESEND_API_KEY=re_build_placeholder
 COPY . .
-RUN test -n "$APP" || (echo "Pass --build-arg APP=<web|tasks|docs|authenticator>" && exit 1)
+RUN test -n "$APP" || (echo "Pass --build-arg APP=<web|tasks|authenticator>" && exit 1)
 RUN pnpm --filter "@zentro/${APP}" build
 
 # ---- runtime: Next standalone output only ----
