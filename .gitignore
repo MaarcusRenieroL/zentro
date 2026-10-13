@@ -47,3 +47,7 @@ __MACOSX/
 # local notes
 REFACTOR_NOTES.md
 AUDIT_REPORT.md
+
+# test artifacts
+playwright-report/
+test-results/

@@ -9,7 +9,8 @@
     "./types/zod-schema": "./src/types/zod-schema.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.11",
@@ -23,6 +24,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@zentro/test-utils": "workspace:*",
     "@zentro/typescript-config": "workspace:*",
     "react": "19.2.4"
   }
