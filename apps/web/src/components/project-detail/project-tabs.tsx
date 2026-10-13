@@ -1,10 +1,6 @@
 import { FC } from "react";
-import {
-  ActivityIcon,
-  FileTextIcon,
-  LayoutDashboardIcon,
-  ListTodoIcon,
-} from "lucide-react";
+import Link from "next/link";
+import { FileTextIcon, LayoutDashboardIcon, ListTodoIcon } from "lucide-react";
 import {
   Tabs,
   TabsList,
@@ -17,19 +13,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@zentro/ui/shadcn/card";
-import { Badge } from "@zentro/ui/shadcn/badge";
+import { Button } from "@zentro/ui/shadcn/button";
 
 type Props = {
   description?: string | null;
+  totalTasks: number;
+  totalDocs: number;
+  // Links to a module are only passed when that module is enabled.
+  tasksHref?: string;
+  docsHref?: string;
 };
 
-const sampleTasks = [
-  { title: "Define project scope", status: "Todo", priority: "High" },
-  { title: "Invite contributors", status: "Ready", priority: "Medium" },
-  { title: "Add project documents", status: "Backlog", priority: "Low" },
-];
-
-export const ProjectTabs: FC<Props> = ({ description }) => {
+export const ProjectTabs: FC<Props> = ({
+  description,
+  totalTasks,
+  totalDocs,
+  tasksHref,
+  docsHref,
+}) => {
   return (
     <div className="w-full">
       <Tabs defaultValue="overview" className="flex-col gap-0">
@@ -39,18 +40,18 @@ export const ProjectTabs: FC<Props> = ({ description }) => {
               <LayoutDashboardIcon aria-hidden="true" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="tasks">
-              <ListTodoIcon aria-hidden="true" />
-              Tasks
-            </TabsTrigger>
-            <TabsTrigger value="docs">
-              <FileTextIcon aria-hidden="true" />
-              Docs
-            </TabsTrigger>
-            <TabsTrigger value="activity">
-              <ActivityIcon aria-hidden="true" />
-              Activity
-            </TabsTrigger>
+            {tasksHref ? (
+              <TabsTrigger value="tasks">
+                <ListTodoIcon aria-hidden="true" />
+                Tasks
+              </TabsTrigger>
+            ) : null}
+            {docsHref ? (
+              <TabsTrigger value="docs">
+                <FileTextIcon aria-hidden="true" />
+                Docs
+              </TabsTrigger>
+            ) : null}
           </TabsList>
         </div>
 
@@ -70,71 +71,45 @@ export const ProjectTabs: FC<Props> = ({ description }) => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="tasks" className="mt-5">
-          <Card className="bg-card/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">Tasks</CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y divide-border">
-              {sampleTasks.map((task) => (
-                <div
-                  key={task.title}
-                  className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {task.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {task.priority} priority
-                    </p>
-                  </div>
-                  <Badge variant="secondary">{task.status}</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {tasksHref ? (
+          <TabsContent value="tasks" className="mt-5">
+            <Card className="bg-card/50">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Tasks</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {totalTasks === 1
+                    ? "1 task in this project."
+                    : `${totalTasks} tasks in this project.`}
+                </p>
+                <Button asChild variant="outline">
+                  <Link href={tasksHref}>View tasks</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ) : null}
 
-        <TabsContent value="docs" className="mt-5">
-          <Card className="bg-card/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">Docs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-dashed p-8 text-center">
-                <FileTextIcon className="mx-auto mb-3 size-8 text-muted-foreground" />
-                <p className="text-sm font-medium text-foreground">
-                  No docs attached yet
+        {docsHref ? (
+          <TabsContent value="docs" className="mt-5">
+            <Card className="bg-card/50">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">Docs</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {totalDocs === 1
+                    ? "1 doc in this project."
+                    : `${totalDocs} docs in this project.`}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Add specs, briefs, and handoff notes when docs are connected.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="activity" className="mt-5">
-          <Card className="bg-card/50">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold">
-                Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-dashed p-8 text-center">
-                <ActivityIcon className="mx-auto mb-3 size-8 text-muted-foreground" />
-                <p className="text-sm font-medium text-foreground">
-                  No timeline yet
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Project events will appear here as the workspace grows.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <Button asChild variant="outline">
+                  <Link href={docsHref}>View docs</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );

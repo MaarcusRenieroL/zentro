@@ -1,11 +1,4 @@
-import {
-  AtSignIcon,
-  CalendarIcon,
-  CheckSquareIcon,
-  FileIcon,
-  FolderIcon,
-  UsersIcon,
-} from "lucide-react";
+import { CheckSquareIcon, FileIcon, FolderIcon, UsersIcon } from "lucide-react";
 import { FC } from "react";
 
 import type {
@@ -22,16 +15,12 @@ type Props = {
 
 const activityIconByKind = {
   tasks: CheckSquareIcon,
-  calendar: CalendarIcon,
   docs: FileIcon,
-  mentions: AtSignIcon,
 };
 
 const activityClassByKind = {
   tasks: "text-purple-500",
-  calendar: "text-orange-500",
   docs: "text-blue-500",
-  mentions: "text-green-500",
 };
 
 const workspaceIconByLabel = {

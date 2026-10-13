@@ -80,9 +80,15 @@ export const ActivityFeed = ({ events }: Props) => {
         </Dialog>
       </CardHeader>
       <CardContent className="space-y-4">
-        {previewEvents.map((event) => (
-          <ActivityItem key={event.id} event={event} />
-        ))}
+        {previewEvents.length ? (
+          previewEvents.map((event) => (
+            <ActivityItem key={event.id} event={event} />
+          ))
+        ) : (
+          <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+            No task activity yet.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

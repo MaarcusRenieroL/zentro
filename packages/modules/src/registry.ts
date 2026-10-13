@@ -18,13 +18,6 @@ export const moduleRegistry: readonly ModuleManifest[] = [
         order: 10,
         items: [
           { label: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
-          { label: "Inbox", href: "/inbox", icon: "Inbox", disabled: true },
-          {
-            label: "Notifications",
-            href: "/notifications",
-            icon: "Bell",
-            disabled: true,
-          },
         ],
       },
     ],
@@ -59,12 +52,6 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             href: "/settings/organization/invitations",
             icon: "UserPlus",
           },
-          {
-            label: "Roles & permissions",
-            href: "/settings/organization/roles",
-            icon: "Shield",
-            disabled: true,
-          },
         ],
       },
       {
@@ -81,12 +68,6 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             label: "Modules",
             href: "/settings/organization/modules",
             icon: "Blocks",
-          },
-          {
-            label: "Billing",
-            href: "/settings/billing",
-            icon: "CreditCard",
-            disabled: true,
           },
           {
             label: "Danger zone",
@@ -155,32 +136,18 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             href: "/tasks",
             icon: "ListChecks",
             children: [
-              { label: "My tasks", href: "/tasks", icon: "Users" },
+              { label: "All tasks", href: "/tasks", icon: "Users" },
               {
-                label: "Due today",
-                href: "/tasks?due=today",
-                icon: "Calendar",
-                disabled: true,
-              },
-              {
-                label: "Upcoming",
-                href: "/tasks?due=upcoming",
-                icon: "Calendar",
-                disabled: true,
+                label: "Overview",
+                href: "/tasks/overview",
+                icon: "Gauge",
               },
               {
                 label: "Completed",
-                href: "/tasks?status=completed",
+                href: "/tasks?status=done",
                 icon: "CheckCircle2",
-                disabled: true,
               },
             ],
-          },
-          {
-            label: "Calendar",
-            href: "/calendar",
-            icon: "Calendar",
-            disabled: true,
           },
         ],
       },

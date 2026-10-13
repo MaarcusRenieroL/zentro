@@ -5,7 +5,6 @@ import { QuickActions } from "./quick-actions";
 import { PinnedSection } from "./pinned-section";
 import { TasksSection } from "./tasks-section";
 import { RecentActivitySection } from "./recent-activity-section";
-import { CalendarSection } from "./calendar-section";
 
 type Props = {
   data: DashboardData;
@@ -24,7 +23,6 @@ export const OverviewSection: FC<Props> = ({ data }) => {
             <RecentActivitySection items={data.recentActivity} />
           </div>
           <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
-            <CalendarSection schedule={data.schedule} />
             <TasksSection
               tasks={data.tasks}
               tasksHref={data.links.tasks ?? ""}

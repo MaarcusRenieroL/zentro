@@ -9,6 +9,7 @@ import {
 } from "@zentro/ui/shadcn/card";
 import { cn } from "@zentro/ui/lib/utils";
 
+import { priorityBars } from "~/src/features/tasks/lib/constants";
 import { PrioritySummary } from "~/src/features/tasks/lib/types";
 
 type Props = {
@@ -37,7 +38,7 @@ export const PriorityBreakdown: FC<Props> = ({ priorities }) => {
 
             <div className="h-8 rounded-sm bg-muted">
               <div
-                className={cn("h-full rounded-sm", priority.color)}
+                className={cn("h-full rounded-sm", priorityBars[priority.id])}
                 style={{ width: `${(priority.count / max) * 100}%` }}
               />
             </div>

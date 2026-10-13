@@ -29,9 +29,8 @@ export const paths = {
 
   tasks: () => "/tasks",
   task: (key: string) => `/tasks/${key}`,
+  tasksForProject: (slug: string) => withQuery("/tasks", { project: slug }),
   tasksOverview: () => "/tasks/overview",
-  tasksProjects: () => "/tasks/projects",
-  tasksProject: (slug: string) => `/tasks/projects/${slug}`,
 
   docs: () => "/docs",
   doc: (slug: string) => `/docs/${slug}`,

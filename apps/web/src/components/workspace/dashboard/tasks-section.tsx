@@ -67,7 +67,7 @@ export const TasksSection: FC<Props> = ({ tasks, tasksHref }) => {
         <div className="rounded-md border border-dashed bg-background/50 px-4 py-8 text-center">
           <p className="text-sm font-medium">No tasks assigned</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Assigned or recently updated tasks will appear here.
+            Tasks assigned to you will appear here.
           </p>
           <Button asChild variant="link" size="sm" className="mt-2">
             <Link href={tasksHref}>Open tasks</Link>

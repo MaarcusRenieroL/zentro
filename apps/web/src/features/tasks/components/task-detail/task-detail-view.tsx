@@ -1,15 +1,10 @@
 import { paths } from "~/src/lib/paths";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import Link from "next/link";
-import {
-  ArrowLeftIcon,
-  CheckSquareIcon,
-  LinkIcon,
-  MoreHorizontalIcon,
-  PlusIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, CheckSquareIcon, LinkIcon } from "lucide-react";
 
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
@@ -60,23 +55,6 @@ export function TaskDetailView({
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <main className="min-w-0 space-y-7">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon-sm"
-                aria-label="Add child item"
-              >
-                <PlusIcon className="size-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                aria-label="More actions"
-              >
-                <MoreHorizontalIcon className="size-4" />
-              </Button>
-            </div>
-
             <InlineTitleEditor
               disabled={savingField === "name"}
               value={task.name}
@@ -118,17 +96,6 @@ export function TaskDetailView({
               </div>
             )}
           </section>
-
-          <TaskLinksSection
-            title="Subtasks"
-            icon={<PlusIcon className="mr-2 size-4" />}
-            action="Add subtask"
-          />
-          <TaskLinksSection
-            title="Linked work items"
-            icon={<LinkIcon className="mr-2 size-4" />}
-            action="Add linked work item"
-          />
 
           <TaskDetailActivity
             members={members}
@@ -174,31 +141,20 @@ function TaskDetailHeader({ task }: { task: TaskDetail }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon-sm" aria-label="Copy task link">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          aria-label="Copy task link"
+          onClick={() => {
+            void navigator.clipboard
+              .writeText(window.location.href)
+              .then(() => toastSuccess("Link copied"))
+              .catch(() => toastError("Error", "Could not copy the link"));
+          }}
+        >
           <LinkIcon className="size-4" />
-        </Button>
-        <Button variant="outline" size="icon-sm" aria-label="More actions">
-          <MoreHorizontalIcon className="size-4" />
         </Button>
       </div>
     </div>
-  );
-}
-
-type TaskLinksSectionProps = {
-  title: string;
-  icon: ReactNode;
-  action: string;
-};
-
-function TaskLinksSection({ title, icon, action }: TaskLinksSectionProps) {
-  return (
-    <section className="space-y-2">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      <button className="flex h-9 w-full items-center rounded-md px-2 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
-        {icon}
-        {action}
-      </button>
-    </section>
   );
 }

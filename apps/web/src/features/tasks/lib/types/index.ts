@@ -1,17 +1,6 @@
 export type TaskStatus = "backlog" | "todo" | "in-progress" | "review" | "done";
 export type TaskPriority = "low" | "medium" | "high";
 
-export type Project = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  lead: string;
-  teamId: string | null;
-  teamName: string | null;
-  teamColor: string | null;
-};
-
 export type WorkspaceTask = {
   id: string;
   key: string;
@@ -26,19 +15,8 @@ export type WorkspaceTask = {
   priority: TaskPriority;
   assignee: string;
   dueDate: string;
-  logged: string;
-};
-
-export type WorkLogEvent = {
-  id: string;
-  actor: string;
-  action: string;
-  taskId: string;
-  taskTitle: string;
-  projectName: string;
-  duration: string;
-  note: string;
-  time: string;
+  // ISO timestamp of the due date; null when the task has none.
+  dueAt: string | null;
 };
 
 export type ActivityEvent = {
@@ -53,19 +31,10 @@ export type StatusSummary = {
   id: TaskStatus;
   label: string;
   count: number;
-  color: string;
 };
 
 export type PrioritySummary = {
   id: TaskPriority;
   label: string;
   count: number;
-  color: string;
-};
-
-export type WorkTypeSummary = {
-  id: string;
-  label: string;
-  count: number;
-  color: string;
 };

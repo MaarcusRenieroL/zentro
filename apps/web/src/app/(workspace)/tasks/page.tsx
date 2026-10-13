@@ -3,9 +3,9 @@
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { TaskWorkspace } from "~/src/features/tasks/components/workspace/task-workspace";
-import { workLogEvents } from "~/src/features/tasks/lib/data";
 import {
   TaskPriority,
   TaskStatus,
@@ -33,7 +33,16 @@ function toTaskPriority(value: string): TaskPriority {
     : "medium";
 }
 
+function toInitialStatus(value: string | null): TaskStatus | "all" {
+  return taskStatuses.includes(value as TaskStatus)
+    ? (value as TaskStatus)
+    : "all";
+}
+
 export default function TasksPage() {
+  const searchParams = useSearchParams();
+  const projectSlug = searchParams.get("project") ?? undefined;
+  const initialStatus = toInitialStatus(searchParams.get("status"));
   const [tasks, setTasks] = useState<WorkspaceTask[] | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
   const trpc = useTrpcClient();
@@ -99,8 +108,7 @@ export default function TasksPage() {
       assignee: task.assignee ?? "Unassigned",
 
       dueDate: task.due ? task.due.toDateString() : "",
-
-      logged: "0",
+      dueAt: task.due ? task.due.toISOString() : null,
     }));
   }, [trpc]);
 
@@ -133,12 +141,22 @@ export default function TasksPage() {
     return null;
   }
 
+  const projectName = projectSlug
+    ? tasks.find((task) => task.projectSlug === projectSlug)?.projectName
+    : undefined;
+
   return (
     <TaskWorkspace
-      title="Tasks"
-      description="Plan, sort, and track every task across your projects."
+      key={`${projectSlug ?? ""}:${initialStatus}`}
+      title={projectName ?? "Tasks"}
+      description={
+        projectSlug
+          ? "Tasks in this project."
+          : "Plan, sort, and track every task across your projects."
+      }
       tasks={tasks}
-      logs={workLogEvents}
+      projectSlug={projectSlug}
+      initialStatus={initialStatus}
       onTaskStatusChange={updateTaskStatus}
       onTaskCreated={() => setRefreshToken((token) => token + 1)}
     />

@@ -131,12 +131,11 @@ export const WorkspaceSidebar: FC<WorkspaceSidebarProps> = ({
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {section.items.map((item) => {
-                      const hasActiveChild = item.children?.some((child) =>
-                        isActivePath(pathname, child.href),
-                      );
-                      const isActive =
-                        isActivePath(pathname, item.href) ||
-                        Boolean(hasActiveChild);
+                      // Only links are highlighted; a group with children is
+                      // never active itself, so one item is active per route.
+                      const isActive = item.children?.length
+                        ? false
+                        : isActivePath(pathname, item.href);
                       const ItemIcon = item.icon;
 
                       return (

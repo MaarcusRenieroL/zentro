@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { authClient } from "@zentro/auth/client";
+import { useEffect, useState } from "react";
 
 import {
   CircleDotIcon,
@@ -76,7 +77,6 @@ export function TaskDetailActivity({
             <HistoryIcon className="size-3.5" />
             History
           </TabsTrigger>
-          <TabsTrigger value="work-log">Work log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="comments" className="m-0 min-w-0 space-y-4">
@@ -98,14 +98,6 @@ export function TaskDetailActivity({
         <TabsContent value="history" className="m-0 min-w-0">
           <ActivityList members={members} events={historyEvents} />
         </TabsContent>
-
-        <TabsContent value="work-log" className="m-0 min-w-0">
-          <ActivityEmptyState
-            icon={<HistoryIcon className="size-4" />}
-            title="No work logged"
-            message="Work log entries will show up here once time tracking is added."
-          />
-        </TabsContent>
       </Tabs>
     </section>
   );
@@ -117,6 +109,13 @@ type CommentComposerProps = {
 };
 
 function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
+  const [currentUserName, setCurrentUserName] = useState("");
+
+  useEffect(() => {
+    void authClient.getSession().then(({ data }) => {
+      setCurrentUserName(data?.user.name ?? data?.user.email ?? "");
+    });
+  }, []);
   const [isComposing, setIsComposing] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
 
@@ -124,7 +123,7 @@ function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
     return (
       <div className="flex items-start gap-3 rounded-md border bg-card p-3 shadow-xs">
         <div className="pt-0.5">
-          <AvatarInitials value="Maarcus" />
+          <AvatarInitials value={currentUserName} />
         </div>
         <button
           className="flex min-h-10 min-w-0 flex-1 items-center rounded-md border bg-background px-3 text-left text-sm text-muted-foreground transition hover:border-primary/30 hover:bg-muted/40 hover:text-foreground"
@@ -147,7 +146,7 @@ function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
   return (
     <div className="flex items-start gap-3 rounded-md border bg-card p-3 shadow-xs">
       <div className="pt-1">
-        <AvatarInitials value="Maarcus" />
+        <AvatarInitials value={currentUserName} />
       </div>
       <div className="min-w-0 flex-1">
         <RichTextEditor

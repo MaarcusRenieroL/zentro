@@ -1,6 +1,5 @@
 import { paths } from "~/src/lib/paths";
 import Link from "next/link";
-import { ClockIcon } from "lucide-react";
 
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { cn } from "@zentro/ui/lib/utils";
@@ -50,11 +49,8 @@ export const TaskCard: FC<Props> = ({ task }) => {
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t pt-3">
-        <span className="text-xs text-muted-foreground">{task.dueDate}</span>
-
-        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-          <ClockIcon className="size-3" />
-          {task.logged}
+        <span className="text-xs text-muted-foreground">
+          {task.dueDate || "No due date"}
         </span>
       </div>
     </Link>

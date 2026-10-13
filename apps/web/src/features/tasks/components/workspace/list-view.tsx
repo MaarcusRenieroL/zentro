@@ -1,6 +1,5 @@
 import { paths } from "~/src/lib/paths";
 import Link from "next/link";
-import { ClockIcon } from "lucide-react";
 
 import {
   DataTable,
@@ -97,19 +96,6 @@ const listColumns: DataTableColumnDef<WorkspaceTask>[] = [
     meta: {
       label: "Due",
     },
-  },
-  {
-    accessorKey: "logged",
-    header: "Logged",
-    meta: {
-      label: "Logged",
-    },
-    cell: ({ row }) => (
-      <span className="inline-flex items-center gap-1 text-muted-foreground">
-        <ClockIcon className="size-3.5" />
-        {row.original.logged}
-      </span>
-    ),
   },
 ];
 

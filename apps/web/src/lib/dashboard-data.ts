@@ -28,7 +28,7 @@ export type DashboardStat = {
 };
 
 export type DashboardActivityPill = {
-  kind: "tasks" | "calendar" | "docs" | "mentions";
+  kind: "tasks" | "docs";
   label: string;
 };
 
@@ -61,21 +61,12 @@ export type DashboardActivityItem = {
   href: string;
 };
 
-export type DashboardScheduleItem = {
-  id: string;
-  time: string;
-  title: string;
-  duration: string;
-  attendees: number;
-};
-
 export type DashboardData = {
   activityPills: DashboardActivityPill[];
   workspaceStats: DashboardStat[];
   recentWork: DashboardWorkItem[];
   recentActivity: DashboardActivityItem[];
   tasks: DashboardTaskItem[];
-  schedule: DashboardScheduleItem[];
   modules: {
     projects: boolean;
     tasks: boolean;
@@ -403,15 +394,13 @@ export async function getDashboardData({
           .limit(4)
       : [];
 
-  const taskItems = (assignedTasks.length ? assignedTasks : recentTasks)
-    .slice(0, 4)
-    .map((task) => ({
-      id: task.id,
-      title: task.name,
-      priority: task.priority,
-      status: task.status,
-      href: paths.task(task.key),
-    }));
+  const taskItems = assignedTasks.slice(0, 4).map((task) => ({
+    id: task.id,
+    title: task.name,
+    priority: task.priority,
+    status: task.status,
+    href: paths.task(task.key),
+  }));
 
   const recentWork: DashboardWorkItem[] = [
     ...recentDocs.map((doc) => ({
@@ -470,10 +459,6 @@ export async function getDashboardData({
                 "tasks due",
               ),
             },
-            {
-              kind: "calendar" as const,
-              label: "0 events today",
-            },
           ]
         : []),
       ...(modules.docs
@@ -488,10 +473,6 @@ export async function getDashboardData({
             },
           ]
         : []),
-      {
-        kind: "mentions" as const,
-        label: "0 mentions",
-      },
     ],
     workspaceStats: [
       { value: memberCount[0]?.count ?? 0, label: "Members" },
@@ -520,7 +501,6 @@ export async function getDashboardData({
     recentWork,
     recentActivity,
     tasks: taskItems,
-    schedule: [],
     modules,
     links: {
       ...(modules.docs ? { docs: paths.docs(), newDoc: paths.docs() } : {}),

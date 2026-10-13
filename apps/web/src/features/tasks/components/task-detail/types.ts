@@ -13,6 +13,8 @@ export type TaskDetail = {
   priority: string;
   assignedToMemberId: string | null;
   assignee: string | null;
+  teamName: string | null;
+  reporter: string | null;
   due: Date | null;
   completedAt: Date | null;
   createdAt: Date;

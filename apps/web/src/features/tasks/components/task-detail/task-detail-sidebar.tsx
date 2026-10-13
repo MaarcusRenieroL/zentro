@@ -1,16 +1,12 @@
 import { useMemo, useState } from "react";
 
 import {
-  BotIcon,
   CheckIcon,
   ChevronDownIcon,
-  GitBranchIcon,
-  MoreHorizontalIcon,
   SearchIcon,
   Trash2Icon,
   UserCircleIcon,
   XIcon,
-  ZapIcon,
 } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
@@ -94,14 +90,6 @@ export function TaskDetailSidebar({
             <SelectItem value="done">Done</SelectItem>
           </SelectContent>
         </Select>
-
-        <Button variant="outline" size="icon-lg" aria-label="Quick action">
-          <ZapIcon className="size-4" />
-        </Button>
-        <Button variant="outline">
-          <BotIcon className="size-4" />
-          Improve Task
-        </Button>
       </div>
 
       <Card className="rounded-md">
@@ -110,9 +98,6 @@ export function TaskDetailSidebar({
             <ChevronDownIcon className="size-4" />
             Details
           </CardTitle>
-          <Button variant="ghost" size="icon-sm" aria-label="Details settings">
-            <MoreHorizontalIcon className="size-4" />
-          </Button>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           <DetailRow label="Assignee">
@@ -145,10 +130,6 @@ export function TaskDetailSidebar({
             </Select>
           </DetailRow>
 
-          <DetailRow label="Parent">
-            <span className="text-muted-foreground">None</span>
-          </DetailRow>
-
           <DetailRow label="Due date">
             <div className="flex items-center gap-1">
               <Input
@@ -178,60 +159,24 @@ export function TaskDetailSidebar({
             </div>
           </DetailRow>
 
-          <DetailRow label="Labels">
-            <span className="text-muted-foreground">None</span>
-          </DetailRow>
-
           <DetailRow label="Team">
-            <span className="text-muted-foreground">None</span>
-          </DetailRow>
-
-          <DetailRow label="Sprint">
-            <button className="font-medium text-primary hover:underline">
-              Sprint 0
-            </button>
-          </DetailRow>
-
-          <DetailRow label="Reporter">
-            <span className="inline-flex items-center gap-2 font-medium">
-              <AvatarInitials value="Maarcus" />
-              Maarcus
+            <span
+              className={
+                task.teamName ? "font-medium" : "text-muted-foreground"
+              }
+            >
+              {task.teamName ?? "No team"}
             </span>
           </DetailRow>
-        </CardContent>
-      </Card>
 
-      <Card className="rounded-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ChevronDownIcon className="size-4" />
-            Development
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <button className="flex items-center gap-2 font-medium text-primary hover:underline">
-            <GitBranchIcon className="size-4" />
-            Create branch
-          </button>
-          <button className="flex items-center gap-2 font-medium text-primary hover:underline">
-            <GitBranchIcon className="size-4" />
-            Create commit
-          </button>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ChevronDownIcon className="size-4" />
-            Automation
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>Refresh to see recent rule runs.</p>
-          <button className="font-medium text-primary hover:underline">
-            Create new automation rule
-          </button>
+          {task.reporter ? (
+            <DetailRow label="Reporter">
+              <span className="inline-flex items-center gap-2 font-medium">
+                <AvatarInitials value={task.reporter} />
+                {task.reporter}
+              </span>
+            </DetailRow>
+          ) : null}
         </CardContent>
       </Card>
 

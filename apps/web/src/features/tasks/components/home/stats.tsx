@@ -11,6 +11,14 @@ import {
   ListTodoIcon,
   type LucideIcon,
 } from "lucide-react";
+import { FC } from "react";
+
+export type TaskStatCounts = {
+  completedLast7Days: number;
+  updatedLast7Days: number;
+  createdLast7Days: number;
+  dueNext7Days: number;
+};
 
 type TaskStat = {
   id: string;
@@ -20,38 +28,42 @@ type TaskStat = {
   timeframe: string;
 };
 
-const stats: TaskStat[] = [
-  {
-    id: "completed",
-    icon: CheckCheckIcon,
-    count: 0,
-    label: "completed",
-    timeframe: "in the last 7 days",
-  },
-  {
-    id: "updated",
-    icon: ListTodoIcon,
-    count: 4,
-    label: "updated",
-    timeframe: "in the last 7 days",
-  },
-  {
-    id: "created",
-    icon: CheckSquareIcon,
-    count: 4,
-    label: "created",
-    timeframe: "in the last 7 days",
-  },
-  {
-    id: "due-soon",
-    icon: CalendarIcon,
-    count: 1,
-    label: "due soon",
-    timeframe: "in the next 7 days",
-  },
-];
+type Props = {
+  counts: TaskStatCounts;
+};
 
-export const TaskStats = () => {
+export const TaskStats: FC<Props> = ({ counts }) => {
+  const stats: TaskStat[] = [
+    {
+      id: "completed",
+      icon: CheckCheckIcon,
+      count: counts.completedLast7Days,
+      label: "completed",
+      timeframe: "in the last 7 days",
+    },
+    {
+      id: "updated",
+      icon: ListTodoIcon,
+      count: counts.updatedLast7Days,
+      label: "updated",
+      timeframe: "in the last 7 days",
+    },
+    {
+      id: "created",
+      icon: CheckSquareIcon,
+      count: counts.createdLast7Days,
+      label: "created",
+      timeframe: "in the last 7 days",
+    },
+    {
+      id: "due-soon",
+      icon: CalendarIcon,
+      count: counts.dueNext7Days,
+      label: "due soon",
+      timeframe: "in the next 7 days",
+    },
+  ];
+
   return (
     <section className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map(({ id, icon: Icon, count, label, timeframe }) => (

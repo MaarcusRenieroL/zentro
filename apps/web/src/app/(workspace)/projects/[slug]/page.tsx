@@ -11,13 +11,13 @@ import { ProjectHeader } from "~/src/components/project-detail/project-header";
 import { ProjectContributors } from "~/src/components/project-detail/project-contributors";
 import { ProjectSummary } from "~/src/components/project-detail/project-summary";
 import { ProjectTabs } from "~/src/components/project-detail/project-tabs";
-import { ProjectActivity } from "~/src/components/project-detail/project-activity";
 import { ProjectPageLoading } from "~/src/components/project-detail/project-loading";
 
 export default function ProjectPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [enabledModules, setEnabledModules] = useState<string[]>([]);
 
   const trpc = useTrpcClient();
 
@@ -30,8 +30,15 @@ export default function ProjectPage() {
           slug: params.slug,
         });
 
+        const moduleList = await trpc.modules.list.query();
+
         if (isMounted) {
           setProject(data as ProjectDetail);
+          setEnabledModules(
+            moduleList.modules
+              .filter((module) => module.enabled)
+              .map((module) => module.id),
+          );
         }
       } catch {
         toastError("Error", "Project not found");
@@ -69,7 +76,19 @@ export default function ProjectPage() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
-          <ProjectTabs description={project.description} />
+          <ProjectTabs
+            description={project.description}
+            totalTasks={project.totalTasks}
+            totalDocs={project.totalDocs}
+            tasksHref={
+              enabledModules.includes("tasks")
+                ? paths.tasksForProject(project.slug)
+                : undefined
+            }
+            docsHref={
+              enabledModules.includes("docs") ? paths.projectDocs() : undefined
+            }
+          />
         </div>
 
         <aside className="flex min-w-0 flex-col gap-5">
@@ -83,7 +102,6 @@ export default function ProjectPage() {
             owner={project.owner}
             totalMembers={project.totalMembers}
           />
-          <ProjectActivity />
         </aside>
       </div>
     </section>

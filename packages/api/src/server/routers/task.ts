@@ -1,5 +1,18 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, isNull, sql } from "@zentro/db/drizzle";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  ne,
+  sql,
+} from "@zentro/db/drizzle";
 import {
   members,
   projects,
@@ -228,6 +241,7 @@ export const taskRouter = router({
           status: tasks.status,
           priority: tasks.priority,
           assignedToMemberId: tasks.assignedToMemberId,
+          createdByMemberId: tasks.createdByMemberId,
           assignee: users.name,
           due: tasks.dueAt,
           completedAt: tasks.completedAt,
@@ -248,8 +262,176 @@ export const taskRouter = router({
         )
         .limit(1);
 
-      return task;
+      if (!task) {
+        return task;
+      }
+
+      // The reporter is the member who created the task, if they still exist.
+      const [reporter] = task.createdByMemberId
+        ? await db
+            .select({ name: users.name, email: users.email })
+            .from(members)
+            .innerJoin(users, eq(users.id, members.userId))
+            .where(
+              and(
+                eq(members.id, task.createdByMemberId),
+                eq(members.organizationId, activeOrganization.id),
+              ),
+            )
+            .limit(1)
+        : [];
+
+      return { ...task, reporter: reporter?.name ?? reporter?.email ?? null };
     }),
+  getOverview: moduleProcedure("tasks").query(async ({ ctx }) => {
+    const { db, user, activeOrganization } = ctx;
+    const organizationId = activeOrganization.id;
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const active = and(
+      eq(tasks.organizationId, organizationId),
+      isNull(tasks.deletedAt),
+    );
+    const open = and(active, ne(tasks.status, "done"));
+    const taskColumns = {
+      id: tasks.id,
+      key: tasks.key,
+      name: tasks.name,
+      status: tasks.status,
+      priority: tasks.priority,
+      dueAt: tasks.dueAt,
+      updatedAt: tasks.updatedAt,
+      project: projects.name,
+    };
+
+    const [currentMember] = await db
+      .select({ id: members.id })
+      .from(members)
+      .where(
+        and(
+          eq(members.userId, user.id),
+          eq(members.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+
+    const [
+      statusRows,
+      priorityRows,
+      [created],
+      [updated],
+      [completed],
+      [dueSoon],
+      assigned,
+      overdue,
+      recentlyUpdated,
+      activity,
+    ] = await Promise.all([
+      db
+        .select({ status: tasks.status, count: count() })
+        .from(tasks)
+        .where(active)
+        .groupBy(tasks.status),
+      db
+        .select({ priority: tasks.priority, count: count() })
+        .from(tasks)
+        .where(active)
+        .groupBy(tasks.priority),
+      db
+        .select({ count: count() })
+        .from(tasks)
+        .where(and(active, gte(tasks.createdAt, weekAgo))),
+      db
+        .select({ count: count() })
+        .from(tasks)
+        .where(and(active, gte(tasks.updatedAt, weekAgo))),
+      // Completion is recorded as a status change event; tasks have no
+      // completion timestamp that is kept up to date.
+      db
+        .select({ count: count() })
+        .from(taskActivityEvents)
+        .where(
+          and(
+            eq(taskActivityEvents.organizationId, organizationId),
+            eq(taskActivityEvents.field, "status"),
+            eq(taskActivityEvents.toValue, "done"),
+            gte(taskActivityEvents.createdAt, weekAgo),
+          ),
+        ),
+      db
+        .select({ count: count() })
+        .from(tasks)
+        .where(and(open, gte(tasks.dueAt, now), lte(tasks.dueAt, weekAhead))),
+      currentMember
+        ? db
+            .select(taskColumns)
+            .from(tasks)
+            .innerJoin(projects, eq(projects.id, tasks.projectId))
+            .where(and(open, eq(tasks.assignedToMemberId, currentMember.id)))
+            .orderBy(sql`${tasks.dueAt} asc nulls last`, desc(tasks.updatedAt))
+            .limit(6)
+        : Promise.resolve([]),
+      db
+        .select(taskColumns)
+        .from(tasks)
+        .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .where(and(open, isNotNull(tasks.dueAt), lt(tasks.dueAt, now)))
+        .orderBy(asc(tasks.dueAt))
+        .limit(6),
+      db
+        .select(taskColumns)
+        .from(tasks)
+        .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .where(active)
+        .orderBy(desc(tasks.updatedAt))
+        .limit(6),
+      db
+        .select({
+          id: taskActivityEvents.id,
+          type: taskActivityEvents.type,
+          field: taskActivityEvents.field,
+          toValue: taskActivityEvents.toValue,
+          createdAt: taskActivityEvents.createdAt,
+          actor: users.name,
+          taskKey: tasks.key,
+          taskName: tasks.name,
+        })
+        .from(taskActivityEvents)
+        .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
+        .leftJoin(members, eq(members.id, taskActivityEvents.actorMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .where(
+          and(
+            eq(taskActivityEvents.organizationId, organizationId),
+            isNull(tasks.deletedAt),
+          ),
+        )
+        .orderBy(desc(taskActivityEvents.createdAt))
+        .limit(20),
+    ]);
+
+    const [overdueCount] = await db
+      .select({ count: count() })
+      .from(tasks)
+      .where(and(open, isNotNull(tasks.dueAt), lt(tasks.dueAt, now)));
+
+    return {
+      counts: {
+        createdLast7Days: created?.count ?? 0,
+        updatedLast7Days: updated?.count ?? 0,
+        completedLast7Days: completed?.count ?? 0,
+        dueNext7Days: dueSoon?.count ?? 0,
+        overdue: overdueCount?.count ?? 0,
+      },
+      byStatus: statusRows,
+      byPriority: priorityRows,
+      assignedToMe: assigned,
+      overdue,
+      recentlyUpdated,
+      activity,
+    };
+  }),
   updateTaskByKey: moduleProcedure("tasks")
     .input(updateTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {

@@ -106,7 +106,8 @@ export default function TaskDetailPage() {
       });
 
       if (updatedTask) {
-        setTask(updatedTask);
+        // The update response has no reporter; it cannot change, so keep it.
+        setTask({ ...updatedTask, reporter: task.reporter });
         await refreshTaskActivity();
         toastSuccess("Task updated");
       }

@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  CalendarDaysIcon,
-  ClockIcon,
-  Columns3Icon,
-  ListIcon,
-} from "lucide-react";
+import { CalendarDaysIcon, Columns3Icon, ListIcon } from "lucide-react";
 
 import {
   Tabs,
@@ -19,11 +14,9 @@ import { CalendarView } from "./calendar-view";
 import { ListView } from "./list-view";
 import { TaskBoard } from "./task-board";
 import { TaskWorkspaceHeader } from "./task-workspace-header";
-import { WorklogPlanner } from "./worklog-planner";
 import type {
   TaskPriority,
   TaskStatus,
-  WorkLogEvent,
   WorkspaceTask,
 } from "~/src/features/tasks/lib/types";
 import { FC } from "react";
@@ -32,8 +25,9 @@ type Props = {
   title: string;
   description: string;
   tasks: WorkspaceTask[];
-  logs: WorkLogEvent[];
-  projectScoped?: boolean;
+  // Only tasks of this project are shown (from /tasks?project=<slug>).
+  projectSlug?: string;
+  initialStatus?: TaskStatus | "all";
   onTaskStatusChange?: (task: WorkspaceTask, status: TaskStatus) => void;
   onTaskCreated?: () => void | Promise<void>;
 };
@@ -42,13 +36,15 @@ export const TaskWorkspace: FC<Props> = ({
   title,
   description,
   tasks,
-  logs,
-  projectScoped = false,
+  projectSlug,
+  initialStatus = "all",
   onTaskStatusChange,
   onTaskCreated,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">(
+    initialStatus,
+  );
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">(
     "all",
   );
@@ -79,6 +75,7 @@ export const TaskWorkspace: FC<Props> = ({
     const normalizedSearch = searchQuery.trim().toLowerCase();
 
     return tasks.filter((task) => {
+      const matchesProject = !projectSlug || task.projectSlug === projectSlug;
       const matchesSearch =
         !normalizedSearch ||
         [
@@ -104,6 +101,7 @@ export const TaskWorkspace: FC<Props> = ({
         task.teamId === teamFilter;
 
       return (
+        matchesProject &&
         matchesSearch &&
         matchesStatus &&
         matchesPriority &&
@@ -114,6 +112,7 @@ export const TaskWorkspace: FC<Props> = ({
   }, [
     assigneeFilter,
     priorityFilter,
+    projectSlug,
     searchQuery,
     statusFilter,
     tasks,
@@ -133,7 +132,7 @@ export const TaskWorkspace: FC<Props> = ({
         title={title}
         description={description}
         taskCount={filteredTasks.length}
-        projectScoped={projectScoped}
+        projectScoped={Boolean(projectSlug)}
         assigneeOptions={assigneeOptions}
         teamOptions={teamOptions}
         filtersActive={filtersActive}
@@ -173,11 +172,6 @@ export const TaskWorkspace: FC<Props> = ({
             <CalendarDaysIcon className="size-4" />
             Calendar
           </TabsTrigger>
-
-          <TabsTrigger value="timeline">
-            <ClockIcon className="size-4" />
-            Timeline
-          </TabsTrigger>
         </TabsList>
 
         <div className="min-w-0">
@@ -195,10 +189,6 @@ export const TaskWorkspace: FC<Props> = ({
 
           <TabsContent value="calendar" className="mt-0">
             <CalendarView tasks={filteredTasks} />
-          </TabsContent>
-
-          <TabsContent value="timeline" className="mt-0">
-            <WorklogPlanner tasks={filteredTasks} logs={logs} />
           </TabsContent>
         </div>
       </Tabs>
