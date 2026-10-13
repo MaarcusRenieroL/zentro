@@ -271,18 +271,32 @@ describe("tasks", () => {
     expect(events.length).toBeGreaterThanOrEqual(2);
   });
 
-  // Bug: createTask reads the latest task number and inserts without a lock, so
-  // concurrent requests in one project compute the same key and the unique
-  // index rejects all but one of them.
-  it.fails("creates unique keys under concurrent requests", async () => {
-    const results = await Promise.allSettled(
+  // Task numbers are allocated under a per-project advisory lock, so
+  // simultaneous requests get distinct, consecutive keys.
+  it("creates distinct sequential keys under concurrent requests", async () => {
+    const before = await as.task.getTasksByOrgId({});
+    const highest = Math.max(
+      ...before
+        .filter((task) => task.key.startsWith("PA-"))
+        .map((task) => Number(task.key.slice(3))),
+    );
+
+    const created = await Promise.all(
       Array.from({ length: 12 }, (_, index) =>
         as.task.createTask({ projectId, name: `Race ${index}` }),
       ),
     );
 
-    expect(results.filter((result) => result.status === "rejected")).toEqual(
-      [],
+    const numbers = created
+      .map((task) => task.taskNumber)
+      .sort((a, b) => a - b);
+
+    expect(new Set(created.map((task) => task.key)).size).toBe(12);
+    expect(numbers).toEqual(
+      Array.from({ length: 12 }, (_, index) => highest + 1 + index),
+    );
+    expect(created.every((task) => task.key === `PA-${task.taskNumber}`)).toBe(
+      true,
     );
   });
 });

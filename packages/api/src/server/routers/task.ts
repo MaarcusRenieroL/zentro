@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, isNull } from "@zentro/db/drizzle";
+import { and, desc, eq, isNull, sql } from "@zentro/db/drizzle";
 import {
   members,
   projects,
@@ -23,120 +23,148 @@ import {
   getTaskForActiveOrganization,
 } from "./task-helpers";
 
+function isUniqueViolation(error: unknown) {
+  const candidate = error as {
+    code?: string;
+    cause?: { code?: string };
+  } | null;
+
+  return candidate?.code === "23505" || candidate?.cause?.code === "23505";
+}
+
 export const taskRouter = router({
   createTask: moduleProcedure("tasks")
     .input(createTaskSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
 
-      return db.transaction(async (tx) => {
-        const [member] = await tx
-          .select({ id: members.id })
-          .from(members)
-          .where(
-            and(
-              eq(members.userId, user.id),
-              eq(members.organizationId, activeOrganization.id),
-            ),
-          )
-          .limit(1);
+      const create = () =>
+        db.transaction(async (tx) => {
+          // Serialize task numbering per project. The lock is released when the
+          // transaction ends, so numbers stay sequential without gaps.
+          await tx.execute(
+            sql`select pg_advisory_xact_lock(hashtextextended(${input.projectId}, 0))`,
+          );
 
-        if (!member) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Member not found in active organization.",
-          });
-        }
-
-        const [project] = await tx
-          .select({
-            id: projects.id,
-            teamId: projects.teamId,
-            taskKeyPrefix: projects.taskKeyPrefix,
-          })
-          .from(projects)
-          .where(
-            and(
-              eq(projects.id, input.projectId),
-              eq(projects.organizationId, activeOrganization.id),
-            ),
-          )
-          .limit(1);
-
-        if (!project) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Project not found.",
-          });
-        }
-
-        const [latestTask] = await tx
-          .select({ taskNumber: tasks.taskNumber })
-          .from(tasks)
-          .where(eq(tasks.projectId, project.id))
-          .orderBy(desc(tasks.taskNumber))
-          .limit(1);
-
-        const taskNumber = (latestTask?.taskNumber ?? 0) + 1;
-        const key = `${project.taskKeyPrefix}-${taskNumber}`;
-        let assignedToMemberId: string | null = null;
-
-        if (input.assignedToMemberId) {
-          const [assignee] = await tx
+          const [member] = await tx
             .select({ id: members.id })
             .from(members)
             .where(
               and(
-                eq(members.id, input.assignedToMemberId),
+                eq(members.userId, user.id),
                 eq(members.organizationId, activeOrganization.id),
               ),
             )
             .limit(1);
 
-          if (!assignee) {
+          if (!member) {
             throw new TRPCError({
               code: "NOT_FOUND",
-              message: "Assignee not found in active organization.",
+              message: "Member not found in active organization.",
             });
           }
 
-          assignedToMemberId = assignee.id;
-        }
+          const [project] = await tx
+            .select({
+              id: projects.id,
+              teamId: projects.teamId,
+              taskKeyPrefix: projects.taskKeyPrefix,
+            })
+            .from(projects)
+            .where(
+              and(
+                eq(projects.id, input.projectId),
+                eq(projects.organizationId, activeOrganization.id),
+              ),
+            )
+            .limit(1);
 
-        const [task] = await tx
-          .insert(tasks)
-          .values({
-            name: input.name,
-            status: input.status,
-            priority: input.priority,
-            dueAt: input.dueAt,
-            projectId: project.id,
-            teamId: project.teamId,
-            description: input.description || null,
-            assignedToMemberId,
-            createdByMemberId: member.id,
+          if (!project) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Project not found.",
+            });
+          }
+
+          const [latestTask] = await tx
+            .select({ taskNumber: tasks.taskNumber })
+            .from(tasks)
+            .where(eq(tasks.projectId, project.id))
+            .orderBy(desc(tasks.taskNumber))
+            .limit(1);
+
+          const taskNumber = (latestTask?.taskNumber ?? 0) + 1;
+          const key = `${project.taskKeyPrefix}-${taskNumber}`;
+          let assignedToMemberId: string | null = null;
+
+          if (input.assignedToMemberId) {
+            const [assignee] = await tx
+              .select({ id: members.id })
+              .from(members)
+              .where(
+                and(
+                  eq(members.id, input.assignedToMemberId),
+                  eq(members.organizationId, activeOrganization.id),
+                ),
+              )
+              .limit(1);
+
+            if (!assignee) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "Assignee not found in active organization.",
+              });
+            }
+
+            assignedToMemberId = assignee.id;
+          }
+
+          const [task] = await tx
+            .insert(tasks)
+            .values({
+              name: input.name,
+              status: input.status,
+              priority: input.priority,
+              dueAt: input.dueAt,
+              projectId: project.id,
+              teamId: project.teamId,
+              description: input.description || null,
+              assignedToMemberId,
+              createdByMemberId: member.id,
+              organizationId: activeOrganization.id,
+              key,
+              taskNumber,
+            })
+            .returning();
+
+          if (!task) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to create task.",
+            });
+          }
+
+          await tx.insert(taskActivityEvents).values({
             organizationId: activeOrganization.id,
-            key,
-            taskNumber,
-          })
-          .returning();
-
-        if (!task) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create task.",
+            taskId: task.id,
+            actorMemberId: member.id,
+            type: "task.created",
           });
-        }
 
-        await tx.insert(taskActivityEvents).values({
-          organizationId: activeOrganization.id,
-          taskId: task.id,
-          actorMemberId: member.id,
-          type: "task.created",
+          return task;
         });
 
-        return task;
-      });
+      try {
+        return await create();
+      } catch (error) {
+        // Safety net: the advisory lock should prevent duplicate keys, but a
+        // unique violation is retried once in case another writer slipped by.
+        if (!isUniqueViolation(error)) {
+          throw error;
+        }
+
+        return create();
+      }
     }),
   getTasksByOrgId: moduleProcedure("tasks")
     .input(getTasksSchema.optional().default({}))

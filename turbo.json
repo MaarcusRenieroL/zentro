@@ -28,7 +28,8 @@
     },
     "test": {
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     }
   }
 }

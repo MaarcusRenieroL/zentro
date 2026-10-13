@@ -41,6 +41,20 @@ test("a user who already belongs to an organization accepts an invitation by lin
 
   const invitationId = await readInvitationId(email);
 
+  // Someone signed in with a different address cannot read the invitation.
+  const stranger = await newContext(browser);
+
+  await registerWithOrganization(stranger.page, {
+    label: "stranger",
+    orgName: uniqueName("Other"),
+  });
+  await stranger.page.goto(`/auth/invite/${invitationId}`);
+  await expect(
+    stranger.page.getByText(/sent to another email address/i),
+  ).toBeVisible();
+  await expect(stranger.page.getByText(ownerOrg)).toHaveCount(0);
+  await stranger.context.close();
+
   // The link works for someone who is already in another organization.
   await invitee.page.goto(`/auth/invite/${invitationId}`);
   await expect(invitee.page).toHaveURL(

@@ -3,10 +3,10 @@ import { and, count, eq } from "@zentro/db/drizzle";
 import { invitations, members, organizations, users } from "@zentro/db/schema";
 
 import { orgInviteDetailsSchema } from "../../types/zod-schema";
-import { publicProcedure, router } from "../trpc";
+import { authenticatedProcedure, router } from "../trpc";
 
 export const organizationRouter = router({
-  getInviteDetails: publicProcedure
+  getInviteDetails: authenticatedProcedure
     .input(orgInviteDetailsSchema)
     .query(async ({ input, ctx }) => {
       const { invitationId } = input;
@@ -14,6 +14,7 @@ export const organizationRouter = router({
       const [invite] = await ctx.db
         .select({
           invitationId: invitations.id,
+          email: invitations.email,
           organizationId: invitations.organizationId,
           role: invitations.role,
           expiresAt: invitations.expiresAt,
@@ -35,6 +36,15 @@ export const organizationRouter = router({
         .limit(1);
 
       if (!invite) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Invitation not found.",
+        });
+      }
+
+      // Only the invited address may read an invitation. Anything else looks
+      // the same as an unknown id, so invitation ids cannot be probed.
+      if (invite.email.toLowerCase() !== ctx.user.email.toLowerCase()) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Invitation not found.",

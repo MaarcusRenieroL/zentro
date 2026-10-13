@@ -28,6 +28,23 @@ const trpc = initTRPC.context<TRPCContext>().create({
 export const router = trpc.router;
 export const publicProcedure = trpc.procedure;
 
+/** Requires a session but, unlike protectedProcedure, no active organization. */
+export const authenticatedProcedure = trpc.procedure.use(({ ctx, next }) => {
+  if (!ctx.user?.id) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "You must be logged in",
+    });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      user: ctx.user,
+    },
+  });
+});
+
 export const protectedProcedure = trpc.procedure.use(({ ctx, next }) => {
   if (!ctx.user?.id) {
     throw new TRPCError({

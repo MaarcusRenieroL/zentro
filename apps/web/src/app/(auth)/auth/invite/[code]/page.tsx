@@ -136,12 +136,14 @@ export default function InviteAcceptPage() {
             <AlertCircleIcon className="h-7 w-7 text-destructive" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {error === "expired" ? "Invite expired" : "Invalid invite"}
+            {error === "expired"
+              ? "Invite expired"
+              : "Invitation not available"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {error === "expired"
               ? "This invitation link has expired. Please ask for a new invite."
-              : "This invitation link is invalid. Please check the URL or ask for a new invite."}
+              : "This invitation link is invalid, or it was sent to another email address. Sign in with the email address it was sent to, or ask for a new invite."}
           </p>
         </div>
 

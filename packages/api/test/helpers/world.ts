@@ -4,6 +4,7 @@ import { db } from "@zentro/db";
 import { eq, inArray } from "@zentro/db/drizzle";
 import {
   docs,
+  invitations,
   members,
   organizationModules,
   organizations,
@@ -217,6 +218,48 @@ export class World {
 
   anonymousCaller() {
     return anonymousCaller();
+  }
+
+  /** A signed-in caller who has no active organization (a brand new user). */
+  sessionCaller(user: TestUser) {
+    return appRouter.createCaller({
+      db,
+      session: {
+        session: {
+          id: randomUUID(),
+          token: randomUUID(),
+          userId: user.id,
+          activeOrganizationId: null,
+          expiresAt: new Date(Date.now() + 60_000),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        user,
+      },
+      user,
+      activeOrganization: null,
+      enabledModules: async () => new Set(),
+    } as unknown as TRPCContext);
+  }
+
+  async invitation(
+    org: TestOrg,
+    inviter: TestUser,
+    values: Partial<typeof invitations.$inferInsert> & { email: string },
+  ) {
+    const [invitation] = await db
+      .insert(invitations)
+      .values({
+        organizationId: org.id,
+        inviterId: inviter.id,
+        role: "member",
+        status: "pending",
+        expiresAt: new Date(Date.now() + 86_400_000),
+        ...values,
+      })
+      .returning();
+
+    return invitation!;
   }
 
   async cleanup() {
