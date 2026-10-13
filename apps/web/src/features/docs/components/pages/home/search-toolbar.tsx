@@ -23,8 +23,8 @@ export const SearchToolbar: FC = () => {
 
     const normalizedQuery = query.trim();
     const searchPath = normalizedQuery
-      ? `/search?q=${encodeURIComponent(normalizedQuery)}`
-      : "/search";
+      ? `/docs/search?q=${encodeURIComponent(normalizedQuery)}`
+      : "/docs/search";
 
     router.push(searchPath);
   }
@@ -67,19 +67,19 @@ export const SearchToolbar: FC = () => {
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
           <Button variant="outline" className="justify-start" asChild>
-            <Link href="/recent">
+            <Link href="/docs/recent">
               <ClockIcon className="size-4" />
               Recent
             </Link>
           </Button>
           <Button variant="outline" className="justify-start" asChild>
-            <Link href="/projects">
+            <Link href="/docs/projects">
               <FolderIcon className="size-4" />
               Projects
             </Link>
           </Button>
           <Button variant="outline" className="justify-start" asChild>
-            <Link href="/trash">
+            <Link href="/docs/trash">
               <Trash2Icon className="size-4" />
               Trash
             </Link>

@@ -64,7 +64,7 @@ export const RecentDocs: FC = () => {
             Pages your team touched most recently
           </p>
         </div>
-        <Link href="/recent">
+        <Link href="/docs/recent">
           <Button variant="link" size="sm">
             View all
           </Button>

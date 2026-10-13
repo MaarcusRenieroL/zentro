@@ -198,6 +198,16 @@ export const getTaskActivityEventsSchema = z.object({
   taskKey: z.string().trim().min(1, "Task key is required."),
 });
 
+// `/docs/[slug]` shares its parent with these static routes.
+export const reservedDocSlugs = [
+  "my-docs",
+  "projects",
+  "recent",
+  "search",
+  "trash",
+  "new",
+] as const;
+
 export const createDocSchema = z.object({
   projectId: z.string().uuid().optional().nullable(),
   teamId: z.string().uuid().optional().nullable(),
@@ -211,6 +221,10 @@ export const createDocSchema = z.object({
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "Use lowercase letters, numbers, and hyphens only.",
+    )
+    .refine(
+      (slug) => !(reservedDocSlugs as readonly string[]).includes(slug),
+      "This slug is reserved.",
     ),
 });
 

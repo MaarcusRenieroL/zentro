@@ -1,4 +1,4 @@
-import { StaticDocListPage } from "../../components/pages/list/static-doc-list-page";
+import { StaticDocListPage } from "~/src/features/docs/components/pages/list/static-doc-list-page";
 
 export default function MyDocsPage() {
   return (

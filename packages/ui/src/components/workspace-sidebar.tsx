@@ -172,39 +172,33 @@ export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
       },
       {
         label: "Docs",
-        href: "/",
+        href: "/docs",
         icon: BookOpenIcon,
-        app: "docs",
         children: [
           {
             label: "All docs",
-            href: "/",
+            href: "/docs",
             icon: FileTextIcon,
-            app: "docs",
           },
           {
             label: "My docs",
-            href: "/my-docs",
+            href: "/docs/my-docs",
             icon: StarIcon,
-            app: "docs",
           },
           {
             label: "Recent",
-            href: "/recent",
+            href: "/docs/recent",
             icon: CalendarIcon,
-            app: "docs",
           },
           {
             label: "Project docs",
-            href: "/projects",
+            href: "/docs/projects",
             icon: FolderIcon,
-            app: "docs",
           },
           {
             label: "Trash",
-            href: "/trash",
+            href: "/docs/trash",
             icon: Trash2Icon,
-            app: "docs",
           },
         ],
       },
@@ -276,11 +270,7 @@ const appByPath: Record<string, WorkspaceSidebarApp> = {
   "/projects": "workspace",
   "/tasks": "tasks",
   "/calendar": "tasks",
-  "/docs": "docs",
-  "/my-docs": "docs",
-  "/recent": "docs",
-  "/search": "docs",
-  "/trash": "docs",
+  "/docs": "workspace",
   "/settings": "workspace",
 };
 

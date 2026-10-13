@@ -78,7 +78,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
       </div>
 
       <form
-        action="/search"
+        action="/docs/search"
         className="flex flex-col gap-3 rounded-lg border bg-background p-3 shadow-sm sm:flex-row sm:items-center"
       >
         <div className="relative flex-1">
@@ -112,7 +112,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
           </div>
           {normalizedQuery ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/search">Clear</Link>
+              <Link href="/docs/search">Clear</Link>
             </Button>
           ) : null}
         </div>

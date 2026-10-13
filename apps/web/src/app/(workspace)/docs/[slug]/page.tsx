@@ -1,4 +1,4 @@
-import { NotionEditorPage } from "../../../components/pages/doc/notion-editor-page";
+import { NotionEditorPage } from "~/src/features/docs/components/pages/doc/notion-editor-page";
 
 type Props = {
   params: Promise<{

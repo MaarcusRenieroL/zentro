@@ -177,8 +177,7 @@ export async function getDashboardData({
     getOrgAppUrl({ orgSlug, app: "workspace", path });
   const tasksUrl = (path: string) =>
     getOrgAppUrl({ orgSlug, app: "tasks", path });
-  const docsUrl = (path: string) =>
-    getOrgAppUrl({ orgSlug, app: "docs", path });
+  const docsUrl = (path: string) => workspaceUrl(path);
 
   const [
     memberCount,
@@ -463,10 +462,10 @@ export async function getDashboardData({
     tasks: taskItems,
     schedule: [],
     links: {
-      docs: docsUrl("/"),
+      docs: docsUrl("/docs"),
       projects: workspaceUrl("/projects"),
       tasks: tasksUrl("/tasks"),
-      newDoc: docsUrl("/"),
+      newDoc: docsUrl("/docs"),
       newTask: tasksUrl("/tasks"),
     },
   };

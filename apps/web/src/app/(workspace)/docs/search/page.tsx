@@ -1,4 +1,4 @@
-import { SearchResultsPage } from "../../components/pages/search/search-results-page";
+import { SearchResultsPage } from "~/src/features/docs/components/pages/search/search-results-page";
 
 type SearchPageProps = {
   searchParams: Promise<{
