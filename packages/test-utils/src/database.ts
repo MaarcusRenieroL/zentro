@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
@@ -9,10 +8,24 @@ import { Client, Pool } from "pg";
 const defaultTestDatabaseUrl =
   "postgres://zentro:zentro@localhost:5434/zentro_test";
 
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-);
+// Works from any package directory (and under both ESM and CJS loaders).
+function findRepoRoot(start = process.cwd()): string {
+  let current = start;
+
+  while (!existsSync(path.join(current, "pnpm-workspace.yaml"))) {
+    const parent = path.dirname(current);
+
+    if (parent === current) {
+      throw new Error("Could not find the repository root.");
+    }
+
+    current = parent;
+  }
+
+  return current;
+}
+
+const repoRoot = findRepoRoot();
 
 /**
  * Reads only `TEST_DATABASE_URL` (from the environment, then from the root
@@ -111,5 +124,27 @@ export async function ensureTestDatabase(
     });
   } finally {
     await pool.end();
+  }
+}
+
+/** Runs one query against the test database (never the dev database). */
+export async function queryTestDatabase<T extends Record<string, unknown>>(
+  sql: string,
+  values: unknown[] = [],
+): Promise<T[]> {
+  const connectionString = getTestDatabaseUrl();
+
+  assertTestDatabaseUrl(connectionString);
+
+  const client = new Client({ connectionString });
+
+  await client.connect();
+
+  try {
+    const result = await client.query(sql, values);
+
+    return result.rows as T[];
+  } finally {
+    await client.end();
   }
 }

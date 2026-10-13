@@ -1,0 +1,11 @@
+{
+  "extends": "../packages/typescript-config/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true
+  },
+  "include": ["./**/*.ts", "../playwright.config.ts"]
+}

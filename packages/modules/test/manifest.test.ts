@@ -119,16 +119,16 @@ function collectRoutes(dir: string, segments: string[] = []): string[][] {
   return routes;
 }
 
+// Manifest links are static paths, so they must match a static route folder.
+// A dynamic folder such as docs/[slug] must not satisfy them, otherwise a
+// renamed "my-docs" folder would silently turn into a doc slug.
 function routeExists(routes: string[][], href: string) {
   const parts = href.split("?")[0]!.split("/").filter(Boolean);
 
   return routes.some(
     (route) =>
       route.length === parts.length &&
-      route.every(
-        (segment, index) =>
-          /^\[.+\]$/.test(segment) || segment === parts[index],
-      ),
+      route.every((segment, index) => segment === parts[index]),
   );
 }
 
