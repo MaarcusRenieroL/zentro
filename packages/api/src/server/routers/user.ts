@@ -1,9 +1,10 @@
 import { invitations, organizations, users } from "@zentro/db/schema";
-import { protectedProcedure, router } from "../trpc";
-import { and, eq, gt, isNull, or } from "@zentro/db/drizzle";
+import { authenticatedProcedure, router } from "../trpc";
+import { and, eq, gt, isNull, or, sql } from "@zentro/db/drizzle";
 
 export const userRouter = router({
-  listPendingInvites: protectedProcedure.query(async ({ ctx }) => {
+  // Session only: a new user has no active organization yet.
+  listPendingInvites: authenticatedProcedure.query(async ({ ctx }) => {
     const { user } = ctx;
 
     return ctx.db
@@ -22,7 +23,7 @@ export const userRouter = router({
       )
       .where(
         and(
-          eq(invitations.email, user.email),
+          sql`lower(${invitations.email}) = lower(${user.email})`,
           eq(invitations.status, "pending"),
           or(
             isNull(invitations.expiresAt),

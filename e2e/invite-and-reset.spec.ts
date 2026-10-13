@@ -127,3 +127,40 @@ test("a password reset link still works after more than 60 seconds", async ({
   await signIn(page, email, newPassword);
   await expect(page).toHaveURL(/\/dashboard/);
 });
+
+test("a new user without an organization sees and accepts pending invitations", async ({
+  page,
+  browser,
+}) => {
+  const ownerOrg = uniqueName("Joinable");
+
+  await registerWithOrganization(page, {
+    label: "joinowner",
+    orgName: ownerOrg,
+  });
+
+  const newcomer = await newContext(browser);
+  const { email } = await registerUser(newcomer.page, "newcomer");
+
+  const response = await page.request.post(
+    "/api/auth/organization/invite-member",
+    {
+      headers: { origin: "http://localhost:3000" },
+      data: { email, role: "member" },
+    },
+  );
+
+  expect(response.ok()).toBe(true);
+
+  await newcomer.page.goto("/auth/join-organization");
+  await expect(newcomer.page.getByText(ownerOrg)).toBeVisible();
+  await newcomer.page.getByRole("button", { name: /join/i }).click();
+  await expect(newcomer.page).toHaveURL(/\/dashboard/);
+  await expect(
+    newcomer.page
+      .locator("header")
+      .getByRole("button", { name: new RegExp(ownerOrg) }),
+  ).toBeVisible();
+
+  await newcomer.context.close();
+});

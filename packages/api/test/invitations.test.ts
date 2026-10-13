@@ -98,3 +98,51 @@ describe("organization.getInviteDetails", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
+
+describe("user.listPendingInvites", () => {
+  it("shows a user with no organization their own pending invites", async () => {
+    const list = await world.sessionCaller(invitee).user.listPendingInvites();
+
+    expect(list.map((invite) => invite.id)).toContain(invitationId);
+    expect(list.find((invite) => invite.id === invitationId)).toMatchObject({
+      orgName: "Inviting Org",
+      invitedBy: "Inviter",
+      role: "member",
+    });
+  });
+
+  it("never lists another user's invitations", async () => {
+    const list = await world.sessionCaller(stranger).user.listPendingInvites();
+
+    expect(list).toEqual([]);
+  });
+
+  it("leaves out expired and non-pending invitations", async () => {
+    const other = await world.user("Other invitee");
+    const expired = await world.invitation(org, inviter, {
+      email: other.email,
+      expiresAt: new Date(Date.now() - 1000),
+    });
+    const accepted = await world.invitation(org, inviter, {
+      email: other.email,
+      status: "accepted",
+    });
+    const pending = await world.invitation(org, inviter, {
+      email: other.email,
+    });
+
+    const ids = (
+      await world.sessionCaller(other).user.listPendingInvites()
+    ).map((invite) => invite.id);
+
+    expect(ids).toEqual([pending.id]);
+    expect(ids).not.toContain(expired.id);
+    expect(ids).not.toContain(accepted.id);
+  });
+
+  it("requires a session", async () => {
+    await expect(
+      world.anonymousCaller().user.listPendingInvites(),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+});
