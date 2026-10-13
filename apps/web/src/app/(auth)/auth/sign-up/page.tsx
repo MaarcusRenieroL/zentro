@@ -12,14 +12,8 @@ import { authClient } from "@zentro/auth/client";
 
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldSeparator,
-} from "@zentro/ui/shadcn/field";
+import { Field, FieldGroup, FieldLabel } from "@zentro/ui/shadcn/field";
 import { toastError, toastSuccess } from "@zentro/ui/lib/toast";
-import { GithubIcon, GoogleIcon } from "@zentro/ui/components/icons";
 import {
   SignupFormValues,
   signupSchema,
@@ -27,9 +21,6 @@ import {
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [socialProvider, setSocialProvider] = useState<
-    "google" | "github" | null
-  >(null);
   const router = useRouter();
 
   const {
@@ -82,20 +73,6 @@ export default function SignupPage() {
     }
 
     router.replace(paths.auth.verifyEmail(email));
-  };
-
-  const handleSocialSignIn = async (provider: "google" | "github") => {
-    setSocialProvider(provider);
-
-    const { error } = await authClient.signIn.social({
-      provider,
-      callbackURL: paths.auth.createOrganization(),
-    });
-
-    if (error) {
-      toastError(error.statusText, error.message);
-      setSocialProvider(null);
-    }
   };
 
   const passwordRequirements = [
@@ -258,34 +235,6 @@ export default function SignupPage() {
             </Button>
           </FieldGroup>
         </form>
-
-        <FieldSeparator className="my-6" />
-
-        <Button
-          type="button"
-          variant="outline"
-          className="mb-3 w-full"
-          disabled={socialProvider !== null}
-          onClick={() => handleSocialSignIn("google")}
-        >
-          <GoogleIcon className="fill-white" />
-          {socialProvider === "google"
-            ? "Connecting Google..."
-            : "Continue with Google"}
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={socialProvider !== null}
-          onClick={() => handleSocialSignIn("github")}
-        >
-          <GithubIcon className="fill-white" />
-          {socialProvider === "github"
-            ? "Connecting GitHub..."
-            : "Continue with GitHub"}
-        </Button>
       </div>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">

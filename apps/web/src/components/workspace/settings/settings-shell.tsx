@@ -86,7 +86,7 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
               Organization settings
             </h1>
             <p className="mt-1 truncate text-sm text-muted-foreground">
-              {organization.name} · {organization.slug}.zentro.app
+              {organization.name}
             </p>
           </div>
         </div>

@@ -135,18 +135,15 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
           <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
-                Workspace URL
+                Workspace slug
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Your workspace address.
+                Your workspace identifier.
               </p>
             </div>
             <div className="max-w-xl space-y-2">
               <Label htmlFor="organization-slug">Slug</Label>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <span className="text-sm text-muted-foreground">
-                  zentro.app/
-                </span>
                 <Input
                   id="organization-slug"
                   value={organization.slug}
@@ -155,7 +152,8 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                Read-only for now. Contact support to change your workspace URL.
+                Read-only for now. Contact support to change your workspace
+                slug.
               </p>
             </div>
           </div>

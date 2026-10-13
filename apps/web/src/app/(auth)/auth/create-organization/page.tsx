@@ -215,10 +215,8 @@ export default function CreateOrganizationPage() {
                     )}
                   </div>
                   <FieldDescription>
-                    <span className="text-muted-foreground">zentro.app/</span>
-                    <span className="text-foreground">
-                      {workspaceSlug || "your-org"}
-                    </span>
+                    Lowercase letters, numbers and hyphens. Used to identify
+                    your workspace.
                   </FieldDescription>
 
                   {fieldState.error && (
