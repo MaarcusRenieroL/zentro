@@ -68,6 +68,7 @@ import {
   getDocTitle,
   getInitials,
 } from "../../../lib/docs";
+import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 import { CommentsPanel } from "./comments-panel";
 
 const slashCommands = [
@@ -567,6 +568,21 @@ export function NotionEditorPage({ slug }: { slug: string }) {
     },
   });
 
+  const docResource = { projectId: doc?.projectId ?? undefined };
+  const canEdit = useAnyPermission(
+    ["docs.update_any", "docs.update_own"],
+    docResource,
+  );
+  const canTrash = useAnyPermission(
+    ["docs.trash_any", "docs.trash_own"],
+    docResource,
+  );
+  const canComment = useAnyPermission(["docs.comment"], docResource);
+
+  useEffect(() => {
+    editor?.setEditable(canEdit);
+  }, [editor, canEdit]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -843,15 +859,19 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                   <MessageSquareIcon className="size-4" />
                   {commentsOpen ? "Hide comments" : "Show comments"}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="gap-2 text-destructive focus:text-destructive"
-                  disabled={isDeleting}
-                  onClick={deleteDoc}
-                >
-                  <Trash2Icon className="size-4" />
-                  {isDeleting ? "Moving..." : "Move to trash"}
-                </DropdownMenuItem>
+                {canTrash ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="gap-2 text-destructive focus:text-destructive"
+                      disabled={isDeleting}
+                      onClick={deleteDoc}
+                    >
+                      <Trash2Icon className="size-4" />
+                      {isDeleting ? "Moving..." : "Move to trash"}
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -888,13 +908,16 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 onBlur={saveTitle}
+                readOnly={!canEdit}
                 placeholder="Untitled"
                 className="!h-auto border-none bg-transparent px-0 py-0 !text-5xl !leading-tight font-semibold tracking-tight shadow-none outline-none focus-visible:ring-0 sm:!text-6xl md:!text-6xl"
               />
             </div>
 
             <div className="mt-9 max-w-4xl">
-              <div className="mb-5 flex flex-wrap items-center gap-1 rounded-lg border bg-background p-2 shadow-sm">
+              <div
+                className={`mb-5 flex-wrap items-center gap-1 rounded-lg border bg-background p-2 shadow-sm ${canEdit ? "flex" : "hidden"}`}
+              >
                 <div className="flex flex-wrap items-center gap-1">
                   <ToolbarMenuButton icon={Heading1Icon} label="H1">
                     <DropdownMenuLabel>Headings</DropdownMenuLabel>
@@ -1055,6 +1078,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
 
         <CommentsPanel
           docId={doc.id}
+          canComment={canComment}
           isOpen={commentsOpen}
           onClose={() => setCommentsOpen(false)}
         />

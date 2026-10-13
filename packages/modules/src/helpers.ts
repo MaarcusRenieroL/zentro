@@ -91,6 +91,28 @@ export function canDisable(
   return { allowed: true };
 }
 
+/** Drops links the caller lacks the permission for, and groups left empty. */
+export function filterNavSections(
+  sections: ModuleNavSection[],
+  can: (permission: string) => boolean,
+): ModuleNavSection[] {
+  const allowed = (link: { permission?: string }) =>
+    !link.permission || can(link.permission);
+
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items
+        .filter(allowed)
+        .map((item) => ({
+          ...item,
+          children: item.children?.filter(allowed),
+        }))
+        .filter((item) => !item.children || item.children.length > 0),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
 /** Merges the nav of the enabled modules into ordered sidebar sections. */
 export function buildNavSections(
   enabled: ReadonlySet<string>,

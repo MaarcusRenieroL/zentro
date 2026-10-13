@@ -12,6 +12,8 @@ import {
   RichTextPreview,
 } from "@zentro/ui/components/rich-text-editor";
 
+import { useAnyPermission } from "~/src/components/permissions/permission-provider";
+
 import { InlineTitleEditor } from "./inline-title-editor";
 import { TaskDetailActivity } from "./task-detail-activity";
 import { TaskDetailSidebar } from "./task-detail-sidebar";
@@ -47,6 +49,17 @@ export function TaskDetailView({
   onAddComment,
 }: Props) {
   const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
+  const resource = { projectId: task.projectId };
+  const canEdit = useAnyPermission(
+    ["tasks.update_any", "tasks.update_own"],
+    resource,
+  );
+  const canAssign = useAnyPermission(["tasks.assign"], resource);
+  const canDelete = useAnyPermission(
+    ["tasks.delete_any", "tasks.delete_own"],
+    resource,
+  );
+  const canComment = useAnyPermission(["tasks.comment"], resource);
 
   return (
     <section className="mx-auto flex w-full max-w-[1680px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
@@ -56,7 +69,7 @@ export function TaskDetailView({
         <main className="min-w-0 space-y-7">
           <div className="space-y-3">
             <InlineTitleEditor
-              disabled={savingField === "name"}
+              disabled={savingField === "name" || !canEdit}
               value={task.name}
               onSave={(name) => onSave("name", { name })}
             />
@@ -79,11 +92,11 @@ export function TaskDetailView({
             ) : (
               <div
                 role="button"
-                tabIndex={0}
+                tabIndex={canEdit ? 0 : -1}
                 className="block w-full rounded-md border border-transparent text-left hover:border-border hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                onClick={() => setIsDescriptionEditing(true)}
+                onClick={() => canEdit && setIsDescriptionEditing(true)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
+                  if (canEdit && (event.key === "Enter" || event.key === " ")) {
                     event.preventDefault();
                     setIsDescriptionEditing(true);
                   }
@@ -102,6 +115,7 @@ export function TaskDetailView({
             comments={comments}
             activityEvents={activityEvents}
             commentDisabled={savingField === "comment"}
+            canComment={canComment}
             onAddComment={onAddComment}
           />
         </main>
@@ -113,6 +127,9 @@ export function TaskDetailView({
           savingField={savingField}
           onSave={onSave}
           onDelete={onDelete}
+          canEdit={canEdit}
+          canAssign={canAssign}
+          canDelete={canDelete}
         />
       </div>
     </section>

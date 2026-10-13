@@ -218,9 +218,11 @@ export const projectRouter = router({
 
       const [project] = await db
         .select({
+          id: projects.id,
           name: projects.name,
           description: projects.description,
           slug: projects.slug,
+          visibility: projects.visibility,
           teamId: projects.teamId,
           teamName: teams.name,
           teamColor: teams.color,
@@ -494,10 +496,24 @@ export const projectRouter = router({
           : [],
       ]);
 
+      // Project roles are listed here so project leads can assign them
+      // without needing the organization-level roles.view permission.
+      const projectRoles = await db
+        .select({ id: roles.id, name: roles.name })
+        .from(roles)
+        .where(
+          and(
+            eq(roles.organizationId, activeOrganization.id),
+            eq(roles.scope, "project"),
+          ),
+        )
+        .orderBy(asc(roles.name));
+
       return {
         projectId: project.id,
         visibility: project.visibility,
         teamId: project.teamId,
+        availableRoles: projectRoles,
         assignments: assignments.map((assignment) => ({
           ...assignment,
           principalName:

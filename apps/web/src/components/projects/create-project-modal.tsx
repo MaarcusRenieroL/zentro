@@ -1,5 +1,6 @@
 "use client";
 
+import { usePermission } from "~/src/components/permissions/permission-provider";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
 import { Textarea } from "@zentro/ui/shadcn/textarea";
@@ -49,7 +50,7 @@ type TeamOption = {
   color: string;
 };
 
-export const CreateProjectModal = ({
+const CreateProjectModalInner = ({
   onProjectCreated,
 }: CreateProjectModalProps) => {
   const [open, setOpen] = useState<boolean>(false);
@@ -378,4 +379,10 @@ export const CreateProjectModal = ({
       </DialogContent>
     </Dialog>
   );
+};
+
+export const CreateProjectModal = (props: CreateProjectModalProps) => {
+  const canCreate = usePermission("projects.create");
+
+  return canCreate ? <CreateProjectModalInner {...props} /> : null;
 };

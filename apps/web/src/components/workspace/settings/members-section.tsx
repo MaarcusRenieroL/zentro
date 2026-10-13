@@ -38,6 +38,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { MemberAccessDialog } from "~/src/components/workspace/roles/member-access-dialog";
+import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 import { trpcResult } from "~/src/lib/trpc-result";
 import { FC, useCallback, useMemo, useState } from "react";
 import { formatRelativeDate } from "~/src/lib/helpers";
@@ -102,7 +104,6 @@ const RoleControl: FC<RoleControlProps> = ({
 type Props = {
   members: Member[];
   userId: string;
-  orgId: string;
   permissions: {
     canRemoveMembers: boolean;
     canUpdateMemberRoles: boolean;
@@ -112,11 +113,15 @@ type Props = {
 export const MembersSection: FC<Props> = ({
   members: initialMembers,
   userId,
-  orgId,
   permissions,
 }) => {
   const [members, setMembers] = useState(initialMembers);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
+  const [accessMember, setAccessMember] = useState<Member | null>(null);
+  const canManageAccess = useAnyPermission([
+    "roles.assign",
+    "permissions.overrides.manage",
+  ]);
 
   const router = useRouter();
   const trpc = useTrpcClient();
@@ -267,7 +272,7 @@ export const MembersSection: FC<Props> = ({
               <DropdownMenu>
                 <DropdownMenuTrigger
                   asChild
-                  disabled={!permissions.canRemoveMembers}
+                  disabled={!permissions.canRemoveMembers && !canManageAccess}
                 >
                   <Button variant="ghost" size="icon-sm">
                     <MoreHorizontalIcon className="size-4" />
@@ -276,14 +281,25 @@ export const MembersSection: FC<Props> = ({
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem
-                    variant="destructive"
-                    className="gap-2"
-                    onClick={() => setMemberToRemove(member)}
-                  >
-                    <Trash2Icon className="size-4" />
-                    Remove member
-                  </DropdownMenuItem>
+                  {canManageAccess ? (
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onClick={() => setAccessMember(member)}
+                    >
+                      <ShieldIcon className="size-4" />
+                      Manage access
+                    </DropdownMenuItem>
+                  ) : null}
+                  {permissions.canRemoveMembers ? (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      className="gap-2"
+                      onClick={() => setMemberToRemove(member)}
+                    >
+                      <Trash2Icon className="size-4" />
+                      Remove member
+                    </DropdownMenuItem>
+                  ) : null}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -295,6 +311,7 @@ export const MembersSection: FC<Props> = ({
       handleRoleChange,
       permissions.canRemoveMembers,
       permissions.canUpdateMemberRoles,
+      canManageAccess,
       userId,
     ],
   );
@@ -328,6 +345,18 @@ export const MembersSection: FC<Props> = ({
             </p>
           </div>
         </div>
+      ) : null}
+
+      {accessMember ? (
+        <MemberAccessDialog
+          userId={accessMember.userId}
+          name={accessMember.user.name}
+          baseRole={accessMember.role}
+          open
+          onOpenChange={(open) => {
+            if (!open) setAccessMember(null);
+          }}
+        />
       ) : null}
 
       <AlertDialog

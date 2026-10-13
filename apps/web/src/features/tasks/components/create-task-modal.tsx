@@ -1,5 +1,6 @@
 "use client";
 
+import { usePermission } from "~/src/components/permissions/permission-provider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTrpcClient } from "@zentro/api/react";
 import {
@@ -66,7 +67,7 @@ const getDateInputValue = (value: unknown) => {
   return "";
 };
 
-export const CreateTaskModal: FC<Props> = ({
+const CreateTaskModalInner: FC<Props> = ({
   defaultProjectId = "",
   defaultStatus = "todo",
   trigger,
@@ -456,4 +457,10 @@ export const CreateTaskModal: FC<Props> = ({
       </DialogContent>
     </Dialog>
   );
+};
+
+export const CreateTaskModal: FC<Props> = (props) => {
+  const canCreate = usePermission("tasks.create");
+
+  return canCreate ? <CreateTaskModalInner {...props} /> : null;
 };

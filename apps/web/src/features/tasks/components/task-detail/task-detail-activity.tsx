@@ -33,6 +33,7 @@ type Props = {
   activityEvents: TaskActivityEvent[];
   commentDisabled: boolean;
   onAddComment: (body: string) => void;
+  canComment?: boolean;
 };
 
 export function TaskDetailActivity({
@@ -41,6 +42,7 @@ export function TaskDetailActivity({
   activityEvents,
   commentDisabled,
   onAddComment,
+  canComment = true,
 }: Props) {
   const historyEvents = activityEvents.filter(
     (event) => event.type !== "comment.created",
@@ -80,10 +82,16 @@ export function TaskDetailActivity({
         </TabsList>
 
         <TabsContent value="comments" className="m-0 min-w-0 space-y-4">
-          <CommentComposer
-            disabled={commentDisabled}
-            onAddComment={onAddComment}
-          />
+          {canComment ? (
+            <CommentComposer
+              disabled={commentDisabled}
+              onAddComment={onAddComment}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              You do not have permission to comment on this task.
+            </p>
+          )}
           <CommentList comments={comments} />
         </TabsContent>
 

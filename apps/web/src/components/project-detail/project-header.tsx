@@ -3,11 +3,13 @@ import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import { ArchiveIcon, PlusIcon, RocketIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
+import { Can } from "~/src/components/permissions/permission-provider";
 import { FC } from "react";
 
 type Props = {
   title: string;
   slug: string;
+  projectId: string;
   description?: string | null;
   status: string;
 };
@@ -15,6 +17,7 @@ type Props = {
 export const ProjectHeader: FC<Props> = ({
   title,
   slug,
+  projectId,
   description,
   status = "active",
 }) => {
@@ -53,21 +56,28 @@ export const ProjectHeader: FC<Props> = ({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <Link href={paths.projectSettings(slug)}>
-          <Button size="sm" variant="secondary" className="gap-2">
-            <SettingsIcon className="size-4" />
-            Settings
-          </Button>
-        </Link>
+        <Can
+          permission={["projects.settings.manage", "projects.update"]}
+          resource={{ projectId }}
+        >
+          <Link href={paths.projectSettings(slug)}>
+            <Button size="sm" variant="secondary" className="gap-2">
+              <SettingsIcon className="size-4" />
+              Settings
+            </Button>
+          </Link>
+        </Can>
 
-        <Button size="sm" className="gap-2" disabled={isArchived}>
-          {isArchived ? (
-            <ArchiveIcon className="size-4" />
-          ) : (
-            <PlusIcon className="size-4" />
-          )}
-          <span>{isArchived ? "Archived" : "New task"}</span>
-        </Button>
+        <Can permission="tasks.create" resource={{ projectId }}>
+          <Button size="sm" className="gap-2" disabled={isArchived}>
+            {isArchived ? (
+              <ArchiveIcon className="size-4" />
+            ) : (
+              <PlusIcon className="size-4" />
+            )}
+            <span>{isArchived ? "Archived" : "New task"}</span>
+          </Button>
+        </Can>
       </div>
     </div>
   );

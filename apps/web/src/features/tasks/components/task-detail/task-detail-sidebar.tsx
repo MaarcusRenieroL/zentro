@@ -61,6 +61,9 @@ type Props = {
   savingField: string | null;
   onSave: (field: string, values: TaskUpdate) => void;
   onDelete: () => void;
+  canEdit: boolean;
+  canAssign: boolean;
+  canDelete: boolean;
 };
 
 export function TaskDetailSidebar({
@@ -70,6 +73,9 @@ export function TaskDetailSidebar({
   savingField,
   onSave,
   onDelete,
+  canEdit,
+  canAssign,
+  canDelete,
 }: Props) {
   return (
     <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
@@ -77,7 +83,7 @@ export function TaskDetailSidebar({
         <Select
           value={toTaskStatus(task.status)}
           onValueChange={(status: TaskStatus) => onSave("status", { status })}
-          disabled={savingField === "status"}
+          disabled={savingField === "status" || !canEdit}
         >
           <SelectTrigger className="h-9 w-36">
             <SelectValue />
@@ -104,7 +110,7 @@ export function TaskDetailSidebar({
             <AssigneePicker
               members={members}
               value={task.assignedToMemberId}
-              disabled={savingField === "assignee"}
+              disabled={savingField === "assignee" || !canAssign}
               onChange={(assignedToMemberId) =>
                 onSave("assignee", { assignedToMemberId })
               }
@@ -117,7 +123,7 @@ export function TaskDetailSidebar({
               onValueChange={(priority: TaskPriority) =>
                 onSave("priority", { priority })
               }
-              disabled={savingField === "priority"}
+              disabled={savingField === "priority" || !canEdit}
             >
               <SelectTrigger className="h-8 border-0 bg-transparent px-0 shadow-none hover:bg-muted">
                 <SelectValue />
@@ -142,10 +148,10 @@ export function TaskDetailSidebar({
                       : null,
                   })
                 }
-                disabled={savingField === "dueAt"}
+                disabled={savingField === "dueAt" || !canEdit}
                 className="h-8 border-0 bg-transparent px-0 shadow-none hover:bg-muted"
               />
-              {task.due ? (
+              {task.due && canEdit ? (
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -180,45 +186,47 @@ export function TaskDetailSidebar({
         </CardContent>
       </Card>
 
-      <Card className="rounded-md border-destructive/30">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base text-destructive">
-            Danger Zone
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                className="w-full justify-start"
-                disabled={savingField === "delete"}
-              >
-                <Trash2Icon className="size-4" />
-                Delete task
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete {task.key}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This task will be removed from task lists and boards. Its
-                  activity history is kept for audit trails.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={onDelete}
+      {canDelete ? (
+        <Card className="rounded-md border-destructive/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base text-destructive">
+              Danger Zone
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="w-full justify-start"
+                  disabled={savingField === "delete"}
                 >
+                  <Trash2Icon className="size-4" />
                   Delete task
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {task.key}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This task will be removed from task lists and boards. Its
+                    activity history is kept for audit trails.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={onDelete}
+                  >
+                    Delete task
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="space-y-1 px-2 text-xs text-muted-foreground">
         <p>Created {formatDate(task.createdAt)}</p>

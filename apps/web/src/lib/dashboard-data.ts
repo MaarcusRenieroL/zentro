@@ -564,10 +564,22 @@ export async function getDashboardData({
     tasks: taskItems,
     modules,
     links: {
-      ...(modules.docs ? { docs: paths.docs(), newDoc: paths.docs() } : {}),
-      ...(modules.projects ? { projects: paths.projects() } : {}),
-      ...(modules.tasks
-        ? { tasks: paths.tasks(), newTask: paths.tasks() }
+      ...(modules.docs && can(snapshot, "docs.view")
+        ? {
+            docs: paths.docs(),
+            ...(can(snapshot, "docs.create") ? { newDoc: paths.docs() } : {}),
+          }
+        : {}),
+      ...(modules.projects && can(snapshot, "projects.view")
+        ? { projects: paths.projects() }
+        : {}),
+      ...(modules.tasks && can(snapshot, "tasks.view")
+        ? {
+            tasks: paths.tasks(),
+            ...(can(snapshot, "tasks.create")
+              ? { newTask: paths.tasks() }
+              : {}),
+          }
         : {}),
     },
   };

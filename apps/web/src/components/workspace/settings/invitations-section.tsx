@@ -34,14 +34,10 @@ import { trpcResult } from "~/src/lib/trpc-result";
 import { formatRelativeDate } from "~/src/lib/helpers";
 
 type Props = {
-  organizationId: string;
   invitations: NewInvitation[];
 };
 
-export const InvitationsSection: FC<Props> = ({
-  organizationId,
-  invitations,
-}) => {
+export const InvitationsSection: FC<Props> = ({ invitations }) => {
   const [resendingInviteId, setResendingInviteId] = useState<string | null>(
     null,
   );

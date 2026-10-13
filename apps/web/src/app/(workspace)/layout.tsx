@@ -1,7 +1,10 @@
 import { JSX } from "react";
 import { DashboardNavbar } from "~/src/components/layout/dashboard-navbar";
 
-import { buildNavSections } from "@zentro/modules";
+import { buildNavSections, filterNavSections } from "@zentro/modules";
+import { effectivePermissions, getCatalogKeys } from "@zentro/permissions";
+
+import { PermissionProvider } from "~/src/components/permissions/permission-provider";
 
 import { paths } from "~/src/lib/paths";
 import { getDashboardContext } from "~/src/lib/dashboard-context";
@@ -17,35 +20,40 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>): Promise<JSX.Element> {
-  const { organization, organizations, session, enabledModules } =
+  const { organization, organizations, session, enabledModules, snapshot } =
     await getDashboardContext();
+  const permissions = effectivePermissions(snapshot, getCatalogKeys());
+  const sections = filterNavSections(
+    buildNavSections(new Set(enabledModules)),
+    (key) => permissions[key] ?? false,
+  );
 
   return (
-    <TooltipProvider>
-      <SidebarProvider defaultOpen>
-        <WorkspaceSidebar
-          sections={buildNavSections(new Set(enabledModules))}
-        />
+    <PermissionProvider value={{ baseRole: snapshot.baseRole, permissions }}>
+      <TooltipProvider>
+        <SidebarProvider defaultOpen>
+          <WorkspaceSidebar sections={sections} />
 
-        <SidebarInset>
-          <div className="min-h-screen bg-background text-foreground">
-            <DashboardNavbar
-              orgSlug={organization.slug}
-              organizations={organizations.map((org) => ({
-                id: org.id,
-                name: org.name,
-                slug: org.slug,
-              }))}
-              createOrganizationHref={paths.auth.createOrganization()}
-              user={{
-                name: session.user.name,
-                email: session.user.email,
-              }}
-            />
-            <main>{children}</main>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+          <SidebarInset>
+            <div className="min-h-screen bg-background text-foreground">
+              <DashboardNavbar
+                orgSlug={organization.slug}
+                organizations={organizations.map((org) => ({
+                  id: org.id,
+                  name: org.name,
+                  slug: org.slug,
+                }))}
+                createOrganizationHref={paths.auth.createOrganization()}
+                user={{
+                  name: session.user.name,
+                  email: session.user.email,
+                }}
+              />
+              <main>{children}</main>
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
+      </TooltipProvider>
+    </PermissionProvider>
   );
 }

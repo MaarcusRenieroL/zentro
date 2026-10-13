@@ -57,16 +57,19 @@ export const moduleRegistry: readonly ModuleManifest[] = [
           {
             label: "Members",
             href: "/settings/organization/members",
+            permission: "members.view",
             icon: "Users",
           },
           {
             label: "Teams",
             href: "/settings/organization/teams",
+            permission: "teams.view",
             icon: "Shield",
           },
           {
             label: "Invitations",
             href: "/settings/organization/invitations",
+            permission: "invitations.view",
             icon: "UserPlus",
           },
         ],
@@ -79,16 +82,19 @@ export const moduleRegistry: readonly ModuleManifest[] = [
           {
             label: "General",
             href: "/settings/organization/general",
+            permission: "org.settings.update",
             icon: "Settings",
           },
           {
             label: "Modules",
             href: "/settings/organization/modules",
+            permission: "modules.view",
             icon: "Blocks",
           },
           {
             label: "Danger zone",
             href: "/settings/organization/danger",
+            permission: "org.delete",
             icon: "Trash2",
           },
         ],
@@ -115,17 +121,25 @@ export const moduleRegistry: readonly ModuleManifest[] = [
           {
             label: "Projects",
             href: "/projects",
+            permission: "projects.view",
             icon: "Folder",
             children: [
-              { label: "All projects", href: "/projects", icon: "Gauge" },
+              {
+                label: "All projects",
+                href: "/projects",
+                permission: "projects.view",
+                icon: "Gauge",
+              },
               {
                 label: "Active projects",
                 href: "/projects?status=active",
+                permission: "projects.view",
                 icon: "CheckCircle2",
               },
               {
                 label: "Archived projects",
                 href: "/projects?status=archived",
+                permission: "projects.view",
                 icon: "Archive",
               },
             ],
@@ -155,17 +169,25 @@ export const moduleRegistry: readonly ModuleManifest[] = [
           {
             label: "Tasks",
             href: "/tasks",
+            permission: "tasks.view",
             icon: "ListChecks",
             children: [
-              { label: "All tasks", href: "/tasks", icon: "Users" },
+              {
+                label: "All tasks",
+                href: "/tasks",
+                permission: "tasks.view",
+                icon: "Users",
+              },
               {
                 label: "Overview",
                 href: "/tasks/overview",
+                permission: "tasks.view",
                 icon: "Gauge",
               },
               {
                 label: "Completed",
                 href: "/tasks?status=done",
+                permission: "tasks.view",
                 icon: "CheckCircle2",
               },
             ],
@@ -194,13 +216,39 @@ export const moduleRegistry: readonly ModuleManifest[] = [
           {
             label: "Docs",
             href: "/docs",
+            permission: "docs.view",
             icon: "BookOpen",
             children: [
-              { label: "All docs", href: "/docs", icon: "FileText" },
-              { label: "My docs", href: "/docs/my-docs", icon: "Star" },
-              { label: "Recent", href: "/docs/recent", icon: "Calendar" },
-              { label: "Project docs", href: "/docs/projects", icon: "Folder" },
-              { label: "Trash", href: "/docs/trash", icon: "Trash2" },
+              {
+                label: "All docs",
+                href: "/docs",
+                permission: "docs.view",
+                icon: "FileText",
+              },
+              {
+                label: "My docs",
+                href: "/docs/my-docs",
+                permission: "docs.view",
+                icon: "Star",
+              },
+              {
+                label: "Recent",
+                href: "/docs/recent",
+                permission: "docs.view",
+                icon: "Calendar",
+              },
+              {
+                label: "Project docs",
+                href: "/docs/projects",
+                permission: "docs.view",
+                icon: "Folder",
+              },
+              {
+                label: "Trash",
+                href: "/docs/trash",
+                permission: "docs.view",
+                icon: "Trash2",
+              },
             ],
           },
         ],

@@ -8,6 +8,7 @@ import {
   Building2Icon,
   MailIcon,
   SettingsIcon,
+  KeyRoundIcon,
   ShieldCheckIcon,
   UsersIcon,
 } from "lucide-react";
@@ -15,36 +16,58 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FC, ReactNode } from "react";
 
-const settingsNavItems = [
+import { usePermissionMap } from "~/src/components/permissions/permission-provider";
+
+const settingsNavItems: Array<{
+  href: string;
+  label: string;
+  icon: typeof SettingsIcon;
+  permission: string;
+  matchPrefix?: boolean;
+}> = [
   {
     href: paths.generalSettings(),
     label: "General",
     icon: SettingsIcon,
+    permission: "org.settings.update",
   },
   {
     href: paths.membersSettings(),
     label: "Members",
     icon: UsersIcon,
+    permission: "members.view",
   },
   {
     href: paths.teamsSettings(),
     label: "Teams",
     icon: ShieldCheckIcon,
+    permission: "teams.view",
   },
   {
     href: paths.invitationsSettings(),
     label: "Invitations",
     icon: MailIcon,
+    permission: "invitations.view",
+  },
+  {
+    href: paths.rolesSettings(),
+    label: "Roles & permissions",
+    icon: KeyRoundIcon,
+    permission: "roles.view",
+    // The roles area has its own pages below this path.
+    matchPrefix: true,
   },
   {
     href: paths.modulesSettings(),
     label: "Modules",
     icon: BlocksIcon,
+    permission: "modules.view",
   },
   {
     href: paths.dangerSettings(),
     label: "Danger Zone",
     icon: AlertTriangleIcon,
+    permission: "org.delete",
   },
 ];
 
@@ -68,6 +91,7 @@ function getInitials(name: string) {
 
 export const SettingsShell: FC<Props> = ({ children, organization }) => {
   const pathname = usePathname();
+  const permissions = usePermissionMap();
 
   return (
     <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
@@ -99,29 +123,32 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
 
         <div className="-mx-4 overflow-x-auto border-b px-4 sm:mx-0 sm:px-0">
           <nav className="flex min-w-max gap-4 sm:gap-6">
-            {settingsNavItems.map((item) => {
-              const isActive =
-                pathname === item.href ||
-                (item.href === paths.generalSettings() &&
-                  (pathname === paths.settings() ||
-                    pathname === paths.organizationSettings()));
+            {settingsNavItems
+              .filter((item) => permissions[item.permission])
+              .map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  (item.matchPrefix && pathname.startsWith(`${item.href}/`)) ||
+                  (item.href === paths.generalSettings() &&
+                    (pathname === paths.settings() ||
+                      pathname === paths.organizationSettings()));
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2 whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-2 whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
+                      isActive
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <item.icon className="size-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
           </nav>
         </div>
 

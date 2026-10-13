@@ -1,5 +1,7 @@
 "use client";
 
+import { TeamRolesPanel } from "~/src/components/workspace/roles/team-roles-panel";
+import { usePermission } from "~/src/components/permissions/permission-provider";
 import { useEffect, useMemo, useState } from "react";
 import {
   Edit3Icon,
@@ -165,6 +167,7 @@ type TeamDialogProps = {
   open: boolean;
   saving: boolean;
   canManageMembers: boolean;
+  teamId: string | null;
   onChange: (form: TeamFormState) => void;
   onOpenChange: (open: boolean) => void;
   onSubmit: () => void;
@@ -177,6 +180,7 @@ function TeamDialog({
   open,
   saving,
   canManageMembers,
+  teamId,
   onChange,
   onOpenChange,
   onSubmit,
@@ -185,6 +189,8 @@ function TeamDialog({
     () => sortMembers(availableMembers),
     [availableMembers],
   );
+
+  const canViewRoles = usePermission("roles.view");
 
   function toggleMember(memberId: string) {
     if (!canManageMembers) {
@@ -306,6 +312,17 @@ function TeamDialog({
               </p>
             ) : null}
           </div>
+          {mode === "edit" && teamId && canViewRoles ? (
+            <TeamRolesPanel
+              teamId={teamId}
+              members={sortedMembers
+                .filter((member) => form.memberIds.includes(member.id))
+                .map((member) => ({
+                  userId: member.userId,
+                  name: member.name ?? member.email,
+                }))}
+            />
+          ) : null}
         </div>
 
         <DialogFooter className="mt-2">
@@ -710,6 +727,7 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
       <TeamDialog
         availableMembers={availableMembers}
         canManageMembers={permissions.canManageTeamMembers}
+        teamId={editingTeamId}
         form={form}
         mode={dialogMode}
         open={dialogOpen}

@@ -6,6 +6,7 @@ import {
   ArrowLeftIcon,
   Building2Icon,
   SettingsIcon,
+  UsersIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { FC, ReactNode } from "react";
@@ -36,6 +37,11 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
       href: paths.projectGeneralSettings(project.slug),
       label: "General",
       icon: SettingsIcon,
+    },
+    {
+      href: paths.projectAccessSettings(project.slug),
+      label: "Members & access",
+      icon: UsersIcon,
     },
     {
       href: paths.projectDangerSettings(project.slug),

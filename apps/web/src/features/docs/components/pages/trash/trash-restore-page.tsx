@@ -1,5 +1,6 @@
 "use client";
 
+import { Can } from "~/src/components/permissions/permission-provider";
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
@@ -166,15 +167,17 @@ export function TrashRestorePage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={restoringId === doc.id}
-                        onClick={() => restoreDoc(doc.id)}
-                      >
-                        <ArchiveRestoreIcon className="size-4" />
-                        {restoringId === doc.id ? "Restoring..." : "Restore"}
-                      </Button>
+                      <Can permission="docs.restore">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={restoringId === doc.id}
+                          onClick={() => restoreDoc(doc.id)}
+                        >
+                          <ArchiveRestoreIcon className="size-4" />
+                          {restoringId === doc.id ? "Restoring..." : "Restore"}
+                        </Button>
+                      </Can>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -50,6 +50,12 @@ export const paths = {
   teamsSettings: () => "/settings/organization/teams",
   invitationsSettings: () => "/settings/organization/invitations",
   modulesSettings: () => "/settings/organization/modules",
+  rolesSettings: () => "/settings/organization/roles",
+  role: (id: string) => `/settings/organization/roles/${id}`,
+  rolesAssignments: () => "/settings/organization/roles/assignments",
+  permissionLog: () => "/settings/organization/roles/log",
+  accessCheck: () => "/settings/organization/roles/access-check",
+  projectAccessSettings: (slug: string) => `/projects/${slug}/settings/access`,
   dangerSettings: () => "/settings/organization/danger",
 
   auth: {

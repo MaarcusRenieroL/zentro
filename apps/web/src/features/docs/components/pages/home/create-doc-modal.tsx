@@ -1,5 +1,6 @@
 "use client";
 
+import { usePermission } from "~/src/components/permissions/permission-provider";
 import { paths } from "~/src/lib/paths";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
@@ -36,7 +37,7 @@ type CreateDocModalProps = {
   triggerVariant?: ComponentProps<typeof Button>["variant"];
 };
 
-export function CreateDocModal({
+function CreateDocModalInner({
   triggerLabel = "New doc",
   triggerVariant,
 }: CreateDocModalProps) {
@@ -217,4 +218,10 @@ export function CreateDocModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+export function CreateDocModal(props: CreateDocModalProps) {
+  const canCreate = usePermission("docs.create");
+
+  return canCreate ? <CreateDocModalInner {...props} /> : null;
 }

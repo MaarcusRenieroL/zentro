@@ -7,6 +7,8 @@ export type ModuleNavLink = {
   /** Name of a lucide icon; the app resolves it to a component. */
   icon: string;
   disabled?: boolean;
+  /** Permission key needed to see this link; the link is hidden without it. */
+  permission?: string;
 };
 
 export type ModuleNavItem = ModuleNavLink & {

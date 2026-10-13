@@ -25,11 +25,17 @@ type DocComment = {
 
 type CommentsPanelProps = {
   docId: string;
+  canComment?: boolean;
   isOpen: boolean;
   onClose: () => void;
 };
 
-export function CommentsPanel({ docId, isOpen, onClose }: CommentsPanelProps) {
+export function CommentsPanel({
+  docId,
+  canComment = true,
+  isOpen,
+  onClose,
+}: CommentsPanelProps) {
   const trpc = useTrpcClient();
   const [comments, setComments] = useState<DocComment[]>([]);
   const [body, setBody] = useState("");
@@ -202,25 +208,27 @@ export function CommentsPanel({ docId, isOpen, onClose }: CommentsPanelProps) {
           })}
         </div>
 
-        <div className="border-t bg-background p-4">
-          <div className="rounded-lg border bg-muted/20 p-3">
-            <Textarea
-              className="min-h-24 resize-none bg-background"
-              placeholder="Add a comment..."
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-            />
-            <Button
-              className="mt-2 w-full"
-              size="sm"
-              disabled={!body.trim() || savingId === "new"}
-              onClick={createComment}
-            >
-              <SendIcon className="size-4" />
-              {savingId === "new" ? "Posting..." : "Comment"}
-            </Button>
+        {canComment ? (
+          <div className="border-t bg-background p-4">
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <Textarea
+                className="min-h-24 resize-none bg-background"
+                placeholder="Add a comment..."
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+              />
+              <Button
+                className="mt-2 w-full"
+                size="sm"
+                disabled={!body.trim() || savingId === "new"}
+                onClick={createComment}
+              >
+                <SendIcon className="size-4" />
+                {savingId === "new" ? "Posting..." : "Comment"}
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </aside>
   );
