@@ -17,13 +17,13 @@ type Organization = {
   id: string;
   name: string;
   slug: string;
-  href: string;
 };
 
 type Props = {
   organizations: Organization[];
   activeOrgSlug: string;
   createOrganizationHref?: string;
+  onSwitchOrganization: (organizationId: string) => void | Promise<void>;
 };
 
 function getInitials(name: string) {
@@ -39,6 +39,7 @@ export const OrgSwitcher: FC<Props> = ({
   organizations,
   activeOrgSlug,
   createOrganizationHref,
+  onSwitchOrganization,
 }) => {
   const activeOrganization =
     organizations.find((org) => org.slug === activeOrgSlug) ?? organizations[0];
@@ -75,8 +76,12 @@ export const OrgSwitcher: FC<Props> = ({
           return (
             <DropdownMenuItem
               key={organization.id}
-              asChild={!isActive}
               className="gap-3 py-2"
+              onSelect={
+                isActive
+                  ? undefined
+                  : () => void onSwitchOrganization(organization.id)
+              }
             >
               {isActive ? (
                 <div className="flex items-center justify-between w-full">
@@ -93,7 +98,7 @@ export const OrgSwitcher: FC<Props> = ({
                   <Check className="ml-auto h-4 w-4 text-primary" />
                 </div>
               ) : (
-                <a href={organization.href}>
+                <>
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
                     {getInitials(organization.name) || (
                       <Building2 className="h-4 w-4" />
@@ -104,7 +109,7 @@ export const OrgSwitcher: FC<Props> = ({
                       {organization.name}
                     </span>
                   </span>
-                </a>
+                </>
               )}
             </DropdownMenuItem>
           );

@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Button } from "@zentro/ui/shadcn/button";
 import Link from "next/link";
 import { FC } from "react";
@@ -45,14 +46,14 @@ export const Navbar: FC = () => {
             className="hidden text-muted-foreground hover:text-foreground sm:inline-flex"
             asChild
           >
-            <Link href="/login">Log in</Link>
+            <Link href={paths.auth.signIn()}>Log in</Link>
           </Button>
           <Button
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90"
             asChild
           >
-            <Link href="/signup">Get started</Link>
+            <Link href={paths.auth.signUp()}>Get started</Link>
           </Button>
         </div>
       </nav>

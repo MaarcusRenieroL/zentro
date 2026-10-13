@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
@@ -125,7 +126,7 @@ export default function TaskDetailPage() {
       setSavingField("delete");
       await trpc.task.deleteTaskByKey.mutate({ key: task.key });
       toastSuccess("Task deleted");
-      router.push("/tasks");
+      router.push(paths.tasks());
     } catch {
       toastError("Error", "Failed to delete task");
     } finally {
@@ -206,7 +207,7 @@ function TaskDetailNotFound() {
   return (
     <section className="mx-auto flex w-full max-w-[900px] flex-col gap-4 px-4 py-10 sm:px-6">
       <Button asChild variant="ghost" className="w-fit">
-        <Link href="/tasks">
+        <Link href={paths.tasks()}>
           <ArrowLeftIcon className="size-4" />
           Back to tasks
         </Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { useTrpcClient } from "@zentro/api/react";
 import { ProjectDetail } from "~/src/lib/types";
 import { toastError } from "@zentro/ui/index";
@@ -34,7 +35,7 @@ export default function ProjectPage() {
         }
       } catch {
         toastError("Error", "Project not found");
-        router.replace("/projects");
+        router.replace(paths.projects());
       }
     }
 

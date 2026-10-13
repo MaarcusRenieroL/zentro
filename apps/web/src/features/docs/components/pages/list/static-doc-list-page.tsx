@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
@@ -101,7 +102,7 @@ export function StaticDocListPage({
                 <Badge variant="secondary">Doc</Badge>
               </div>
               <CardTitle className="text-sm font-semibold">
-                <Link href={`/docs/${doc.slug}`}>{getDocTitle(doc.title)}</Link>
+                <Link href={paths.doc(doc.slug)}>{getDocTitle(doc.title)}</Link>
               </CardTitle>
               <CardDescription className="line-clamp-2">
                 Updated {formatDocDate(doc.updatedAt)}
@@ -113,7 +114,7 @@ export function StaticDocListPage({
                 <Badge variant="secondary">{getDocTeam(doc)}</Badge>
               </div>
               <Button variant="link" size="sm" asChild>
-                <Link href={`/docs/${doc.slug}`}>Open</Link>
+                <Link href={paths.doc(doc.slug)}>Open</Link>
               </Button>
             </CardContent>
           </Card>

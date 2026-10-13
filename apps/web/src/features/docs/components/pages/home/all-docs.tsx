@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import {
@@ -134,7 +135,7 @@ export const AllDocs: FC = () => {
                             </div>
                             <div className="min-w-0">
                               <p className="truncate font-medium">
-                                <Link href={`/docs/${doc.slug}`}>
+                                <Link href={paths.doc(doc.slug)}>
                                   {getDocTitle(doc.title)}
                                 </Link>
                               </p>
@@ -220,7 +221,7 @@ export const AllDocs: FC = () => {
                     <Badge variant="secondary">Doc</Badge>
                   </div>
                   <CardTitle className="text-sm font-semibold">
-                    <Link href={`/docs/${doc.slug}`}>
+                    <Link href={paths.doc(doc.slug)}>
                       {getDocTitle(doc.title)}
                     </Link>
                   </CardTitle>

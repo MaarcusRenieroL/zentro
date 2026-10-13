@@ -9,7 +9,6 @@ export default async function DashboardPage(): Promise<JSX.Element> {
   const { organization, session } = await getDashboardContext();
   const dashboardData = await getDashboardData({
     organizationId: organization.id,
-    orgSlug: organization.slug,
     userId: session.user.id,
   });
 

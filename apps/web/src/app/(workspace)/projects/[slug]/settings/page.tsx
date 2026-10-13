@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -8,7 +9,7 @@ export default function ProjectsSettingsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace(`/projects/${params.slug}/settings/general`);
+    router.replace(paths.projectGeneralSettings(params.slug));
   }, [params.slug, router]);
 
   return null;

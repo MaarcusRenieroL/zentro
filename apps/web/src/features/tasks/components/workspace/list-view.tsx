@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import Link from "next/link";
 import { ClockIcon } from "lucide-react";
 
@@ -29,7 +30,7 @@ const listColumns: DataTableColumnDef<WorkspaceTask>[] = [
       return (
         <div className="min-w-0">
           <Link
-            href={`/tasks/${task.key}`}
+            href={paths.task(task.key)}
             className="font-medium hover:underline"
           >
             {task.title}

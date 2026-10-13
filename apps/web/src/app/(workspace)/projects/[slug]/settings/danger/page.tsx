@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import { JSX } from "react";
 import { db } from "@zentro/db";
 import { and, eq } from "@zentro/db/drizzle";
@@ -44,7 +45,7 @@ export default async function DangerSettingsPage({
     .limit(1);
 
   if (!project) {
-    redirect("/projects");
+    redirect(paths.projects());
   }
 
   return (

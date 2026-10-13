@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
@@ -78,7 +79,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
       </div>
 
       <form
-        action="/docs/search"
+        action={paths.searchDocs()}
         className="flex flex-col gap-3 rounded-lg border bg-background p-3 shadow-sm sm:flex-row sm:items-center"
       >
         <div className="relative flex-1">
@@ -112,7 +113,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
           </div>
           {normalizedQuery ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/docs/search">Clear</Link>
+              <Link href={paths.searchDocs()}>Clear</Link>
             </Button>
           ) : null}
         </div>
@@ -134,7 +135,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
               return (
                 <Link
                   key={doc.id}
-                  href={`/docs/${doc.slug}`}
+                  href={paths.doc(doc.slug)}
                   className="flex flex-col gap-3 border-b px-4 py-4 last:border-b-0 hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-start gap-3">

@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
 import {
@@ -23,8 +24,8 @@ export const SearchToolbar: FC = () => {
 
     const normalizedQuery = query.trim();
     const searchPath = normalizedQuery
-      ? `/docs/search?q=${encodeURIComponent(normalizedQuery)}`
-      : "/docs/search";
+      ? paths.searchDocs(normalizedQuery)
+      : paths.searchDocs();
 
     router.push(searchPath);
   }
@@ -67,19 +68,19 @@ export const SearchToolbar: FC = () => {
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
           <Button variant="outline" className="justify-start" asChild>
-            <Link href="/docs/recent">
+            <Link href={paths.recentDocs()}>
               <ClockIcon className="size-4" />
               Recent
             </Link>
           </Button>
           <Button variant="outline" className="justify-start" asChild>
-            <Link href="/docs/projects">
+            <Link href={paths.projectDocs()}>
               <FolderIcon className="size-4" />
               Projects
             </Link>
           </Button>
           <Button variant="outline" className="justify-start" asChild>
-            <Link href="/docs/trash">
+            <Link href={paths.trashedDocs()}>
               <Trash2Icon className="size-4" />
               Trash
             </Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -221,7 +222,7 @@ export const ProjectList = ({
           {filteredProjects.map((project) => (
             <Link
               key={project.id}
-              href={`/projects/${project.slug}`}
+              href={paths.project(project.slug)}
               className="flex flex-col gap-4 rounded-md border bg-card p-4 transition-colors hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0 flex-1">
@@ -289,7 +290,7 @@ export const ProjectList = ({
                     <DropdownMenuItem
                       onSelect={(event) => {
                         event.preventDefault();
-                        router.push(`/projects/${project.slug}`);
+                        router.push(paths.project(project.slug));
                       }}
                     >
                       <EyeIcon className="size-4" />
@@ -299,7 +300,7 @@ export const ProjectList = ({
                     <DropdownMenuItem
                       onSelect={(event) => {
                         event.preventDefault();
-                        router.push(`/projects/${project.slug}/settings`);
+                        router.push(paths.projectSettings(project.slug));
                       }}
                     >
                       <SettingsIcon className="size-4" />
@@ -312,9 +313,7 @@ export const ProjectList = ({
                       variant="destructive"
                       onSelect={(event) => {
                         event.preventDefault();
-                        router.push(
-                          `/projects/${project.slug}/settings/danger`,
-                        );
+                        router.push(paths.projectDangerSettings(project.slug));
                       }}
                     >
                       <Trash2Icon className="size-4" />

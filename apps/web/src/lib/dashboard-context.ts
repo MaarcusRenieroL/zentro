@@ -9,11 +9,8 @@ import {
   type OrganizationRole,
   type PermissionRequest,
 } from "@zentro/auth";
-import {
-  getAuthAppUrl,
-  getOrgAppUrl,
-  resolveOrgAppFromHost,
-} from "@zentro/utils";
+
+import { paths } from "~/src/lib/paths";
 
 const defaultRole = "member";
 
@@ -43,18 +40,13 @@ export async function getAuthorizedDashboardContext(
 
 export const getDashboardContext = cache(async () => {
   const requestHeaders = await headers();
-  const resolvedApp = resolveOrgAppFromHost(requestHeaders.get("host") ?? "");
 
   const session = await auth.api.getSession({
     headers: requestHeaders,
   });
 
-  if (!session) {
-    redirect(getAuthAppUrl({ path: "/auth/sign-in" }));
-  }
-
-  if (!session.user) {
-    redirect(getAuthAppUrl({ path: "/auth/sign-in" }));
+  if (!session?.user) {
+    redirect(paths.auth.signIn());
   }
 
   const sessionWithUser = {
@@ -63,43 +55,33 @@ export const getDashboardContext = cache(async () => {
   };
 
   if (!sessionWithUser.user.emailVerified) {
-    redirect(
-      getAuthAppUrl({
-        path: `/auth/verify-email?email=${encodeURIComponent(sessionWithUser.user.email)}`,
-      }),
-    );
+    redirect(paths.auth.verifyEmail(sessionWithUser.user.email));
   }
 
   const organizations = await auth.api.listOrganizations({
     headers: requestHeaders,
   });
 
-  const activeOrganization =
-    organizations.find(
-      (organization) =>
-        organization.id === sessionWithUser.session.activeOrganizationId,
-    ) ?? organizations[0];
-
-  if (!activeOrganization) {
-    redirect(getAuthAppUrl({ path: "/auth/create-organization" }));
-  }
-
-  if (!resolvedApp || resolvedApp.app !== "workspace") {
-    redirect(
-      getOrgAppUrl({
-        orgSlug: activeOrganization.slug,
-        app: "workspace",
-        path: "/dashboard",
-      }),
-    );
-  }
-
-  const organization = organizations.find(
-    (org) => org.slug === resolvedApp.orgSlug,
+  // The organization is the one active in the session. A session without one
+  // (for example one created before the user joined an organization) falls
+  // back to the user's first organization, which is then made active.
+  let organization = organizations.find(
+    (item) => item.id === sessionWithUser.session.activeOrganizationId,
   );
 
   if (!organization) {
-    redirect(getAuthAppUrl({ path: "/auth/create-organization" }));
+    const fallbackOrganization = organizations[0];
+
+    if (!fallbackOrganization) {
+      redirect(paths.auth.createOrganization());
+    }
+
+    await auth.api.setActiveOrganization({
+      headers: requestHeaders,
+      body: { organizationId: fallbackOrganization.id },
+    });
+
+    organization = fallbackOrganization;
   }
 
   const organizationRole = await auth.api.getActiveMemberRole({

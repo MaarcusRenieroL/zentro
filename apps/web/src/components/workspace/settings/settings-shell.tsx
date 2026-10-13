@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { cn } from "@zentro/ui";
 import {
   AlertTriangleIcon,
@@ -15,27 +16,27 @@ import { FC, ReactNode } from "react";
 
 const settingsNavItems = [
   {
-    href: "/settings/organization/general",
+    href: paths.generalSettings(),
     label: "General",
     icon: SettingsIcon,
   },
   {
-    href: "/settings/organization/members",
+    href: paths.membersSettings(),
     label: "Members",
     icon: UsersIcon,
   },
   {
-    href: "/settings/organization/teams",
+    href: paths.teamsSettings(),
     label: "Teams",
     icon: ShieldCheckIcon,
   },
   {
-    href: "/settings/organization/invitations",
+    href: paths.invitationsSettings(),
     label: "Invitations",
     icon: MailIcon,
   },
   {
-    href: "/settings/organization/danger",
+    href: paths.dangerSettings(),
     label: "Danger Zone",
     icon: AlertTriangleIcon,
   },
@@ -95,9 +96,9 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
             {settingsNavItems.map((item) => {
               const isActive =
                 pathname === item.href ||
-                (item.href === "/settings/organization/general" &&
-                  (pathname === "/settings" ||
-                    pathname === "/settings/organization"));
+                (item.href === paths.generalSettings() &&
+                  (pathname === paths.settings() ||
+                    pathname === paths.organizationSettings()));
 
               return (
                 <Link

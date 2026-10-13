@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Button } from "@zentro/ui/components/shadcn/button";
 import { AlertTriangleIcon, HomeIcon, RotateCcwIcon } from "lucide-react";
 import Link from "next/link";
@@ -37,7 +38,7 @@ export default function Error({ error, reset }: Props) {
             Try again
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/dashboard">
+            <Link href={paths.dashboard()}>
               <HomeIcon className="size-4" />
               Dashboard
             </Link>

@@ -20,7 +20,7 @@ import {
   teams,
   users,
 } from "@zentro/db/schema";
-import { getOrgAppUrl } from "@zentro/utils";
+import { paths } from "~/src/lib/paths";
 
 export type DashboardStat = {
   value: number;
@@ -164,19 +164,13 @@ function formatActivityKind(
 
 export async function getDashboardData({
   organizationId,
-  orgSlug,
   userId,
 }: {
   organizationId: string;
-  orgSlug: string;
   userId: string;
 }): Promise<DashboardData> {
   const todayStart = startOfToday();
   const todayEnd = endOfToday();
-  const workspaceUrl = (path: string) =>
-    getOrgAppUrl({ orgSlug, app: "workspace", path });
-  const tasksUrl = (path: string) => workspaceUrl(path);
-  const docsUrl = (path: string) => workspaceUrl(path);
 
   const [
     memberCount,
@@ -374,7 +368,7 @@ export async function getDashboardData({
       title: task.name,
       priority: task.priority,
       status: task.status,
-      href: tasksUrl(`/tasks/${task.key}`),
+      href: paths.task(task.key),
     }));
 
   const recentWork: DashboardWorkItem[] = [
@@ -384,7 +378,7 @@ export async function getDashboardData({
       title: doc.title,
       label: "Docs",
       updatedAt: formatRelativeDate(doc.updatedAt),
-      href: docsUrl(`/docs/${doc.slug}`),
+      href: paths.doc(doc.slug),
     })),
     ...recentProjects.map((project) => ({
       id: project.id,
@@ -392,7 +386,7 @@ export async function getDashboardData({
       title: project.name,
       label: "Projects",
       updatedAt: formatRelativeDate(project.updatedAt),
-      href: workspaceUrl(`/projects/${project.slug}`),
+      href: paths.project(project.slug),
     })),
     ...recentTasks.slice(0, 2).map((task) => ({
       id: task.id,
@@ -400,7 +394,7 @@ export async function getDashboardData({
       title: task.name,
       label: "Tasks",
       updatedAt: formatRelativeDate(task.updatedAt),
-      href: tasksUrl(`/tasks/${task.key}`),
+      href: paths.task(task.key),
     })),
   ].slice(0, 5);
 
@@ -413,7 +407,7 @@ export async function getDashboardData({
     app: "Tasks",
     time: formatRelativeDate(event.createdAt),
     kind: formatActivityKind(event.type, event.taskStatus),
-    href: tasksUrl(`/tasks/${event.taskKey}`),
+    href: paths.task(event.taskKey),
   }));
 
   return {
@@ -461,11 +455,11 @@ export async function getDashboardData({
     tasks: taskItems,
     schedule: [],
     links: {
-      docs: docsUrl("/docs"),
-      projects: workspaceUrl("/projects"),
-      tasks: tasksUrl("/tasks"),
-      newDoc: docsUrl("/docs"),
-      newTask: tasksUrl("/tasks"),
+      docs: paths.docs(),
+      projects: paths.projects(),
+      tasks: paths.tasks(),
+      newDoc: paths.docs(),
+      newTask: paths.tasks(),
     },
   };
 }

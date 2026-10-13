@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   Dialog,
@@ -109,7 +110,7 @@ export function CreateDocModal({
       setTeamId("workspace");
       setTitle("");
       setContent("");
-      router.push(`/docs/${doc.slug}`);
+      router.push(paths.doc(doc.slug));
     } catch (error) {
       toastError(error, "Failed to create doc");
     } finally {

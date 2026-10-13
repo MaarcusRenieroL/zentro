@@ -1,0 +1,17 @@
+import { paths } from "~/src/lib/paths";
+import Link from "next/link";
+
+export const AuthNavbar = () => {
+  return (
+    <header className="flex min-h-16 items-center px-4 py-5 sm:px-6 sm:py-6">
+      <Link href={paths.home()} className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-primary to-primary/60">
+          <span className="text-sm font-bold text-primary-foreground">Z</span>
+        </div>
+        <span className="text-lg font-semibold tracking-tight text-foreground">
+          zentro
+        </span>
+      </Link>
+    </header>
+  );
+};

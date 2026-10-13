@@ -3,6 +3,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { emailOTP, organization } from "better-auth/plugins";
 
 import { db } from "@zentro/db";
+import { desc, eq } from "@zentro/db/drizzle";
 import * as schema from "@zentro/db/schema";
 import {
   sendForgotPasswordEmail,
@@ -15,32 +16,12 @@ import { userAdditionalFields } from "./additional-fields";
 
 validateProductionEnv();
 
-const baseURL =
-  process.env.BETTER_AUTH_URL ??
-  process.env.NEXT_PUBLIC_BASE_URL ??
-  "http://localhost:3000";
+const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 const secret = process.env.BETTER_AUTH_SECRET;
 
 const trustedOrigins = Array.from(
-  new Set([
-    baseURL,
-    process.env.NEXT_PUBLIC_BASE_URL,
-    "http://localhost:3001",
-    "http://*.localhost:3000",
-    "http://*.localhost:3002",
-    "http://*.tasks.localhost:3002",
-    "http://*.localhost:3003",
-    "http://*.docs.localhost:3003",
-  ]),
-).filter((origin): origin is string => Boolean(origin));
-
-const crossSubDomainCookies =
-  process.env.NODE_ENV === "production"
-    ? {
-        enabled: true,
-        domain: "zentro.com",
-      }
-    : undefined;
+  new Set([new URL(baseURL).origin, "http://localhost:3000"]),
+);
 
 export const auth = betterAuth({
   baseURL,
@@ -65,6 +46,34 @@ export const auth = betterAuth({
     },
   },
 
+  databaseHooks: {
+    session: {
+      create: {
+        // Open every new session in the user's most recently joined
+        // organization. Users without one are sent to onboarding instead.
+        before: async (session) => {
+          const [latestMembership] = await db
+            .select({ organizationId: schema.members.organizationId })
+            .from(schema.members)
+            .where(eq(schema.members.userId, session.userId))
+            .orderBy(desc(schema.members.createdAt))
+            .limit(1);
+
+          if (!latestMembership) {
+            return { data: session };
+          }
+
+          return {
+            data: {
+              ...session,
+              activeOrganizationId: latestMembership.organizationId,
+            },
+          };
+        },
+      },
+    },
+  },
+
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -82,7 +91,6 @@ export const auth = betterAuth({
     database: {
       generateId: false,
     },
-    crossSubDomainCookies,
   },
 
   plugins: [

@@ -2,7 +2,6 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "@zentro/api/server";
 import { auth } from "@zentro/auth";
 import { db } from "@zentro/db";
-import { resolveOrgAppFromHost } from "@zentro/utils";
 
 const handler = (request: Request) => {
   return fetchRequestHandler({
@@ -23,17 +22,9 @@ const handler = (request: Request) => {
         };
       }
 
-      const resolvedApp = resolveOrgAppFromHost(
-        request.headers.get("host") ?? "",
-      );
-
+      // The active organization comes from the session, not from the host.
       const activeOrganization = await auth.api.getFullOrganization({
         headers: request.headers,
-        query: resolvedApp
-          ? {
-              organizationSlug: resolvedApp.orgSlug,
-            }
-          : undefined,
       });
 
       return {

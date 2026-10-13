@@ -1,71 +1,49 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { auth } from "@zentro/auth";
-import {
-  getAuthAppUrl,
-  getOrgAppUrl,
-  resolveOrgAppFromHost,
-} from "@zentro/utils";
+
+import { paths } from "~/src/lib/paths";
+
+const onboardingRoutes = ["/auth/join-organization", "/auth/invite"];
+
+function isRoute(pathname: string, routes: string[]) {
+  return routes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
 
 export async function proxy(request: NextRequest) {
-  const resolvedApp = resolveOrgAppFromHost(request.headers.get("host") ?? "");
+  const { pathname } = request.nextUrl;
 
   const session = await auth.api.getSession({
     headers: request.headers,
   });
 
   if (!session) {
-    return NextResponse.redirect(
-      new URL(getAuthAppUrl({ path: "/auth/sign-in" })),
-    );
+    const signInUrl = new URL(paths.auth.signIn(), request.url);
+
+    // Invite links come back to the invitation after signing in.
+    if (pathname.startsWith("/auth/invite/")) {
+      signInUrl.searchParams.set("redirectTo", pathname);
+    }
+
+    return NextResponse.redirect(signInUrl);
   }
 
   if (!session.user.emailVerified) {
     return NextResponse.redirect(
-      new URL(
-        getAuthAppUrl({
-          path: `/auth/verify-email?email=${encodeURIComponent(session.user.email)}`,
-        }),
-      ),
+      new URL(paths.auth.verifyEmail(session.user.email), request.url),
     );
   }
 
-  const organizations = await auth.api.listOrganizations({
-    headers: request.headers,
-  });
+  if (isRoute(pathname, onboardingRoutes)) {
+    const organizations = await auth.api.listOrganizations({
+      headers: request.headers,
+    });
 
-  const activeOrganization =
-    organizations.find(
-      (organization) =>
-        organization.id === session.session.activeOrganizationId,
-    ) ?? organizations[0];
-
-  if (!activeOrganization) {
-    return NextResponse.redirect(
-      new URL(getAuthAppUrl({ path: "/auth/create-organization" })),
-    );
-  }
-
-  if (!resolvedApp || resolvedApp.app !== "workspace") {
-    return NextResponse.redirect(
-      new URL(
-        getOrgAppUrl({
-          orgSlug: activeOrganization.slug,
-          app: "workspace",
-          path: request.nextUrl.pathname,
-        }),
-      ),
-    );
-  }
-
-  const organization = organizations.find(
-    (org) => org.slug === resolvedApp.orgSlug,
-  );
-
-  if (!organization) {
-    return NextResponse.redirect(
-      new URL(getAuthAppUrl({ path: "/auth/create-organization" })),
-    );
+    if (organizations.length > 0) {
+      return NextResponse.redirect(new URL(paths.dashboard(), request.url));
+    }
   }
 
   return NextResponse.next();
@@ -74,8 +52,12 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/projects/:path*",
     "/settings/:path*",
     "/docs/:path*",
     "/tasks/:path*",
+    "/auth/create-organization/:path*",
+    "/auth/join-organization/:path*",
+    "/auth/invite/:path*",
   ],
 };

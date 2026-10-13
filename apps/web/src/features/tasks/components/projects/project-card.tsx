@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import Link from "next/link";
 import { ArrowRightIcon, FolderKanbanIcon } from "lucide-react";
 
@@ -61,7 +62,7 @@ export const ProjectCard: FC<Props> = ({ project, tasks }) => {
         </div>
 
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/tasks/projects/${project.slug}`}>
+          <Link href={paths.tasksProject(project.slug)}>
             Open project
             <ArrowRightIcon className="size-4" />
           </Link>

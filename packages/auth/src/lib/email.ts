@@ -5,6 +5,13 @@ import { User } from "better-auth";
 
 const resend = new Resend(authEnv.RESEND_API_KEY);
 
+function getAppUrl() {
+  return (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(
+    /\/+$/,
+    "",
+  );
+}
+
 export async function sendVerificationEmail(email: string, otp: string) {
   console.log(otp);
   await resend.emails.send({
@@ -120,7 +127,7 @@ export async function sendOrgInviteEmail(
     user: User;
   },
 ) {
-  const appUrl = "http://localhost:3001";
+  const appUrl = getAppUrl();
 
   const inviteUrl = `${appUrl}/auth/invite/${encodeURIComponent(
     invitation.id,

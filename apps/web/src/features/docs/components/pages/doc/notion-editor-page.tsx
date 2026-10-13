@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
@@ -677,7 +678,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
       setIsDeleting(true);
       await trpc.docs.delete.mutate({ id: doc.id });
       toastSuccess("Doc moved to trash");
-      router.push("/docs");
+      router.push(paths.docs());
     } catch (error) {
       toastError(error, "Failed to delete doc");
       setIsDeleting(false);
@@ -792,7 +793,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => router.push("/docs")}
+              onClick={() => router.push(paths.docs())}
             >
               <ArrowLeftIcon className="size-4" />
               <span className="sr-only">Back to docs</span>

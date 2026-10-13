@@ -46,8 +46,6 @@ import {
 
 import type { LucideIcon } from "lucide-react";
 
-export type WorkspaceSidebarApp = "workspace" | "tasks" | "docs";
-
 export type WorkspaceSidebarLinkComponentProps = {
   href: string;
   children: ReactNode;
@@ -60,7 +58,6 @@ export type WorkspaceSidebarItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  app?: WorkspaceSidebarApp;
   disabled?: boolean;
   children?: WorkspaceSidebarItem[];
 };
@@ -252,74 +249,6 @@ export const zentroWorkspaceSidebarSections: WorkspaceSidebarSection[] = [
     ],
   },
 ];
-
-type CreateWorkspaceSidebarSectionsInput = {
-  orgSlug: string;
-  getOrgAppUrl: (input: {
-    orgSlug: string;
-    app: WorkspaceSidebarApp;
-    path?: string;
-  }) => string;
-  sections?: WorkspaceSidebarSection[];
-};
-
-const appByPath: Record<string, WorkspaceSidebarApp> = {
-  "/dashboard": "workspace",
-  "/inbox": "workspace",
-  "/notifications": "workspace",
-  "/projects": "workspace",
-  "/tasks": "workspace",
-  "/calendar": "workspace",
-  "/docs": "workspace",
-  "/settings": "workspace",
-};
-
-function getAppForHref(item: WorkspaceSidebarItem): WorkspaceSidebarApp {
-  if (item.app) {
-    return item.app;
-  }
-
-  const pathname = item.href.split("?")[0] ?? item.href;
-  const pathKey = Object.keys(appByPath)
-    .sort((a, b) => b.length - a.length)
-    .find((key) => pathname === key || pathname.startsWith(`${key}/`));
-
-  return pathKey ? (appByPath[pathKey] ?? "workspace") : "workspace";
-}
-
-function resolveSidebarItemHref({
-  item,
-  orgSlug,
-  getOrgAppUrl,
-}: {
-  item: WorkspaceSidebarItem;
-  orgSlug: string;
-  getOrgAppUrl: CreateWorkspaceSidebarSectionsInput["getOrgAppUrl"];
-}) {
-  return getOrgAppUrl({
-    orgSlug,
-    app: getAppForHref(item),
-    path: item.href,
-  });
-}
-
-export function createWorkspaceSidebarSections({
-  orgSlug,
-  getOrgAppUrl,
-  sections = zentroWorkspaceSidebarSections,
-}: CreateWorkspaceSidebarSectionsInput): WorkspaceSidebarSection[] {
-  return sections.map((section) => ({
-    ...section,
-    items: section.items.map((item) => ({
-      ...item,
-      href: resolveSidebarItemHref({ item, orgSlug, getOrgAppUrl }),
-      children: item.children?.map((child) => ({
-        ...child,
-        href: resolveSidebarItemHref({ item: child, orgSlug, getOrgAppUrl }),
-      })),
-    })),
-  }));
-}
 
 function getHrefPathname(href: string) {
   return new URL(href, "http://zentro.local").pathname;

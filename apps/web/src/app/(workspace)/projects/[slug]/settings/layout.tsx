@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError } from "@zentro/ui/index";
 import { useParams, useRouter } from "next/navigation";
@@ -35,7 +36,7 @@ export default function ProjectSettingsLayout({
         }
       } catch {
         toastError("Error", "Project not found");
-        router.replace("/projects");
+        router.replace(paths.projects());
       }
     }
 

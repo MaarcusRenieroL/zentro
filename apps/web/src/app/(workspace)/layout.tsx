@@ -1,8 +1,7 @@
 import { JSX } from "react";
 import { DashboardNavbar } from "~/src/components/layout/dashboard-navbar";
 
-import { getAuthAppUrl, getOrgAppUrl } from "@zentro/utils";
-
+import { paths } from "~/src/lib/paths";
 import { getDashboardContext } from "~/src/lib/dashboard-context";
 import {
   SidebarInset,
@@ -21,7 +20,7 @@ export default async function DashboardLayout({
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen>
-        <WorkspaceSidebar orgSlug={organization.slug} />
+        <WorkspaceSidebar />
 
         <SidebarInset>
           <div className="min-h-screen bg-background text-foreground">
@@ -31,19 +30,8 @@ export default async function DashboardLayout({
                 id: org.id,
                 name: org.name,
                 slug: org.slug,
-                href: getAuthAppUrl({
-                  path: `/api/auth/workspace-session-bridge?redirectTo=${encodeURIComponent(
-                    getOrgAppUrl({
-                      orgSlug: org.slug,
-                      app: "workspace",
-                      path: "/dashboard",
-                    }),
-                  )}`,
-                }),
               }))}
-              createOrganizationHref={getAuthAppUrl({
-                path: "/auth/create-organization",
-              })}
+              createOrganizationHref={paths.auth.createOrganization()}
               user={{
                 name: session.user.name,
                 email: session.user.email,

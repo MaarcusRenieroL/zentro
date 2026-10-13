@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import { useState, type ReactNode } from "react";
 
 import Link from "next/link";
@@ -156,11 +157,11 @@ function TaskDetailHeader({ task }: { task: TaskDetail }) {
     <div className="flex items-center justify-between gap-3 border-b pb-3">
       <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
         <Button asChild variant="ghost" size="icon-sm">
-          <Link href="/tasks" aria-label="Back to tasks">
+          <Link href={paths.tasks()} aria-label="Back to tasks">
             <ArrowLeftIcon className="size-4" />
           </Link>
         </Button>
-        <Link href="/tasks" className="hover:text-foreground">
+        <Link href={paths.tasks()} className="hover:text-foreground">
           Tasks
         </Link>
         <span>/</span>

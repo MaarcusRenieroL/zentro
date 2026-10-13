@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import { Button } from "@zentro/ui/components/shadcn/button";
 import { ArrowLeftIcon, HomeIcon, LayoutDashboardIcon } from "lucide-react";
 import Link from "next/link";
@@ -20,7 +21,7 @@ export default function NotFound() {
 
         <div className="mt-6 grid w-full gap-2 sm:flex sm:justify-center">
           <Button asChild>
-            <Link href="/dashboard">
+            <Link href={paths.dashboard()}>
               <LayoutDashboardIcon className="size-4" />
               Dashboard
             </Link>

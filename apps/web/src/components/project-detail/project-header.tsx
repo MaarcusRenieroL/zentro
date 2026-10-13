@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import { ArchiveIcon, PlusIcon, RocketIcon, SettingsIcon } from "lucide-react";
@@ -52,7 +53,7 @@ export const ProjectHeader: FC<Props> = ({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <Link href={`/projects/${slug}/settings`}>
+        <Link href={paths.projectSettings(slug)}>
           <Button size="sm" variant="secondary" className="gap-2">
             <SettingsIcon className="size-4" />
             Settings

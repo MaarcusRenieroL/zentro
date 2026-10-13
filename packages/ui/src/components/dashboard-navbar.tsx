@@ -21,7 +21,6 @@ type Organization = {
   id: string;
   name: string;
   slug: string;
-  href: string;
 };
 
 type User = {
@@ -39,6 +38,7 @@ type Props = {
   activeOrgSlug: string;
   organizations: Organization[];
   createOrganizationHref?: string;
+  onSwitchOrganization: (organizationId: string) => void | Promise<void>;
   user: User;
   pathname: string;
   LinkComponent: ComponentType<LinkComponentProps>;
@@ -52,6 +52,7 @@ export const DashboardNavbar: FC<Props> = ({
   activeOrgSlug,
   organizations,
   createOrganizationHref,
+  onSwitchOrganization,
   user,
   pathname,
   LinkComponent,
@@ -72,6 +73,7 @@ export const DashboardNavbar: FC<Props> = ({
             organizations={organizations}
             activeOrgSlug={activeOrgSlug}
             createOrganizationHref={createOrganizationHref}
+            onSwitchOrganization={onSwitchOrganization}
           />
 
           <div className="hidden min-w-0 flex-1 overflow-hidden md:block">

@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTrpcClient } from "@zentro/api/react";
 import { Badge } from "@zentro/ui/components/shadcn/badge";
@@ -159,7 +160,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
       setSaveState("saved");
 
       if (updatedProject.slug !== project.slug) {
-        router.replace(`/projects/${updatedProject.slug}/settings/general`);
+        router.replace(paths.projectGeneralSettings(updatedProject.slug));
         return;
       }
 

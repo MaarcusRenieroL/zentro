@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
@@ -64,7 +65,7 @@ export const RecentDocs: FC = () => {
             Pages your team touched most recently
           </p>
         </div>
-        <Link href="/docs/recent">
+        <Link href={paths.recentDocs()}>
           <Button variant="link" size="sm">
             View all
           </Button>
@@ -93,7 +94,7 @@ export const RecentDocs: FC = () => {
             <CardHeader className="gap-3">
               <div className="flex items-start gap-3">
                 <Link
-                  href={`/docs/${doc.slug}`}
+                  href={paths.doc(doc.slug)}
                   className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm"
                 >
                   <FileTextIcon className="size-4" />
@@ -101,7 +102,7 @@ export const RecentDocs: FC = () => {
 
                 <div className="min-w-0 flex-1">
                   <CardTitle className="truncate text-sm font-semibold">
-                    <Link href={`/docs/${doc.slug}`}>
+                    <Link href={paths.doc(doc.slug)}>
                       {getDocTitle(doc.title)}
                     </Link>
                   </CardTitle>

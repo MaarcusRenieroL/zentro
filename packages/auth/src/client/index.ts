@@ -8,7 +8,6 @@ import { ac, member, owner, admin } from "../permissions";
 import { userAdditionalFields } from "../additional-fields";
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_AUTHENTICATOR_URL,
   plugins: [
     emailOTPClient(),
     organizationClient({

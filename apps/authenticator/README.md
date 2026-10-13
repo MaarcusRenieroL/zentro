@@ -1,1 +1,0 @@
-# Zentro Authenticator

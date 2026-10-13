@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import {
   AlertTriangleIcon,
   ArrowLeftIcon,
@@ -32,12 +33,12 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
   const pathname = usePathname();
   const settingsNavItems = [
     {
-      href: `/projects/${project.slug}/settings/general`,
+      href: paths.projectGeneralSettings(project.slug),
       label: "General",
       icon: SettingsIcon,
     },
     {
-      href: `/projects/${project.slug}/settings/danger`,
+      href: paths.projectDangerSettings(project.slug),
       label: "Danger Zone",
       icon: AlertTriangleIcon,
     },
@@ -59,7 +60,7 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
             </p>
           </div>
           <Link
-            href={`/projects/${project.slug}`}
+            href={paths.project(project.slug)}
             className="ml-auto hidden items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground sm:flex"
           >
             <ArrowLeftIcon className="size-4" />

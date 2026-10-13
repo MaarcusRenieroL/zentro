@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import Link from "next/link";
 
 import { Badge } from "@zentro/ui/shadcn/badge";
@@ -73,7 +74,7 @@ export const CalendarView: FC<Props> = ({ tasks }) => {
                     .map((task) => (
                       <Link
                         key={task.id}
-                        href={`/tasks/${task.key}`}
+                        href={paths.task(task.key)}
                         className="block rounded-md border bg-muted/40 p-2 transition-colors hover:bg-muted"
                       >
                         <p className="line-clamp-2 text-xs font-medium">

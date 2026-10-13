@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { useTrpcClient } from "@zentro/api/react";
 import {
   AlertDialog,
@@ -109,7 +110,7 @@ export const DangerSection: FC<Props> = ({ project }) => {
       setIsDeleteDialogOpen(false);
       setTypedConfirmation("");
 
-      router.replace("/projects");
+      router.replace(paths.projects());
       router.refresh();
     } catch (error) {
       toastError("Delete failed", getErrorMessage(error));

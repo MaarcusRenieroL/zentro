@@ -2,13 +2,13 @@
 
 import { FC, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { authClient } from "@zentro/auth/client";
+import { toastError } from "@zentro/ui/index";
 import { DashboardNavbar as BaseDashboardNavbar } from "@zentro/ui/components/dashboard-navbar";
 
-const authenticatorUrl =
-  process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? "http://localhost:3001";
+import { paths } from "~/src/lib/paths";
 
 type Props = {
   orgSlug: string;
@@ -16,7 +16,6 @@ type Props = {
     id: string;
     name: string;
     slug: string;
-    href: string;
   }[];
   createOrganizationHref: string;
   user: {
@@ -33,17 +32,31 @@ export const DashboardNavbar: FC<Props> = ({
 }) => {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
 
     try {
       await authClient.signOut();
-      await fetch("/api/session-bridge", { method: "DELETE" });
-      window.location.assign(`${authenticatorUrl}/auth/sign-in`);
+      window.location.assign(paths.auth.signIn());
     } finally {
       setIsSigningOut(false);
     }
+  };
+
+  const handleSwitchOrganization = async (organizationId: string) => {
+    const { error } = await authClient.organization.setActive({
+      organizationId,
+    });
+
+    if (error) {
+      toastError(error, "Could not switch organization");
+      return;
+    }
+
+    router.push(paths.dashboard());
+    router.refresh();
   };
 
   return (
@@ -51,6 +64,7 @@ export const DashboardNavbar: FC<Props> = ({
       activeOrgSlug={orgSlug}
       organizations={organizations}
       createOrganizationHref={createOrganizationHref}
+      onSwitchOrganization={handleSwitchOrganization}
       user={user}
       pathname={pathname}
       LinkComponent={Link}

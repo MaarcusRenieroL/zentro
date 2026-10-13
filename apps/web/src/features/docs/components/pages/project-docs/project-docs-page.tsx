@@ -1,5 +1,6 @@
 "use client";
 
+import { paths } from "~/src/lib/paths";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import {
   Card,
@@ -151,7 +152,7 @@ export function ProjectDocsPage() {
                 {group.docs.map((doc) => (
                   <Link
                     key={`${group.id}-${doc.id}`}
-                    href={`/docs/${doc.slug}`}
+                    href={paths.doc(doc.slug)}
                     className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3 transition-colors hover:bg-muted/30"
                   >
                     <div className="flex min-w-0 items-center gap-3">

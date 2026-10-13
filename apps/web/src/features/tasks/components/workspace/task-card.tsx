@@ -1,3 +1,4 @@
+import { paths } from "~/src/lib/paths";
 import Link from "next/link";
 import { ClockIcon } from "lucide-react";
 
@@ -14,7 +15,7 @@ type Props = {
 export const TaskCard: FC<Props> = ({ task }) => {
   return (
     <Link
-      href={`/tasks/${task.key}`}
+      href={paths.task(task.key)}
       className="group block rounded-lg border bg-card p-3 shadow-xs transition-colors hover:bg-muted/50"
     >
       <div className="flex items-start justify-between gap-2">
