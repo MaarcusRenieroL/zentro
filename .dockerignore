@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/coverage
+.git
+.github
+.husky
+.env
+.env.*
+!.env.example
+**/*.tsbuildinfo
+**/.DS_Store
+*.md
+Dockerfile
+docker-compose*.yml

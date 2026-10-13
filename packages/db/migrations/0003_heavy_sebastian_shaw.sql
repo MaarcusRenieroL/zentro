@@ -1,11 +1,11 @@
 CREATE TABLE "project" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"organizationId" text NOT NULL,
+	"organizationId" uuid NOT NULL,
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
 	"description" text,
 	"status" text DEFAULT 'active' NOT NULL,
-	"createdById" text,
+	"createdById" uuid,
 	"archivedAt" timestamp,
 	"deletedAt" timestamp,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
