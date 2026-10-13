@@ -68,18 +68,33 @@ export const organizationProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 type ActiveOrganizationWithMembers = {
   members?: {
+    userId?: string | null;
     role?: string | null;
   }[];
 };
+
+// getFullOrganization returns every member, so the role must come from the
+// member that belongs to the current user. No matching member means no access.
+function getCurrentMemberRole(
+  activeOrganization: ActiveOrganizationWithMembers,
+  userId: string,
+): OrganizationRole | null {
+  const member = activeOrganization.members?.find(
+    (candidate) => candidate.userId === userId,
+  );
+
+  return member?.role ? (member.role as OrganizationRole) : null;
+}
 
 export const adminProcedure = organizationProcedure.use(({ ctx, next }) => {
   const activeOrganization =
     ctx.activeOrganization as ActiveOrganizationWithMembers;
 
-  const role = activeOrganization.members?.[0]?.role ?? "member";
+  const role = getCurrentMemberRole(activeOrganization, ctx.user.id);
 
   if (
-    !hasOrganizationPermission(role as OrganizationRole, {
+    !role ||
+    !hasOrganizationPermission(role, {
       organization: ["update"],
     })
   ) {
@@ -99,9 +114,9 @@ export const authorizedProcedure = (permission: PermissionRequest) =>
     const activeOrganization =
       ctx.activeOrganization as ActiveOrganizationWithMembers;
 
-    const role = activeOrganization.members?.[0]?.role ?? "member";
+    const role = getCurrentMemberRole(activeOrganization, ctx.user.id);
 
-    if (!hasOrganizationPermission(role as OrganizationRole, permission)) {
+    if (!role || !hasOrganizationPermission(role, permission)) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "You do not have permission to perform this action",
