@@ -1,4 +1,12 @@
-import { existsSync, readFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -147,4 +155,86 @@ export async function queryTestDatabase<T extends Record<string, unknown>>(
   } finally {
     await client.end();
   }
+}
+
+/**
+ * A scratch database (name ending in `_test`) migrated only up to the first
+ * `count` migrations, for testing a migration against data from before it.
+ * Any previous database of that name is dropped first.
+ */
+export async function createDatabaseAtMigration(
+  databaseName: string,
+  count: number,
+) {
+  const base = getTestDatabaseUrl();
+  const connectionString = withDatabase(base, databaseName);
+
+  assertTestDatabaseUrl(connectionString);
+
+  const admin = new Client({
+    connectionString: withDatabase(base, "postgres"),
+  });
+
+  await admin.connect();
+
+  try {
+    await admin.query(
+      `drop database if exists "${databaseName.replace(/"/g, '""')}" with (force)`,
+    );
+    await admin.query(`create database "${databaseName.replace(/"/g, '""')}"`);
+  } finally {
+    await admin.end();
+  }
+
+  const folder = path.join(repoRoot, "packages/db/migrations");
+  const partial = mkdtempSync(path.join(os.tmpdir(), "migrations-"));
+
+  cpSync(folder, partial, { recursive: true });
+
+  const journalPath = path.join(partial, "meta/_journal.json");
+  const journal = JSON.parse(readFileSync(journalPath, "utf8")) as {
+    entries: unknown[];
+  };
+
+  journal.entries = journal.entries.slice(0, count);
+  writeFileSync(journalPath, JSON.stringify(journal));
+
+  const pool = new Pool({ connectionString, max: 1 });
+
+  try {
+    await migrate(drizzle({ client: pool }), { migrationsFolder: partial });
+  } finally {
+    await pool.end();
+    rmSync(partial, { recursive: true, force: true });
+  }
+
+  return {
+    connectionString,
+    /** Applies every migration the database is missing. */
+    async migrateToLatest() {
+      const latest = new Pool({ connectionString, max: 1 });
+
+      try {
+        await migrate(drizzle({ client: latest }), {
+          migrationsFolder: folder,
+        });
+      } finally {
+        await latest.end();
+      }
+    },
+    async query<T extends Record<string, unknown>>(
+      sql: string,
+      values: unknown[] = [],
+    ) {
+      const client = new Client({ connectionString });
+
+      await client.connect();
+
+      try {
+        return (await client.query(sql, values)).rows as T[];
+      } finally {
+        await client.end();
+      }
+    },
+  };
 }

@@ -44,6 +44,8 @@ export async function ensureSystemRoles(
         kind: "system" as const,
         systemKey: definition.systemKey,
         permissions: definition.permissions,
+        // Everything the role starts with counts as applied.
+        appliedDefaults: definition.permissions,
       })),
     )
     .onConflictDoNothing();

@@ -27,6 +27,12 @@ export const roles = pgTable(
     kind: text("kind").$type<"system" | "custom">().notNull(),
     systemKey: text("systemKey"),
     permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
+    // Default keys already given to a system role. A key that is new in the
+    // defaults is added once; an administrator who removes it keeps it removed.
+    appliedDefaults: jsonb("appliedDefaults")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
 
     createdByUserId: uuid("createdByUserId").references(() => users.id, {
       onDelete: "set null",

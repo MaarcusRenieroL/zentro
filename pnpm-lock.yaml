@@ -250,6 +250,19 @@ importers:
         specifier: 19.2.4
         version: 19.2.4
 
+  packages/audit:
+    dependencies:
+      '@zentro/db':
+        specifier: workspace:*
+        version: link:../db
+      '@zentro/modules':
+        specifier: workspace:*
+        version: link:../modules
+    devDependencies:
+      '@zentro/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+
   packages/auth:
     dependencies:
       '@better-auth/drizzle-adapter':
