@@ -1,7 +1,7 @@
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, router } from "../trpc";
 
 export const fileRouter = router({
-  getFiles: publicProcedure.query(() => {
+  getFiles: protectedProcedure.query(() => {
     return null;
   }),
 });

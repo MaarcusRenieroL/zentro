@@ -1,7 +1,7 @@
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, router } from "../trpc";
 
 export const searchRouter = router({
-  searchById: publicProcedure.query(() => {
+  searchById: protectedProcedure.query(() => {
     return null;
   }),
 });
