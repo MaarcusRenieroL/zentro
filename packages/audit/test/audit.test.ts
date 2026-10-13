@@ -5,6 +5,8 @@ import {
   actorName,
   auditCatalog,
   buildChanges,
+  buildCsv,
+  csvCell,
   describeEvent,
   getAuditEvent,
   redactSecrets,
@@ -250,5 +252,26 @@ describe("actorName", () => {
     expect(actorName(null, null)).toBe("System");
     expect(actorName({ name: "Priya" }, "id")).toBe("Priya");
     expect(actorName({ name: "", email: "a@b.c" }, "id")).toBe("a@b.c");
+  });
+});
+
+describe("csv", () => {
+  it("quotes cells that need it", () => {
+    expect(csvCell('a "b", c')).toBe('"a ""b"", c"');
+    expect(csvCell("line\nbreak")).toBe('"line\nbreak"');
+    expect(csvCell(null)).toBe("");
+    expect(csvCell(new Date("2026-01-01T00:00:00.000Z"))).toBe(
+      "2026-01-01T00:00:00.000Z",
+    );
+  });
+
+  it("defuses spreadsheet formulas", () => {
+    for (const value of ["=SUM(A1)", "+1", "-1+2", "@cmd"]) {
+      expect(csvCell(value).startsWith("'")).toBe(true);
+    }
+  });
+
+  it("builds rows with a header", () => {
+    expect(buildCsv(["a", "b"], [[1, "x,y"]])).toBe('a,b\r\n1,"x,y"');
   });
 });

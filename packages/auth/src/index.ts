@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
+import { createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
+import { auditAfter, auditBefore } from "./audit-hooks";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { emailOTP, organization } from "better-auth/plugins";
 
@@ -66,20 +67,31 @@ const disabledOrganizationPaths = [
 export const auth = betterAuth({
   disabledPaths: disabledOrganizationPaths,
   hooks: {
-    // Leaving an organization deletes the member row directly and skips the
-    // organization hooks, so the access that came with it is cleared here.
+    before: createAuthMiddleware(async (ctx) => {
+      await auditBefore(ctx, async () => {
+        const session = await getSessionFromCtx(ctx).catch(() => null);
+
+        return session?.user.id ?? null;
+      });
+    }),
     after: createAuthMiddleware(async (ctx) => {
-      if (ctx.path !== "/organization/leave") {
-        return;
+      // Leaving an organization deletes the member row directly and skips the
+      // organization hooks, so the access that came with it is cleared here.
+      if (ctx.path === "/organization/leave") {
+        const left = ctx.context.returned as
+          | { organizationId?: string; userId?: string }
+          | undefined;
+
+        if (left?.organizationId && left.userId) {
+          await removeMemberAccess(db, left.organizationId, left.userId);
+        }
       }
 
-      const left = ctx.context.returned as
-        | { organizationId?: string; userId?: string }
-        | undefined;
+      await auditAfter(ctx, async () => {
+        const session = await getSessionFromCtx(ctx).catch(() => null);
 
-      if (left?.organizationId && left.userId) {
-        await removeMemberAccess(db, left.organizationId, left.userId);
-      }
+        return session?.user.id ?? ctx.context.newSession?.user.id ?? null;
+      });
     }),
   },
   baseURL,

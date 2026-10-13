@@ -18,7 +18,7 @@ describe("permission catalog", () => {
 
   it("uses dotted keys", () => {
     for (const entry of catalog) {
-      expect(entry.key, entry.key).toMatch(/^[a-z]+(\.[a-z_]+)+$/);
+      expect(entry.key, entry.key).toMatch(/^[a-z_]+(\.[a-z_]+)+$/);
     }
   });
 

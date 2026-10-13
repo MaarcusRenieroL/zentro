@@ -7,12 +7,14 @@ import { z } from "zod";
 
 import { auth } from "@zentro/auth";
 
-import { logPermissionChange } from "../access";
+import { buildChanges } from "@zentro/audit";
 import { callAuth } from "../auth-calls";
 import { authenticatedProcedure, permissionProcedure, router } from "../trpc";
 
 export const organizationRouter = router({
-  update: permissionProcedure("org.settings.update")
+  update: permissionProcedure("org.settings.update", undefined, {
+    audit: ["org.updated"],
+  })
     .input(
       z.object({
         name: z.string().trim().min(1).max(120).optional(),
@@ -29,21 +31,45 @@ export const organizationRouter = router({
         }),
       );
 
-      await logPermissionChange(db, {
-        organizationId: activeOrganization.id,
-        actorUserId: user.id,
-        action: "organization.updated",
-        targetType: "organization",
-        targetId: activeOrganization.id,
-        before: { name: activeOrganization.name },
-        after: input,
-      });
+      const changes = buildChanges(
+        { name: activeOrganization.name, logo: activeOrganization.logo },
+        input,
+      );
+
+      if (changes.length) {
+        await ctx.audit.record(db, {
+          action: "org.updated",
+          target: {
+            id: activeOrganization.id,
+            label: input.name ?? activeOrganization.name,
+          },
+          changes,
+          metadata: {
+            before: { name: activeOrganization.name },
+            after: input,
+          },
+        });
+      } else {
+        ctx.audit.skipped("org.updated");
+      }
 
       return { id: activeOrganization.id };
     }),
 
   // Owner only (org.delete is an owner-only permission).
-  delete: permissionProcedure("org.delete").mutation(async ({ ctx }) => {
+  delete: permissionProcedure("org.delete", undefined, {
+    audit: ["org.deleted"],
+  }).mutation(async ({ ctx }) => {
+    // Written first: deleting the organization removes its events with it, so
+    // this is the last entry the organization's log ever holds.
+    await ctx.audit.record(ctx.db, {
+      action: "org.deleted",
+      target: {
+        id: ctx.activeOrganization.id,
+        label: ctx.activeOrganization.name,
+      },
+    });
+
     await callAuth(() =>
       auth.api.deleteOrganization({
         headers: ctx.headers,

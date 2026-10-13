@@ -4,7 +4,7 @@ import {
   docComments,
   docs,
   projects,
-  taskActivityEvents,
+  activityEvents,
   taskComments,
   tasks,
   teamMembers,
@@ -82,11 +82,13 @@ beforeAll(async () => {
     authorMemberId: memberBId,
     body: "secret task comment",
   });
-  await db.insert(taskActivityEvents).values({
+  await db.insert(activityEvents).values({
     organizationId: orgB.id,
-    taskId: taskB.id,
-    actorMemberId: memberBId,
-    type: "task.created",
+    action: "task.created",
+    targetType: "task",
+    targetId: taskB.id,
+    targetLabel: taskB.key,
+    projectId: taskB.projectId,
   });
 
   asA = await world.caller(userA, orgA);

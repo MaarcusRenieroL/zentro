@@ -9,6 +9,7 @@ import {
   MailIcon,
   SettingsIcon,
   KeyRoundIcon,
+  ScrollTextIcon,
   ShieldCheckIcon,
   UsersIcon,
 } from "lucide-react";
@@ -62,6 +63,12 @@ const settingsNavItems: Array<{
     label: "Modules",
     icon: BlocksIcon,
     permission: "modules.view",
+  },
+  {
+    href: paths.auditLogSettings(),
+    label: "Audit log",
+    icon: ScrollTextIcon,
+    permission: "audit_logs.view",
   },
   {
     href: paths.dangerSettings(),

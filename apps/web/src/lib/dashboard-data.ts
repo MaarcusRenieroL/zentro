@@ -1,3 +1,8 @@
+import {
+  createPermissionContext,
+  visibleActivityCondition,
+} from "@zentro/api/server";
+import { actorName, describeEvent } from "@zentro/audit";
 import { db } from "@zentro/db";
 import {
   can,
@@ -19,14 +24,15 @@ import {
   sql,
 } from "@zentro/db/drizzle";
 import {
+  activityEvents,
   docs,
   members,
   projects,
-  taskActivityEvents,
   tasks,
   teams,
   users,
 } from "@zentro/db/schema";
+import type { ModuleId } from "@zentro/modules";
 import { paths } from "~/src/lib/paths";
 
 export type DashboardStat = {
@@ -145,25 +151,6 @@ function endOfToday() {
   date.setHours(23, 59, 59, 999);
 
   return date;
-}
-
-function formatActivityAction(type: string) {
-  if (type === "task.created") return "created";
-  if (type === "task.comment.created") return "commented on";
-  if (type === "task.updated") return "updated";
-
-  return "updated";
-}
-
-function formatActivityKind(
-  type: string,
-  status: string | null,
-): DashboardActivityItem["kind"] {
-  if (status === "done") return "completed";
-  if (type.includes("comment")) return "commented";
-  if (type.includes("created")) return "created";
-
-  return "updated";
 }
 
 // Disabled modules are not queried; their widgets stay empty.
@@ -431,29 +418,33 @@ export async function getDashboardData({
         .orderBy(desc(tasks.updatedAt))
         .limit(5),
     ),
-    when(enabledModules.has("tasks"), () =>
+    // Recent activity: everything the caller may see, from the unified store.
+    visibleActivityCondition(
+      createPermissionContext(db, organizationId, userId),
+      enabledModules as ReadonlySet<ModuleId>,
+    ).then((visible) =>
       db
         .select({
-          id: taskActivityEvents.id,
-          type: taskActivityEvents.type,
-          createdAt: taskActivityEvents.createdAt,
+          id: activityEvents.id,
+          action: activityEvents.action,
+          targetType: activityEvents.targetType,
+          targetLabel: activityEvents.targetLabel,
+          metadata: activityEvents.metadata,
+          createdAt: activityEvents.createdAt,
+          actorUserId: activityEvents.actorUserId,
           actorName: users.name,
-          taskKey: tasks.key,
-          taskName: tasks.name,
-          taskStatus: tasks.status,
+          actorEmail: users.email,
         })
-        .from(taskActivityEvents)
-        .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
-        .leftJoin(members, eq(members.id, taskActivityEvents.actorMemberId))
-        .leftJoin(users, eq(users.id, members.userId))
+        .from(activityEvents)
+        .leftJoin(users, eq(users.id, activityEvents.actorUserId))
         .where(
           and(
-            eq(taskActivityEvents.organizationId, organizationId),
-            tasksVisible,
-            isNull(tasks.deletedAt),
+            eq(activityEvents.organizationId, organizationId),
+            eq(activityEvents.auditOnly, false),
+            visible,
           ),
         )
-        .orderBy(desc(taskActivityEvents.createdAt))
+        .orderBy(desc(activityEvents.createdAt), desc(activityEvents.id))
         .limit(6),
     ),
   ]);
@@ -520,17 +511,62 @@ export async function getDashboardData({
     })),
   ].slice(0, 5);
 
-  const recentActivity: DashboardActivityItem[] = recentEvents.map((event) => ({
-    id: event.id,
-    user: event.actorName ?? "Someone",
-    userInitials: getInitials(event.actorName),
-    action: formatActivityAction(event.type),
-    target: event.taskName,
-    app: "Tasks",
-    time: formatRelativeDate(event.createdAt),
-    kind: formatActivityKind(event.type, event.taskStatus),
-    href: paths.task(event.taskKey),
-  }));
+  const recentActivity: DashboardActivityItem[] = recentEvents.map((event) => {
+    const name = actorName(
+      event.actorName || event.actorEmail
+        ? { name: event.actorName, email: event.actorEmail }
+        : null,
+      event.actorUserId,
+    );
+    const sentence = describeEvent(
+      {
+        action: event.action,
+        targetType: event.targetType,
+        targetLabel: event.targetLabel,
+        metadata: event.metadata,
+      },
+      name,
+    );
+    const slug =
+      typeof event.metadata?.slug === "string" ? event.metadata.slug : null;
+
+    return {
+      id: event.id,
+      user: name,
+      userInitials: getInitials(event.actorName ?? event.actorEmail),
+      // The sentence without the actor, which the card shows in bold.
+      action: sentence.slice(name.length).trim(),
+      target: "",
+      app:
+        event.targetType === "task"
+          ? "Tasks"
+          : event.targetType === "doc"
+            ? "Docs"
+            : event.targetType === "project"
+              ? "Projects"
+              : "Workspace",
+      time: formatRelativeDate(event.createdAt),
+      kind:
+        event.action === "task.status_changed" &&
+        (
+          event.metadata?.changes as Array<{ to: string | null }> | undefined
+        )?.[0]?.to === "done"
+          ? "completed"
+          : event.action.includes("comment")
+            ? "commented"
+            : event.action.endsWith("created")
+              ? "created"
+              : "updated",
+      href:
+        event.targetType === "task" && event.targetLabel
+          ? paths.task(event.targetLabel)
+          : event.targetType === "doc" && slug
+            ? paths.doc(slug)
+            : event.targetType === "project" && slug
+              ? paths.project(slug)
+              : paths.dashboard(),
+    };
+  });
 
   const modules = {
     projects: enabledModules.has("projects"),

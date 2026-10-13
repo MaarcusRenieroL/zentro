@@ -330,6 +330,18 @@ function formatActivityValue(
     return "None";
   }
 
+  if (field === "status") {
+    const labels: Record<string, string> = {
+      backlog: "Backlog",
+      todo: "To do",
+      "in-progress": "In progress",
+      review: "Review",
+      done: "Done",
+    };
+
+    return labels[value] ?? value;
+  }
+
   if (field === "assignedToMemberId") {
     const member = members.find((candidate) => candidate.id === value);
 

@@ -6,3 +6,5 @@ export {
   loadPermissionSnapshot,
   type PermissionContext,
 } from "./permissions";
+export { createAuditContext, type AuditContext } from "./audit";
+export { visibleActivityCondition } from "./activity";

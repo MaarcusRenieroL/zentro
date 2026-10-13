@@ -42,7 +42,9 @@ export const modulesRouter = router({
     };
   }),
 
-  setEnabled: permissionProcedure("modules.manage")
+  setEnabled: permissionProcedure("modules.manage", undefined, {
+    audit: ["module.enabled", "module.disabled"],
+  })
     .input(setEnabledSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -65,6 +67,8 @@ export const modulesRouter = router({
       const enabled = await loadEnabledModules(db, activeOrganization.id);
 
       if (enabled.has(manifest.id) === input.enabled) {
+        ctx.audit.skipped("module.enabled");
+
         return { moduleId: manifest.id, enabled: input.enabled };
       }
 
@@ -79,25 +83,32 @@ export const modulesRouter = router({
         });
       }
 
-      await db
-        .insert(organizationModules)
-        .values({
-          organizationId: activeOrganization.id,
-          moduleId: manifest.id,
-          enabled: input.enabled,
-          updatedByUserId: user.id,
-        })
-        .onConflictDoUpdate({
-          target: [
-            organizationModules.organizationId,
-            organizationModules.moduleId,
-          ],
-          set: {
+      await db.transaction(async (tx) => {
+        await tx
+          .insert(organizationModules)
+          .values({
+            organizationId: activeOrganization.id,
+            moduleId: manifest.id,
             enabled: input.enabled,
             updatedByUserId: user.id,
-            updatedAt: new Date(),
-          },
+          })
+          .onConflictDoUpdate({
+            target: [
+              organizationModules.organizationId,
+              organizationModules.moduleId,
+            ],
+            set: {
+              enabled: input.enabled,
+              updatedByUserId: user.id,
+              updatedAt: new Date(),
+            },
+          });
+
+        await ctx.audit.record(tx, {
+          action: input.enabled ? "module.enabled" : "module.disabled",
+          target: { id: manifest.id, label: manifest.name },
         });
+      });
 
       return { moduleId: manifest.id, enabled: input.enabled };
     }),

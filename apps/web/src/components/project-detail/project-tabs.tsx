@@ -1,6 +1,13 @@
 import { FC } from "react";
 import Link from "next/link";
-import { FileTextIcon, LayoutDashboardIcon, ListTodoIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  FileTextIcon,
+  LayoutDashboardIcon,
+  ListTodoIcon,
+} from "lucide-react";
+
+import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
 import {
   Tabs,
   TabsList,
@@ -16,6 +23,7 @@ import {
 import { Button } from "@zentro/ui/shadcn/button";
 
 type Props = {
+  projectId: string;
   description?: string | null;
   totalTasks: number;
   totalDocs: number;
@@ -25,6 +33,7 @@ type Props = {
 };
 
 export const ProjectTabs: FC<Props> = ({
+  projectId,
   description,
   totalTasks,
   totalDocs,
@@ -52,6 +61,10 @@ export const ProjectTabs: FC<Props> = ({
                 Docs
               </TabsTrigger>
             ) : null}
+            <TabsTrigger value="activity">
+              <ActivityIcon aria-hidden="true" />
+              Activity
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -67,6 +80,22 @@ export const ProjectTabs: FC<Props> = ({
                 {description ||
                   "Use this space for the project brief, scope, and next steps."}
               </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-5">
+          <Card className="bg-card/50">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold">
+                Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityFeed
+                selector={{ projectId }}
+                emptyText="Nothing has happened in this project yet."
+              />
             </CardContent>
           </Card>
         </TabsContent>

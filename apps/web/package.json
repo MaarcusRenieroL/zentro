@@ -26,6 +26,7 @@
     "@trpc/server": "^11.17.0",
     "@trpc/tanstack-react-query": "^11.17.0",
     "@zentro/api": "workspace:*",
+    "@zentro/audit": "workspace:*",
     "@zentro/auth": "workspace:*",
     "@zentro/db": "workspace:*",
     "@zentro/modules": "workspace:*",

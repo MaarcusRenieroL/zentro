@@ -312,7 +312,7 @@ test("the access check explains a decision and the log records changes", async (
   // Every change above is in the permission log.
   await page.goto("/settings/organization/roles/log");
   await expect(page.getByText("role.updated").first()).toBeVisible();
-  await expect(page.getByText("override.created").first()).toBeVisible();
+  await expect(page.getByText("override.set").first()).toBeVisible();
 
   await member.context.close();
 });

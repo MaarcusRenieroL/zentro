@@ -194,6 +194,27 @@ export const settingsPermissions: PermissionDefinition[] = [
     "Roles and permissions",
     org,
   ),
+  definePermission(
+    "audit_logs.view",
+    "View the audit log",
+    "See every recorded event in the organization, including sign-ins and permission changes.",
+    "Audit",
+    org,
+  ),
+  definePermission(
+    "audit_logs.export",
+    "Export the audit log",
+    "Download the audit log as a CSV file.",
+    "Audit",
+    org,
+  ),
+  definePermission(
+    "activity.view_org",
+    "View organization activity",
+    "See the organization-wide activity feed (what you can view stays visible without it).",
+    "Audit",
+    org,
+  ),
 ];
 
 export const projectsPermissions: PermissionDefinition[] = [

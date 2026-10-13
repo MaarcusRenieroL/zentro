@@ -7,7 +7,7 @@ import { db } from "@zentro/db";
 import { and, eq } from "@zentro/db/drizzle";
 import {
   members,
-  permissionChangeLogs,
+  activityEvents,
   projects,
   roles,
   teamMembers,
@@ -1230,7 +1230,7 @@ describe("permission log", () => {
         "role.created",
         "role.updated",
         "assignment.created",
-        "override.created",
+        "override.set",
         "assignment.removed",
       ]),
     );
@@ -1511,8 +1511,8 @@ describe("Better Auth endpoints cannot be called directly", () => {
 
     const rows = await db
       .select()
-      .from(permissionChangeLogs)
-      .where(eq(permissionChangeLogs.organizationId, org.id));
+      .from(activityEvents)
+      .where(eq(activityEvents.organizationId, org.id));
 
     expect(rows.map((row) => row.action)).toContain("member.removed");
   });

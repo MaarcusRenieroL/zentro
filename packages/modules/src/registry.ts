@@ -46,6 +46,8 @@ export const moduleRegistry: readonly ModuleManifest[] = [
       "teams",
       "roles",
       "permissions",
+      "audit_logs",
+      "activity",
     ],
     permissions: settingsPermissions,
     nav: [
@@ -90,6 +92,12 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             href: "/settings/organization/modules",
             permission: "modules.view",
             icon: "Blocks",
+          },
+          {
+            label: "Audit log",
+            href: "/settings/organization/audit-log",
+            permission: "audit_logs.view",
+            icon: "ScrollText",
           },
           {
             label: "Danger zone",

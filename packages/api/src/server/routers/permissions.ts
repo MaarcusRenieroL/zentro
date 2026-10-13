@@ -1,8 +1,17 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, inArray, lt, or } from "@zentro/db/drizzle";
 import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  like,
+  or,
+} from "@zentro/db/drizzle";
+import {
+  activityEvents,
   members,
-  permissionChangeLogs,
   permissionOverrides,
   projects,
   roleAssignments,
@@ -21,7 +30,10 @@ import {
 } from "@zentro/permissions";
 import { z } from "zod";
 
-import { assertHoldsAll, logPermissionChange } from "../access";
+import { buildChanges } from "@zentro/audit";
+
+import { cursorCondition, cursorSchema, encodeCursor } from "../activity";
+import { assertHoldsAll } from "../access";
 import { loadEnabledModules } from "../modules";
 import { loadPermissionSnapshot } from "../permissions";
 import { loadProjectById } from "../resources";
@@ -155,6 +167,59 @@ const assignKeys: Record<z.infer<typeof scopeSchema>, string[]> = {
   team: ["roles.assign", "teams.members.manage"],
   project: ["roles.assign", "projects.members.manage"],
 };
+
+/** Names for an assignment's scope and principal, kept with the event. */
+async function describeAssignment(
+  ctx: OrganizationContext,
+  assignment: {
+    scopeType: z.infer<typeof scopeSchema>;
+    scopeId: string;
+    principalType: "user" | "team";
+    principalId: string;
+  },
+) {
+  let scopeName = ctx.activeOrganization.name;
+
+  if (assignment.scopeType === "team") {
+    const [row] = await ctx.db
+      .select({ name: teams.name })
+      .from(teams)
+      .where(eq(teams.id, assignment.scopeId))
+      .limit(1);
+
+    scopeName = row?.name ?? "a team";
+  } else if (assignment.scopeType === "project") {
+    const [row] = await ctx.db
+      .select({ name: projects.name })
+      .from(projects)
+      .where(eq(projects.id, assignment.scopeId))
+      .limit(1);
+
+    scopeName = row?.name ?? "a project";
+  }
+
+  let principalName: string | null = null;
+
+  if (assignment.principalType === "user") {
+    const [row] = await ctx.db
+      .select({ name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.id, assignment.principalId))
+      .limit(1);
+
+    principalName = row ? row.name || row.email : null;
+  } else {
+    const [row] = await ctx.db
+      .select({ name: teams.name })
+      .from(teams)
+      .where(eq(teams.id, assignment.principalId))
+      .limit(1);
+
+    principalName = row?.name ?? null;
+  }
+
+  return { scopeName, principalName };
+}
 
 async function loadMemberOfOrganization(
   ctx: OrganizationContext,
@@ -299,7 +364,9 @@ const rolesRouter = router({
     .input(z.object({ id: uuid }))
     .query(async ({ ctx, input }) => loadRole(ctx, input.id)),
 
-  create: permissionProcedure("roles.create")
+  create: permissionProcedure("roles.create", undefined, {
+    audit: ["role.created"],
+  })
     .input(
       z.object({
         ...roleInput,
@@ -312,37 +379,40 @@ const rolesRouter = router({
 
       await assertHoldsAll(ctx.permissions, keys);
 
-      const [role] = await ctx.db
-        .insert(roles)
-        .values({
-          organizationId: ctx.activeOrganization.id,
-          name: input.name,
-          description: input.description ?? null,
-          scope: input.scope,
-          kind: "custom",
-          permissions: keys,
-          createdByUserId: ctx.user.id,
-        })
-        .onConflictDoNothing()
-        .returning();
+      const role = await ctx.db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(roles)
+          .values({
+            organizationId: ctx.activeOrganization.id,
+            name: input.name,
+            description: input.description ?? null,
+            scope: input.scope,
+            kind: "custom",
+            permissions: keys,
+            createdByUserId: ctx.user.id,
+          })
+          .onConflictDoNothing()
+          .returning();
 
-      if (!role) {
-        throw conflict("A role with this name already exists.");
-      }
+        if (!created) {
+          throw conflict("A role with this name already exists.");
+        }
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "role.created",
-        targetType: "role",
-        targetId: role.id,
-        after: summarizeRole(role),
+        await ctx.audit.record(tx, {
+          action: "role.created",
+          target: { id: created.id, label: created.name },
+          metadata: { after: summarizeRole(created) },
+        });
+
+        return created;
       });
 
       return role;
     }),
 
-  update: permissionProcedure("roles.update")
+  update: permissionProcedure("roles.update", undefined, {
+    audit: ["role.updated"],
+  })
     .input(
       z.object({
         id: uuid,
@@ -380,36 +450,51 @@ const rolesRouter = router({
         "You cannot edit a role that grants permissions you do not hold.",
       );
 
-      const [updated] = await ctx.db
-        .update(roles)
-        .set({
-          ...(input.name ? { name: input.name } : {}),
-          ...(input.description !== undefined
-            ? { description: input.description }
-            : {}),
-          permissions: nextPermissions,
-          updatedAt: new Date(),
-        })
-        .where(eq(roles.id, role.id))
-        .returning()
-        .catch(() => {
-          throw conflict("A role with this name already exists.");
+      const updated = await ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(roles)
+          .set({
+            ...(input.name ? { name: input.name } : {}),
+            ...(input.description !== undefined
+              ? { description: input.description }
+              : {}),
+            permissions: nextPermissions,
+            updatedAt: new Date(),
+          })
+          .where(eq(roles.id, role.id))
+          .returning()
+          .catch(() => {
+            throw conflict("A role with this name already exists.");
+          });
+
+        await ctx.audit.record(tx, {
+          action: "role.updated",
+          target: { id: role.id, label: row!.name },
+          changes: buildChanges(
+            { name: role.name, description: role.description },
+            { name: row!.name, description: row!.description },
+          ),
+          metadata: {
+            before: summarizeRole(role),
+            after: summarizeRole(row!),
+            addedPermissions: nextPermissions.filter(
+              (key) => !role.permissions.includes(key),
+            ),
+            removedPermissions: role.permissions.filter(
+              (key) => !nextPermissions.includes(key),
+            ),
+          },
         });
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "role.updated",
-        targetType: "role",
-        targetId: role.id,
-        before: summarizeRole(role),
-        after: summarizeRole(updated!),
+        return row!;
       });
 
-      return updated!;
+      return updated;
     }),
 
-  delete: permissionProcedure("roles.delete")
+  delete: permissionProcedure("roles.delete", undefined, {
+    audit: ["role.deleted"],
+  })
     .input(z.object({ id: uuid }))
     .mutation(async ({ ctx, input }) => {
       const role = await loadRole(ctx, input.id);
@@ -427,21 +512,21 @@ const rolesRouter = router({
         });
       }
 
-      await ctx.db.delete(roles).where(eq(roles.id, role.id));
-
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "role.deleted",
-        targetType: "role",
-        targetId: role.id,
-        before: summarizeRole(role),
+      await ctx.db.transaction(async (tx) => {
+        await tx.delete(roles).where(eq(roles.id, role.id));
+        await ctx.audit.record(tx, {
+          action: "role.deleted",
+          target: { id: role.id, label: role.name },
+          metadata: { before: summarizeRole(role) },
+        });
       });
 
       return { id: role.id };
     }),
 
-  clone: permissionProcedure("roles.create")
+  clone: permissionProcedure("roles.create", undefined, {
+    audit: ["role.cloned"],
+  })
     .input(z.object({ id: uuid, name: roleInput.name }))
     .mutation(async ({ ctx, input }) => {
       const source = await loadRole(ctx, input.id);
@@ -452,38 +537,44 @@ const rolesRouter = router({
 
       await assertHoldsAll(ctx.permissions, keys);
 
-      const [role] = await ctx.db
-        .insert(roles)
-        .values({
-          organizationId: ctx.activeOrganization.id,
-          name: input.name,
-          description: source.description,
-          scope: source.scope,
-          kind: "custom",
-          permissions: keys,
-          createdByUserId: ctx.user.id,
-        })
-        .onConflictDoNothing()
-        .returning();
+      const role = await ctx.db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(roles)
+          .values({
+            organizationId: ctx.activeOrganization.id,
+            name: input.name,
+            description: source.description,
+            scope: source.scope,
+            kind: "custom",
+            permissions: keys,
+            createdByUserId: ctx.user.id,
+          })
+          .onConflictDoNothing()
+          .returning();
 
-      if (!role) {
-        throw conflict("A role with this name already exists.");
-      }
+        if (!created) {
+          throw conflict("A role with this name already exists.");
+        }
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "role.cloned",
-        targetType: "role",
-        targetId: role.id,
-        before: { clonedFrom: source.id },
-        after: summarizeRole(role),
+        await ctx.audit.record(tx, {
+          action: "role.cloned",
+          target: { id: created.id, label: created.name },
+          metadata: {
+            clonedFrom: source.id,
+            clonedFromName: source.name,
+            after: summarizeRole(created),
+          },
+        });
+
+        return created;
       });
 
       return role;
     }),
 
-  resetSystem: permissionProcedure("roles.update")
+  resetSystem: permissionProcedure("roles.update", undefined, {
+    audit: ["role.reset"],
+  })
     .input(z.object({ systemKey: z.enum(["admin", "member"]) }))
     .mutation(async ({ ctx, input }) => {
       const definition = getSystemRoleDefinition(input.systemKey)!;
@@ -509,23 +600,31 @@ const rolesRouter = router({
         "You cannot reset a role that grants permissions you do not hold.",
       );
 
-      const [updated] = await ctx.db
-        .update(roles)
-        .set({ permissions: definition.permissions, updatedAt: new Date() })
-        .where(eq(roles.id, role.id))
-        .returning();
+      const updated = await ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(roles)
+          .set({
+            permissions: definition.permissions,
+            // The defaults as they are now count as applied.
+            appliedDefaults: definition.permissions,
+            updatedAt: new Date(),
+          })
+          .where(eq(roles.id, role.id))
+          .returning();
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "role.reset",
-        targetType: "role",
-        targetId: role.id,
-        before: summarizeRole(role),
-        after: summarizeRole(updated!),
+        await ctx.audit.record(tx, {
+          action: "role.reset",
+          target: { id: role.id, label: role.name },
+          metadata: {
+            before: summarizeRole(role),
+            after: summarizeRole(row!),
+          },
+        });
+
+        return row!;
       });
 
-      return updated!;
+      return updated;
     }),
 });
 
@@ -731,6 +830,7 @@ const assignmentsRouter = router({
         "teams.members.manage",
         "projects.members.manage",
       ],
+      audit: ["assignment.created"],
     })
     .input(
       z.object({
@@ -795,31 +895,62 @@ const assignmentsRouter = router({
 
       await assertHoldsAll(ctx.permissions, role.permissions, resource);
 
-      const [assignment] = await ctx.db
-        .insert(roleAssignments)
-        .values({
-          organizationId: ctx.activeOrganization.id,
+      const names = await describeAssignment(ctx, input);
+
+      const assignment = await ctx.db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(roleAssignments)
+          .values({
+            organizationId: ctx.activeOrganization.id,
+            roleId: role.id,
+            principalType: input.principalType,
+            principalId: input.principalId,
+            scopeType: input.scopeType,
+            scopeId: input.scopeId,
+            createdByUserId: ctx.user.id,
+          })
+          .onConflictDoNothing()
+          .returning();
+
+        if (!created) {
+          throw conflict("This role is already assigned there.");
+        }
+
+        const scope = {
+          projectId: input.scopeType === "project" ? input.scopeId : null,
+          teamId: input.scopeType === "team" ? input.scopeId : null,
+        };
+        const details = {
           roleId: role.id,
+          roleName: role.name,
           principalType: input.principalType,
           principalId: input.principalId,
+          principalName: names.principalName,
           scopeType: input.scopeType,
           scopeId: input.scopeId,
-          createdByUserId: ctx.user.id,
-        })
-        .onConflictDoNothing()
-        .returning();
+          scopeName: names.scopeName,
+        };
 
-      if (!assignment) {
-        throw conflict("This role is already assigned there.");
-      }
+        await ctx.audit.record(tx, {
+          action: "assignment.created",
+          target: {
+            id: created.id,
+            label: `${role.name} for ${names.principalName ?? "someone"} on ${names.scopeName}`,
+          },
+          ...scope,
+          metadata: { ...details, after: input },
+        });
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "assignment.created",
-        targetType: input.scopeType,
-        targetId: input.scopeId,
-        after: { ...input, roleName: role.name },
+        if (input.scopeType === "project") {
+          await ctx.audit.record(tx, {
+            action: "project.member_added",
+            target: { id: input.scopeId, label: names.scopeName },
+            ...scope,
+            metadata: details,
+          });
+        }
+
+        return created;
       });
 
       return assignment;
@@ -832,6 +963,7 @@ const assignmentsRouter = router({
         "teams.members.manage",
         "projects.members.manage",
       ],
+      audit: ["assignment.removed"],
     })
     .input(z.object({ assignmentId: uuid }))
     .mutation(async ({ ctx, input }) => {
@@ -870,22 +1002,47 @@ const assignmentsRouter = router({
 
       await assertHoldsAll(ctx.permissions, role.permissions, resource);
 
-      await ctx.db
-        .delete(roleAssignments)
-        .where(eq(roleAssignments.id, assignment.id));
+      const names = await describeAssignment(ctx, assignment);
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "assignment.removed",
-        targetType: assignment.scopeType,
-        targetId: assignment.scopeId,
-        before: {
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .delete(roleAssignments)
+          .where(eq(roleAssignments.id, assignment.id));
+
+        const scope = {
+          projectId:
+            assignment.scopeType === "project" ? assignment.scopeId : null,
+          teamId: assignment.scopeType === "team" ? assignment.scopeId : null,
+        };
+        const details = {
           roleId: assignment.roleId,
           roleName: role.name,
           principalType: assignment.principalType,
           principalId: assignment.principalId,
-        },
+          principalName: names.principalName,
+          scopeType: assignment.scopeType,
+          scopeId: assignment.scopeId,
+          scopeName: names.scopeName,
+        };
+
+        await ctx.audit.record(tx, {
+          action: "assignment.removed",
+          target: {
+            id: assignment.id,
+            label: `${role.name} for ${names.principalName ?? "someone"} on ${names.scopeName}`,
+          },
+          ...scope,
+          metadata: { ...details, before: details },
+        });
+
+        if (assignment.scopeType === "project") {
+          await ctx.audit.record(tx, {
+            action: "project.member_removed",
+            target: { id: assignment.scopeId, label: names.scopeName },
+            ...scope,
+            metadata: details,
+          });
+        }
       });
 
       return { id: assignment.id };
@@ -920,7 +1077,10 @@ const overridesRouter = router({
     }),
 
   set: protectedProcedure
-    .meta({ permissions: ["permissions.overrides.manage"] })
+    .meta({
+      permissions: ["permissions.overrides.manage"],
+      audit: ["override.set"],
+    })
     .input(
       z.object({
         userId: uuid,
@@ -981,44 +1141,72 @@ const overridesRouter = router({
         )
         .limit(1);
 
-      const [override] = await ctx.db
-        .insert(permissionOverrides)
-        .values({
-          organizationId: ctx.activeOrganization.id,
-          userId: input.userId,
-          permission: input.permission,
-          effect: input.effect,
-          scopeType: input.scopeType,
-          scopeId: input.scopeId,
-          reason: input.reason ?? null,
-          createdByUserId: ctx.user.id,
-        })
-        .onConflictDoUpdate({
-          target: [
-            permissionOverrides.userId,
-            permissionOverrides.permission,
-            permissionOverrides.scopeType,
-            permissionOverrides.scopeId,
-          ],
-          set: { effect: input.effect, reason: input.reason ?? null },
-        })
-        .returning();
+      const target = await loadMemberOfOrganization(ctx, input.userId);
+      const [person] = await ctx.db
+        .select({ name: users.name, email: users.email })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+      const personName = person ? person.name || person.email : "someone";
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: existing ? "override.updated" : "override.created",
-        targetType: "user",
-        targetId: input.userId,
-        before: existing ?? null,
-        after: override,
+      const override = await ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(permissionOverrides)
+          .values({
+            organizationId: ctx.activeOrganization.id,
+            userId: input.userId,
+            permission: input.permission,
+            effect: input.effect,
+            scopeType: input.scopeType,
+            scopeId: input.scopeId,
+            reason: input.reason ?? null,
+            createdByUserId: ctx.user.id,
+          })
+          .onConflictDoUpdate({
+            target: [
+              permissionOverrides.userId,
+              permissionOverrides.permission,
+              permissionOverrides.scopeType,
+              permissionOverrides.scopeId,
+            ],
+            set: { effect: input.effect, reason: input.reason ?? null },
+          })
+          .returning();
+
+        await ctx.audit.record(tx, {
+          action: "override.set",
+          target: {
+            id: row!.id,
+            label: `${input.effect} ${input.permission} for ${personName}`,
+          },
+          projectId: input.scopeType === "project" ? input.scopeId : null,
+          teamId: input.scopeType === "team" ? input.scopeId : null,
+          metadata: {
+            userId: input.userId,
+            memberId: target?.id,
+            personName,
+            permission: input.permission,
+            effect: input.effect,
+            scopeType: input.scopeType,
+            scopeId: input.scopeId,
+            reason: input.reason ?? null,
+            updated: Boolean(existing),
+            before: existing ?? null,
+            after: row,
+          },
+        });
+
+        return row!;
       });
 
-      return override!;
+      return override;
     }),
 
   remove: protectedProcedure
-    .meta({ permissions: ["permissions.overrides.manage"] })
+    .meta({
+      permissions: ["permissions.overrides.manage"],
+      audit: ["override.removed"],
+    })
     .input(z.object({ id: uuid }))
     .mutation(async ({ ctx, input }) => {
       const [override] = await ctx.db
@@ -1054,22 +1242,56 @@ const overridesRouter = router({
         await assertHoldsAll(ctx.permissions, [override.permission], resource);
       }
 
-      await ctx.db
-        .delete(permissionOverrides)
-        .where(eq(permissionOverrides.id, override.id));
+      const [person] = await ctx.db
+        .select({ name: users.name, email: users.email })
+        .from(users)
+        .where(eq(users.id, override.userId))
+        .limit(1);
+      const personName = person ? person.name || person.email : "someone";
 
-      await logPermissionChange(ctx.db, {
-        organizationId: ctx.activeOrganization.id,
-        actorUserId: ctx.user.id,
-        action: "override.removed",
-        targetType: "user",
-        targetId: override.userId,
-        before: override,
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .delete(permissionOverrides)
+          .where(eq(permissionOverrides.id, override.id));
+
+        await ctx.audit.record(tx, {
+          action: "override.removed",
+          target: {
+            id: override.id,
+            label: `${override.effect} ${override.permission} for ${personName}`,
+          },
+          projectId: override.scopeType === "project" ? override.scopeId : null,
+          teamId: override.scopeType === "team" ? override.scopeId : null,
+          metadata: {
+            userId: override.userId,
+            personName,
+            permission: override.permission,
+            effect: override.effect,
+            scopeType: override.scopeType,
+            scopeId: override.scopeId,
+            before: override,
+          },
+        });
       });
 
       return { id: override.id };
     }),
 });
+
+// Permission-related events in the order they happened. The log is read from
+// the unified activity store.
+const permissionLogActions = [
+  "role.%",
+  "assignment.%",
+  "override.%",
+  "member.role_updated",
+  "member.removed",
+  "org.ownership_transferred",
+  "org.updated",
+  "invitation.%",
+  "project.visibility_changed",
+  "project.member_%",
+];
 
 const logRouter = router({
   list: permissionProcedure("permissions.log.view")
@@ -1077,7 +1299,7 @@ const logRouter = router({
       z
         .object({
           limit: z.number().int().min(1).max(100).default(30),
-          cursor: z.string().optional(),
+          cursor: cursorSchema.optional(),
           actorUserId: uuid.optional(),
           targetType: z.string().optional(),
           targetId: z.string().optional(),
@@ -1086,58 +1308,58 @@ const logRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const conditions = [
-        eq(permissionChangeLogs.organizationId, ctx.activeOrganization.id),
+        eq(activityEvents.organizationId, ctx.activeOrganization.id),
+        or(
+          ...permissionLogActions.map((pattern) =>
+            like(activityEvents.action, pattern),
+          ),
+        ),
+        cursorCondition(input.cursor),
       ];
 
       if (input.actorUserId) {
-        conditions.push(
-          eq(permissionChangeLogs.actorUserId, input.actorUserId),
-        );
+        conditions.push(eq(activityEvents.actorUserId, input.actorUserId));
       }
 
       if (input.targetType) {
-        conditions.push(eq(permissionChangeLogs.targetType, input.targetType));
+        conditions.push(eq(activityEvents.targetType, input.targetType));
       }
 
       if (input.targetId) {
-        conditions.push(eq(permissionChangeLogs.targetId, input.targetId));
-      }
-
-      if (input.cursor) {
-        conditions.push(
-          lt(permissionChangeLogs.createdAt, new Date(input.cursor)),
-        );
+        conditions.push(eq(activityEvents.targetId, input.targetId));
       }
 
       const rows = await ctx.db
         .select({
-          id: permissionChangeLogs.id,
-          action: permissionChangeLogs.action,
-          targetType: permissionChangeLogs.targetType,
-          targetId: permissionChangeLogs.targetId,
-          before: permissionChangeLogs.before,
-          after: permissionChangeLogs.after,
-          createdAt: permissionChangeLogs.createdAt,
-          actorUserId: permissionChangeLogs.actorUserId,
+          id: activityEvents.id,
+          action: activityEvents.action,
+          targetType: activityEvents.targetType,
+          targetId: activityEvents.targetId,
+          targetLabel: activityEvents.targetLabel,
+          metadata: activityEvents.metadata,
+          createdAt: activityEvents.createdAt,
+          actorUserId: activityEvents.actorUserId,
           actorName: users.name,
         })
-        .from(permissionChangeLogs)
-        .leftJoin(users, eq(users.id, permissionChangeLogs.actorUserId))
+        .from(activityEvents)
+        .leftJoin(users, eq(users.id, activityEvents.actorUserId))
         .where(and(...conditions))
-        .orderBy(
-          desc(permissionChangeLogs.createdAt),
-          desc(permissionChangeLogs.id),
-        )
+        .orderBy(desc(activityEvents.createdAt), desc(activityEvents.id))
         .limit(input.limit + 1);
 
       const hasMore = rows.length > input.limit;
-      const items = hasMore ? rows.slice(0, input.limit) : rows;
+      const items = (hasMore ? rows.slice(0, input.limit) : rows).map(
+        ({ metadata, ...row }) => ({
+          ...row,
+          before: metadata?.before ?? null,
+          after: metadata?.after ?? null,
+          metadata,
+        }),
+      );
 
       return {
         items,
-        nextCursor: hasMore
-          ? items[items.length - 1]!.createdAt.toISOString()
-          : null,
+        nextCursor: hasMore ? encodeCursor(items[items.length - 1]!) : null,
       };
     }),
 });

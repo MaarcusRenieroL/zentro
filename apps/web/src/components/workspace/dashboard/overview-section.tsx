@@ -17,18 +17,19 @@ export const OverviewSection: FC<Props> = ({ data }) => {
         <QuickActions links={data.links} />
         <PinnedSection items={data.recentWork} />
       </div>
+      <div
+        className={
+          data.modules.tasks
+            ? "min-w-0 lg:col-span-2 xl:col-span-3"
+            : "min-w-0 lg:col-span-1 xl:col-span-5"
+        }
+      >
+        <RecentActivitySection items={data.recentActivity} />
+      </div>
       {data.modules.tasks ? (
-        <>
-          <div className="min-w-0 lg:col-span-2 xl:col-span-3">
-            <RecentActivitySection items={data.recentActivity} />
-          </div>
-          <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
-            <TasksSection
-              tasks={data.tasks}
-              tasksHref={data.links.tasks ?? ""}
-            />
-          </div>
-        </>
+        <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
+          <TasksSection tasks={data.tasks} tasksHref={data.links.tasks ?? ""} />
+        </div>
       ) : null}
     </div>
   );

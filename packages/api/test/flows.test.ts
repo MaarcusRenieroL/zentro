@@ -4,7 +4,7 @@ import {
   docComments,
   docs,
   projects,
-  taskActivityEvents,
+  activityEvents,
   taskComments,
   tasks,
 } from "@zentro/db/schema";
@@ -265,8 +265,8 @@ describe("tasks", () => {
 
     const events = await db
       .select()
-      .from(taskActivityEvents)
-      .where(eq(taskActivityEvents.taskId, task.id));
+      .from(activityEvents)
+      .where(eq(activityEvents.targetId, task.id));
 
     expect(events.length).toBeGreaterThanOrEqual(2);
   });

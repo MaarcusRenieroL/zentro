@@ -3,7 +3,7 @@ import { eq } from "@zentro/db/drizzle";
 import {
   docComments,
   roles,
-  taskActivityEvents,
+  activityEvents,
   taskComments,
   teamMembers,
 } from "@zentro/db/schema";
@@ -107,14 +107,15 @@ describe.each(scenarios)("$label project visibility", (scenario) => {
       createdByMemberId: owner.member.id,
     });
 
-    await db.insert(taskActivityEvents).values({
+    await db.insert(activityEvents).values({
       organizationId: org.id,
-      taskId: task.id,
-      actorMemberId: owner.member.id,
-      type: "task.updated",
-      field: "status",
-      fromValue: "todo",
-      toValue: "done",
+      actorUserId: owner.user.id,
+      action: "task.status_changed",
+      targetType: "task",
+      targetId: task.id,
+      targetLabel: task.key,
+      projectId: hidden.id,
+      metadata: { changes: [{ field: "status", from: "todo", to: "done" }] },
     });
     await db.insert(taskComments).values({
       organizationId: org.id,
@@ -394,9 +395,7 @@ describe.each(scenarios)("$label project visibility", (scenario) => {
           dashboard.recentWork.some((item) => item.title.includes("Hidden")),
         ).toBe(!hidden);
         expect(
-          dashboard.recentActivity.some(
-            (item) => item.target === "Hidden task",
-          ),
+          dashboard.recentActivity.some((item) => item.action.includes("HP-1")),
         ).toBe(!hidden);
       });
 
@@ -443,23 +442,26 @@ describe.each(scenarios)("$label project visibility", (scenario) => {
     );
   });
 
-  it("deleted tasks stay out of the dashboard activity", async () => {
+  it("a deleted task's events stay, only for people who can see its project", async () => {
     const owner = await world.caller(ownerUser, org);
 
     await owner.task.deleteTaskByKey({ key: "HP-2" });
 
-    const snapshot = await loadPermissionSnapshot(db, org.id, memberUser.id);
-    const dashboard = await getDashboardData({
-      organizationId: org.id,
-      userId: memberUser.id,
-      enabledModules: new Set(["projects", "tasks", "docs"]),
-      snapshot,
-    });
+    const feed = async (user: TestUser) =>
+      (
+        await getDashboardData({
+          organizationId: org.id,
+          userId: user.id,
+          enabledModules: new Set(["projects", "tasks", "docs"]),
+          snapshot: await loadPermissionSnapshot(db, org.id, user.id),
+        })
+      ).recentActivity.map((item) => item.action);
 
+    expect((await feed(memberUser)).some((text) => text.includes("HP-2"))).toBe(
+      true,
+    );
     expect(
-      dashboard.recentActivity.some(
-        (item) => item.target === "Hidden overdue task",
-      ),
+      (await feed(outsiderUser)).some((text) => text.includes("HP-2")),
     ).toBe(false);
   });
 });

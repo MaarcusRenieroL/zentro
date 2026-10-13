@@ -49,8 +49,13 @@ export const RecentActivitySection: FC<Props> = ({ items }) => {
                     <span className="font-medium">{activity.user}</span>{" "}
                     <span className="text-muted-foreground">
                       {activity.action}
-                    </span>{" "}
-                    <span className="font-medium">{activity.target}</span>
+                    </span>
+                    {activity.target ? (
+                      <>
+                        {" "}
+                        <span className="font-medium">{activity.target}</span>
+                      </>
+                    ) : null}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {activity.app} · {activity.time}
@@ -66,7 +71,7 @@ export const RecentActivitySection: FC<Props> = ({ items }) => {
           <AlertCircleIcon className="mb-3 size-9 text-muted-foreground" />
           <p className="text-sm font-medium">No activity yet</p>
           <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-            Task changes and comments will show up here once your workspace gets
+            Changes and comments will show up here once your workspace gets
             moving.
           </p>
         </div>

@@ -14,6 +14,12 @@ export type ProcedureMeta = {
    * the explicit allowlist.
    */
   permissions?: string[];
+  /**
+   * Activity event keys a mutation writes (any of them is enough). After the
+   * mutation succeeds, the audit guard checks that one was recorded through
+   * `ctx.audit`. The sweep test requires every mutation to declare keys.
+   */
+  audit?: string[];
 };
 
 const trpc = initTRPC
@@ -34,10 +40,40 @@ const trpc = initTRPC
   });
 
 export const router = trpc.router;
-export const publicProcedure = trpc.procedure;
+
+/**
+ * Every mutation that declares `meta.audit` must record one of those events.
+ * In tests and development a miss throws; in production it is logged and the
+ * request still succeeds, because the change has already been committed.
+ */
+const auditGuard = trpc.middleware(async ({ ctx, type, meta, path, next }) => {
+  if (type !== "mutation" || !meta?.audit?.length) {
+    return next();
+  }
+
+  // Calls in one request each track their own events.
+  const audit = ctx.audit.forCall();
+  const result = await next({ ctx: { ...ctx, audit } });
+
+  if (result.ok && !meta.audit.some((key) => audit.recorded.includes(key))) {
+    const message = `${path} succeeded without recording any of: ${meta.audit.join(", ")}`;
+
+    if (process.env.NODE_ENV === "production") {
+      console.error(`[audit] ${message}`);
+    } else {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
+    }
+  }
+
+  return result;
+});
+
+const baseProcedure = trpc.procedure.use(auditGuard);
+
+export const publicProcedure = baseProcedure;
 
 /** Requires a session but, unlike protectedProcedure, no active organization. */
-export const authenticatedProcedure = trpc.procedure.use(({ ctx, next }) => {
+export const authenticatedProcedure = baseProcedure.use(({ ctx, next }) => {
   if (!ctx.user?.id) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -53,7 +89,7 @@ export const authenticatedProcedure = trpc.procedure.use(({ ctx, next }) => {
   });
 });
 
-export const protectedProcedure = trpc.procedure.use(({ ctx, next }) => {
+export const protectedProcedure = baseProcedure.use(({ ctx, next }) => {
   if (!ctx.user?.id) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
@@ -155,6 +191,8 @@ export const permissionProcedure = (
     module?: ModuleId;
     /** Further keys the handler checks itself (declared for the coverage test). */
     also?: string[];
+    /** Activity events a mutation records (see `ProcedureMeta.audit`). */
+    audit?: string[];
   } = {},
 ) => {
   const base = options.module
@@ -162,7 +200,10 @@ export const permissionProcedure = (
     : protectedProcedure;
 
   return base
-    .meta({ permissions: [permission, ...(options.also ?? [])] })
+    .meta({
+      permissions: [permission, ...(options.also ?? [])],
+      ...(options.audit ? { audit: options.audit } : {}),
+    })
     .use(async (opts) => {
       const { ctx, next, getRawInput } = opts;
       const resource = resolve

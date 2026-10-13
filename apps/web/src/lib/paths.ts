@@ -53,6 +53,7 @@ export const paths = {
   rolesSettings: () => "/settings/organization/roles",
   role: (id: string) => `/settings/organization/roles/${id}`,
   rolesAssignments: () => "/settings/organization/roles/assignments",
+  auditLogSettings: () => "/settings/organization/audit-log",
   permissionLog: () => "/settings/organization/roles/log",
   accessCheck: () => "/settings/organization/roles/access-check",
   projectAccessSettings: (slug: string) => `/projects/${slug}/settings/access`,

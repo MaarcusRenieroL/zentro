@@ -4,7 +4,7 @@ import { and, desc, eq } from "@zentro/db/drizzle";
 import { invitations, roles, users } from "@zentro/db/schema";
 import { z } from "zod";
 
-import { assertHoldsAll, logPermissionChange } from "../access";
+import { assertHoldsAll } from "../access";
 import { callAuth } from "../auth-calls";
 import { permissionProcedure, router } from "../trpc";
 
@@ -28,7 +28,9 @@ export const invitationRouter = router({
       .orderBy(desc(invitations.createdAt));
   }),
 
-  invite: permissionProcedure("members.invite")
+  invite: permissionProcedure("members.invite", undefined, {
+    audit: ["invitation.sent"],
+  })
     .input(
       z.object({
         email: z.string().trim().email(),
@@ -63,19 +65,18 @@ export const invitationRouter = router({
         }),
       );
 
-      await logPermissionChange(db, {
-        organizationId: activeOrganization.id,
-        actorUserId: user.id,
-        action: "invitation.created",
-        targetType: "invitation",
-        targetId: invitation.id,
-        after: { email: input.email, role: input.role },
+      await ctx.audit.record(db, {
+        action: "invitation.sent",
+        target: { id: invitation.id, label: input.email },
+        metadata: { role: input.role },
       });
 
       return invitation;
     }),
 
-  resend: permissionProcedure("invitations.resend")
+  resend: permissionProcedure("invitations.resend", undefined, {
+    audit: ["invitation.resent"],
+  })
     .input(invitationIdSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -97,7 +98,7 @@ export const invitationRouter = router({
         });
       }
 
-      return callAuth(() =>
+      const resent = await callAuth(() =>
         auth.api.createInvitation({
           headers: ctx.headers,
           body: {
@@ -108,9 +109,19 @@ export const invitationRouter = router({
           },
         }),
       );
+
+      await ctx.audit.record(db, {
+        action: "invitation.resent",
+        target: { id: invitation.id, label: invitation.email },
+        metadata: { role: invitation.role },
+      });
+
+      return resent;
     }),
 
-  cancel: permissionProcedure("invitations.cancel")
+  cancel: permissionProcedure("invitations.cancel", undefined, {
+    audit: ["invitation.cancelled"],
+  })
     .input(invitationIdSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -139,13 +150,9 @@ export const invitationRouter = router({
         }),
       );
 
-      await logPermissionChange(db, {
-        organizationId: activeOrganization.id,
-        actorUserId: user.id,
+      await ctx.audit.record(db, {
         action: "invitation.cancelled",
-        targetType: "invitation",
-        targetId: invitation.id,
-        before: { email: invitation.email },
+        target: { id: invitation.id, label: invitation.email },
       });
 
       return { invitationId: invitation.id };

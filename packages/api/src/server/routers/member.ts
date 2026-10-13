@@ -4,7 +4,7 @@ import { and, asc, eq } from "@zentro/db/drizzle";
 import { members, roles, users } from "@zentro/db/schema";
 import { z } from "zod";
 
-import { assertHoldsAll, logPermissionChange } from "../access";
+import { assertHoldsAll } from "../access";
 import { callAuth } from "../auth-calls";
 import { permissionProcedure, router } from "../trpc";
 
@@ -35,6 +35,19 @@ async function loadTargetMember(
   return target;
 }
 
+async function userLabel(
+  ctx: { db: typeof import("@zentro/db").db },
+  userId: string,
+) {
+  const [row] = await ctx.db
+    .select({ name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  return row ? row.name || row.email : null;
+}
+
 const isOwner = (role: string) =>
   role
     .split(",")
@@ -61,7 +74,9 @@ export const memberRouter = router({
   }),
 
   // Changes a member's base organization role (admin or member).
-  updateRole: permissionProcedure("members.role.update")
+  updateRole: permissionProcedure("members.role.update", undefined, {
+    audit: ["member.role_updated"],
+  })
     .input(memberIdSchema.extend({ role: z.enum(["admin", "member"]) }))
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -107,20 +122,23 @@ export const memberRouter = router({
         }),
       );
 
-      await logPermissionChange(db, {
-        organizationId: activeOrganization.id,
-        actorUserId: user.id,
-        action: "member.role.updated",
-        targetType: "member",
-        targetId: target.id,
-        before: { role: target.role },
-        after: { role: input.role },
+      await ctx.audit.record(db, {
+        action: "member.role_updated",
+        target: { id: target.id, label: await userLabel(ctx, target.userId) },
+        changes: [{ field: "role", from: target.role, to: input.role }],
+        metadata: {
+          userId: target.userId,
+          before: { role: target.role },
+          after: { role: input.role },
+        },
       });
 
       return { memberId: target.id, role: input.role };
     }),
 
-  remove: permissionProcedure("members.remove")
+  remove: permissionProcedure("members.remove", undefined, {
+    audit: ["member.removed"],
+  })
     .input(memberIdSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -140,6 +158,8 @@ export const memberRouter = router({
         });
       }
 
+      const label = await userLabel(ctx, target.userId);
+
       await callAuth(() =>
         auth.api.removeMember({
           headers: ctx.headers,
@@ -150,20 +170,22 @@ export const memberRouter = router({
         }),
       );
 
-      await logPermissionChange(db, {
-        organizationId: activeOrganization.id,
-        actorUserId: user.id,
+      await ctx.audit.record(db, {
         action: "member.removed",
-        targetType: "member",
-        targetId: target.id,
-        before: { userId: target.userId, role: target.role },
+        target: { id: target.id, label },
+        metadata: {
+          userId: target.userId,
+          before: { userId: target.userId, role: target.role },
+        },
       });
 
       return { memberId: target.id };
     }),
 
   // Owner only: the target becomes an owner and the caller steps down to admin.
-  transferOwnership: permissionProcedure("org.ownership.transfer")
+  transferOwnership: permissionProcedure("org.ownership.transfer", undefined, {
+    audit: ["org.ownership_transferred"],
+  })
     .input(memberIdSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
@@ -175,6 +197,8 @@ export const memberRouter = router({
           message: "You already own this organization.",
         });
       }
+
+      const label = await userLabel(ctx, target.userId);
 
       await db.transaction(async (tx) => {
         await tx
@@ -190,16 +214,16 @@ export const memberRouter = router({
               eq(members.organizationId, activeOrganization.id),
             ),
           );
-      });
 
-      await logPermissionChange(db, {
-        organizationId: activeOrganization.id,
-        actorUserId: user.id,
-        action: "ownership.transferred",
-        targetType: "member",
-        targetId: target.id,
-        before: { ownerUserId: user.id },
-        after: { ownerUserId: target.userId },
+        await ctx.audit.record(tx, {
+          action: "org.ownership_transferred",
+          target: { id: target.id, label },
+          metadata: {
+            userId: target.userId,
+            before: { ownerUserId: user.id },
+            after: { ownerUserId: target.userId },
+          },
+        });
       });
 
       return { memberId: target.id };

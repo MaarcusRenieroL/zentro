@@ -1,6 +1,7 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import {
   appRouter,
+  createAuditContext,
   createEnabledModulesLoader,
   createPermissionContext,
 } from "@zentro/api/server";
@@ -25,6 +26,11 @@ const handler = (request: Request) => {
           activeOrganization: null,
           enabledModules: createEnabledModulesLoader(db, null),
           permissions: createPermissionContext(db, null, null),
+          audit: createAuditContext({
+            organizationId: null,
+            userId: null,
+            headers: request.headers,
+          }),
           headers: request.headers,
         };
       }
@@ -48,6 +54,11 @@ const handler = (request: Request) => {
           activeOrganization?.id ?? null,
           session.user.id,
         ),
+        audit: createAuditContext({
+          organizationId: activeOrganization?.id ?? null,
+          userId: session.user.id,
+          headers: request.headers,
+        }),
         headers: request.headers,
       };
     },

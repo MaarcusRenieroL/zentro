@@ -69,6 +69,7 @@ import {
   getInitials,
 } from "../../../lib/docs";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
+import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
 import { CommentsPanel } from "./comments-panel";
 
 const slashCommands = [
@@ -1079,6 +1080,13 @@ export function NotionEditorPage({ slug }: { slug: string }) {
               </div>
             </div>
           </div>
+          <section
+            className="mx-auto mt-10 w-full max-w-3xl px-4 pb-10"
+            aria-label="Doc activity"
+          >
+            <h2 className="mb-3 text-sm font-semibold">Activity</h2>
+            <ActivityFeed selector={{ targetType: "doc", targetId: doc.id }} />
+          </section>
         </main>
 
         <CommentsPanel

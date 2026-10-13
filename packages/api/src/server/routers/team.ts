@@ -17,6 +17,7 @@ import {
   router,
 } from "../trpc";
 import { assignCreatorLeadRole } from "../access";
+import { buildChanges } from "@zentro/audit";
 import { teamById } from "../resources";
 
 type TeamDbClient = Pick<
@@ -64,7 +65,12 @@ async function assertTeamInOrganization({
   teamId: string;
 }) {
   const [team] = await db
-    .select({ id: teams.id })
+    .select({
+      id: teams.id,
+      name: teams.name,
+      description: teams.description,
+      color: teams.color,
+    })
     .from(teams)
     .where(
       and(
@@ -302,7 +308,9 @@ export const teamRouter = router({
         .orderBy(asc(users.name), asc(users.email));
     }),
 
-  create: permissionProcedure("teams.create")
+  create: permissionProcedure("teams.create", undefined, {
+    audit: ["team.created"],
+  })
     .input(createTeamSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db, user } = ctx;
@@ -358,27 +366,37 @@ export const teamRouter = router({
           memberIds: input.memberIds,
         });
 
-        return team;
-      });
+        await ctx.audit.record(tx, {
+          action: "team.created",
+          target: { id: team.id, label: team.name },
+          teamId: team.id,
+          metadata: { memberCount: new Set(input.memberIds).size },
+        });
 
-      // Whoever creates a team leads it.
-      await assignCreatorLeadRole(db, {
-        organizationId: activeOrganization.id,
-        userId: user.id,
-        systemKey: "team_lead",
-        scopeType: "team",
-        scopeId: created.id,
+        // Whoever creates a team leads it.
+        await assignCreatorLeadRole(tx, ctx.audit, {
+          organizationId: activeOrganization.id,
+          userId: user.id,
+          systemKey: "team_lead",
+          scopeType: "team",
+          scopeId: team.id,
+          scopeName: team.name,
+        });
+
+        return team;
       });
 
       return created;
     }),
 
-  update: permissionProcedure("teams.update", teamById("id"))
+  update: permissionProcedure("teams.update", teamById("id"), {
+    audit: ["team.updated"],
+  })
     .input(updateTeamSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db } = ctx;
 
-      await assertTeamInOrganization({
+      const previous = await assertTeamInOrganization({
         db,
         organizationId: activeOrganization.id,
         teamId: input.id,
@@ -404,81 +422,177 @@ export const teamRouter = router({
         });
       }
 
-      const [team] = await db
-        .update(teams)
-        .set({
-          name: input.name,
-          description: input.description || null,
-          color: input.color,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(teams.id, input.id),
-            eq(teams.organizationId, activeOrganization.id),
-            isNull(teams.archivedAt),
-          ),
-        )
-        .returning();
+      const team = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(teams)
+          .set({
+            name: input.name,
+            description: input.description || null,
+            color: input.color,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(teams.id, input.id),
+              eq(teams.organizationId, activeOrganization.id),
+              isNull(teams.archivedAt),
+            ),
+          )
+          .returning();
 
-      if (!team) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to update team.",
-        });
-      }
+        if (!row) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to update team.",
+          });
+        }
+
+        const changes = buildChanges(
+          {
+            name: previous.name,
+            description: previous.description,
+            color: previous.color,
+          },
+          {
+            name: row.name,
+            description: row.description,
+            color: row.color,
+          },
+        );
+
+        if (changes.length) {
+          await ctx.audit.record(tx, {
+            action: "team.updated",
+            target: { id: row.id, label: row.name },
+            teamId: row.id,
+            changes,
+          });
+        } else {
+          ctx.audit.skipped("team.updated");
+        }
+
+        return row;
+      });
 
       return team;
     }),
 
-  updateMembers: permissionProcedure("teams.members.manage", teamById("teamId"))
+  updateMembers: permissionProcedure(
+    "teams.members.manage",
+    teamById("teamId"),
+    {
+      audit: ["team.member_added", "team.member_removed"],
+    },
+  )
     .input(updateTeamMembersSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db } = ctx;
 
-      await assertTeamInOrganization({
+      const team = await assertTeamInOrganization({
         db,
         organizationId: activeOrganization.id,
         teamId: input.teamId,
       });
 
-      const memberIds = await replaceTeamMembers({
-        db,
-        organizationId: activeOrganization.id,
-        teamId: input.teamId,
-        memberIds: input.memberIds,
+      return db.transaction(async (tx) => {
+        const before = new Set(
+          (
+            await tx
+              .select({ memberId: teamMembers.memberId })
+              .from(teamMembers)
+              .where(eq(teamMembers.teamId, input.teamId))
+          ).map((row) => row.memberId),
+        );
+
+        const memberIds = await replaceTeamMembers({
+          db: tx,
+          organizationId: activeOrganization.id,
+          teamId: input.teamId,
+          memberIds: input.memberIds,
+        });
+
+        await tx
+          .update(teams)
+          .set({ updatedAt: new Date() })
+          .where(eq(teams.id, input.teamId));
+
+        const after = new Set(memberIds);
+        const added = memberIds.filter((id) => !before.has(id));
+        const removed = [...before].filter((id) => !after.has(id));
+        const changed = [...added, ...removed];
+        const people = changed.length
+          ? await tx
+              .select({
+                memberId: members.id,
+                userId: members.userId,
+                name: users.name,
+                email: users.email,
+              })
+              .from(members)
+              .innerJoin(users, eq(users.id, members.userId))
+              .where(inArray(members.id, changed))
+          : [];
+
+        for (const [action, ids] of [
+          ["team.member_added", added],
+          ["team.member_removed", removed],
+        ] as const) {
+          for (const id of ids) {
+            const person = people.find((item) => item.memberId === id);
+
+            await ctx.audit.record(tx, {
+              action,
+              target: { id: team.id, label: team.name },
+              teamId: team.id,
+              metadata: {
+                memberId: id,
+                userId: person?.userId,
+                name: person?.name || person?.email,
+              },
+            });
+          }
+        }
+
+        if (!changed.length) {
+          ctx.audit.skipped("team.member_added");
+        }
+
+        return { memberIds };
       });
-
-      await db
-        .update(teams)
-        .set({ updatedAt: new Date() })
-        .where(eq(teams.id, input.teamId));
-
-      return { memberIds };
     }),
 
-  delete: permissionProcedure("teams.delete", teamById("id"))
+  delete: permissionProcedure("teams.delete", teamById("id"), {
+    audit: ["team.deleted"],
+  })
     .input(deleteTeamSchema)
     .mutation(async ({ ctx, input }) => {
       const { activeOrganization, db } = ctx;
 
-      const [team] = await db
-        .delete(teams)
-        .where(
-          and(
-            eq(teams.id, input.id),
-            eq(teams.organizationId, activeOrganization.id),
-          ),
-        )
-        .returning({ id: teams.id });
+      return db.transaction(async (tx) => {
+        const [team] = await tx
+          .delete(teams)
+          .where(
+            and(
+              eq(teams.id, input.id),
+              eq(teams.organizationId, activeOrganization.id),
+            ),
+          )
+          .returning({ id: teams.id, name: teams.name });
 
-      if (!team) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Team not found.",
+        if (!team) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Team not found.",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "team.deleted",
+          target: { id: team.id, label: team.name },
+          teamId: team.id,
         });
-      }
 
-      return team;
+        return { id: team.id };
+      });
     }),
 });

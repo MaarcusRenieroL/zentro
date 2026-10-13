@@ -9,7 +9,8 @@ import {
   updateProjectBySlugSchema,
 } from "../../types/zod-schema";
 import { listProcedure, permissionProcedure, router } from "../trpc";
-import { assignCreatorLeadRole, logPermissionChange } from "../access";
+import { assignCreatorLeadRole } from "../access";
+import { buildChanges } from "@zentro/audit";
 import { loadProjectBySlug, projectBySlug } from "../resources";
 import {
   docs,
@@ -73,6 +74,7 @@ const createUniqueTaskKeyPrefix = async ({
 export const projectRouter = router({
   createProject: permissionProcedure("projects.create", undefined, {
     module: "projects",
+    audit: ["project.created"],
   })
     .input(createProjectSchema)
     .mutation(async ({ ctx, input }) => {
@@ -107,34 +109,47 @@ export const projectRouter = router({
         teamId = team.id;
       }
 
-      const [project] = await db
-        .insert(projects)
-        .values({
-          name,
-          slug,
-          taskKeyPrefix,
-          description: description || null,
-          teamId,
-          organizationId: activeOrganization.id,
-          createdById: user.id,
-          status: "active",
-        })
-        .returning();
+      const project = await db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(projects)
+          .values({
+            name,
+            slug,
+            taskKeyPrefix,
+            description: description || null,
+            teamId,
+            organizationId: activeOrganization.id,
+            createdById: user.id,
+            status: "active",
+          })
+          .returning();
 
-      if (!project) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create project",
+        if (!created) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create project",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "project.created",
+          target: { id: created.id, label: created.name },
+          projectId: created.id,
+          teamId: created.teamId,
+          metadata: { slug: created.slug },
         });
-      }
 
-      // Whoever creates a project leads it.
-      await assignCreatorLeadRole(db, {
-        organizationId: activeOrganization.id,
-        userId: user.id,
-        systemKey: "project_lead",
-        scopeType: "project",
-        scopeId: project.id,
+        // Whoever creates a project leads it.
+        await assignCreatorLeadRole(tx, ctx.audit, {
+          organizationId: activeOrganization.id,
+          userId: user.id,
+          systemKey: "project_lead",
+          scopeType: "project",
+          scopeId: created.id,
+          scopeName: created.name,
+        });
+
+        return created;
       });
 
       return project;
@@ -327,7 +342,7 @@ export const projectRouter = router({
   updateProjectBySlug: permissionProcedure(
     "projects.update",
     projectBySlug("currentSlug"),
-    { module: "projects" },
+    { module: "projects", audit: ["project.updated"] },
   )
     .input(updateProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
@@ -339,6 +354,9 @@ export const projectRouter = router({
         .select({
           id: projects.id,
           slug: projects.slug,
+          name: projects.name,
+          description: projects.description,
+          teamId: projects.teamId,
           organizationId: projects.organizationId,
         })
         .from(projects)
@@ -448,6 +466,29 @@ export const projectRouter = router({
               eq(docs.organizationId, activeOrganization.id),
             ),
           );
+
+        const changes = buildChanges(
+          {
+            name: existingProject.name,
+            slug: existingProject.slug,
+            description: existingProject.description,
+            teamId: existingProject.teamId,
+          },
+          { name, slug, description: description || null, teamId },
+        );
+
+        if (changes.length) {
+          await ctx.audit.record(tx, {
+            action: "project.updated",
+            target: { id: project.id, label: project.name },
+            projectId: project.id,
+            teamId: project.teamId,
+            metadata: { slug: project.slug },
+            changes,
+          });
+        } else {
+          ctx.audit.skipped("project.updated");
+        }
 
         return project;
       });
@@ -560,7 +601,7 @@ export const projectRouter = router({
   updateAccess: permissionProcedure(
     "projects.settings.manage",
     projectBySlug("slug"),
-    { module: "projects" },
+    { module: "projects", audit: ["project.visibility_changed"] },
   )
     .input(
       getProjectBySlugSchema.extend({
@@ -573,6 +614,7 @@ export const projectRouter = router({
       const [existing] = await db
         .select({
           id: projects.id,
+          name: projects.name,
           visibility: projects.visibility,
           teamId: projects.teamId,
         })
@@ -616,23 +658,33 @@ export const projectRouter = router({
         });
       }
 
-      await db
-        .update(projects)
-        .set({
-          visibility: input.visibility,
-          teamId: input.teamId,
-          updatedAt: new Date(),
-        })
-        .where(eq(projects.id, existing.id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(projects)
+          .set({
+            visibility: input.visibility,
+            teamId: input.teamId,
+            updatedAt: new Date(),
+          })
+          .where(eq(projects.id, existing.id));
 
-      await logPermissionChange(db, {
-        organizationId: activeOrganization.id,
-        actorUserId: user.id,
-        action: "project.access.updated",
-        targetType: "project",
-        targetId: existing.id,
-        before: { visibility: existing.visibility, teamId: existing.teamId },
-        after: { visibility: input.visibility, teamId: input.teamId },
+        await ctx.audit.record(tx, {
+          action: "project.visibility_changed",
+          target: { id: existing.id, label: existing.name },
+          projectId: existing.id,
+          teamId: input.teamId,
+          changes: buildChanges(
+            { visibility: existing.visibility, teamId: existing.teamId },
+            { visibility: input.visibility, teamId: input.teamId },
+          ),
+          metadata: {
+            before: {
+              visibility: existing.visibility,
+              teamId: existing.teamId,
+            },
+            after: { visibility: input.visibility, teamId: input.teamId },
+          },
+        });
       });
 
       return { projectId: existing.id };
@@ -640,7 +692,7 @@ export const projectRouter = router({
   archiveProject: permissionProcedure(
     "projects.archive",
     projectBySlug("slug"),
-    { module: "projects" },
+    { module: "projects", audit: ["project.archived", "project.restored"] },
   )
     .input(archiveProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
@@ -651,6 +703,7 @@ export const projectRouter = router({
         .select({
           id: projects.id,
           slug: projects.slug,
+          name: projects.name,
           organizationId: projects.organizationId,
           status: projects.status,
         })
@@ -673,20 +726,37 @@ export const projectRouter = router({
       const nextStatus =
         existingProject.status === "archived" ? "active" : "archived";
 
-      const [updatedProject] = await db
-        .update(projects)
-        .set({
-          status: nextStatus,
-          archivedAt: nextStatus === "archived" ? new Date() : null,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(projects.id, existingProject.id),
-            eq(projects.organizationId, activeOrganization.id),
-          ),
-        )
-        .returning();
+      const updatedProject = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(projects)
+          .set({
+            status: nextStatus,
+            archivedAt: nextStatus === "archived" ? new Date() : null,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(projects.id, existingProject.id),
+              eq(projects.organizationId, activeOrganization.id),
+            ),
+          )
+          .returning();
+
+        if (row) {
+          await ctx.audit.record(tx, {
+            action:
+              nextStatus === "archived"
+                ? "project.archived"
+                : "project.restored",
+            target: { id: row.id, label: row.name },
+            projectId: row.id,
+            teamId: row.teamId,
+            metadata: { slug: row.slug },
+          });
+        }
+
+        return row;
+      });
 
       if (!updatedProject) {
         throw new TRPCError({
@@ -702,6 +772,7 @@ export const projectRouter = router({
     }),
   deleteProject: permissionProcedure("projects.delete", projectBySlug("slug"), {
     module: "projects",
+    audit: ["project.deleted"],
   })
     .input(deleteProjectBySlugSchema)
     .mutation(async ({ ctx, input }) => {
@@ -725,15 +796,30 @@ export const projectRouter = router({
         });
       }
 
-      const [deletedProject] = await db
-        .delete(projects)
-        .where(
-          and(
-            eq(projects.slug, slug),
-            eq(projects.organizationId, activeOrganization.id),
-          ),
-        )
-        .returning();
+      const deletedProject = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .delete(projects)
+          .where(
+            and(
+              eq(projects.slug, slug),
+              eq(projects.organizationId, activeOrganization.id),
+            ),
+          )
+          .returning();
+
+        if (row) {
+          // The event outlives the project: it keeps the project id and name.
+          await ctx.audit.record(tx, {
+            action: "project.deleted",
+            target: { id: row.id, label: row.name },
+            projectId: row.id,
+            teamId: row.teamId,
+            metadata: { slug: row.slug },
+          });
+        }
+
+        return row;
+      });
 
       if (!deletedProject) {
         throw new TRPCError({

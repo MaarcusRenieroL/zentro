@@ -348,15 +348,6 @@ export const auditCatalog: readonly AuditEventDefinition[] = [
     "removed someone from {target}",
     "A project role was taken away.",
   ),
-  event(
-    "project.member_role_changed",
-    "Project member role changed",
-    "projects",
-    "project",
-    true,
-    "changed a role on {target}",
-    "A project role was replaced by another.",
-  ),
 
   // Tasks
   event(
@@ -450,15 +441,6 @@ export const auditCatalog: readonly AuditEventDefinition[] = [
     false,
     "restored the doc {target}",
     "A doc was restored from the trash.",
-  ),
-  event(
-    "doc.deleted",
-    "Doc deleted",
-    "docs",
-    "doc",
-    false,
-    "deleted the doc {target}",
-    "A doc was permanently deleted.",
   ),
   event(
     "doc.comment_added",

@@ -2,6 +2,7 @@ import type { db as database } from "@zentro/db";
 import {
   and,
   eq,
+  gt,
   inArray,
   isNull,
   or,
@@ -9,8 +10,8 @@ import {
   type SQL,
 } from "@zentro/db/drizzle";
 import {
+  activityEvents,
   docs,
-  permissionChangeLogs,
   roleAssignments,
   roles,
 } from "@zentro/db/schema";
@@ -18,49 +19,35 @@ import {
 import { TRPCError } from "@trpc/server";
 import { holdsAll, type ResourceContext } from "@zentro/permissions";
 
+import type { AuditContext } from "./audit";
 import type { PermissionContext } from "./permissions";
 
 type Database = typeof database;
 
-export async function logPermissionChange(
-  db: Database,
-  entry: {
-    organizationId: string;
-    actorUserId: string | null;
-    action: string;
-    targetType: string;
-    targetId: string;
-    before?: unknown;
-    after?: unknown;
-  },
-) {
-  await db.insert(permissionChangeLogs).values({
-    organizationId: entry.organizationId,
-    actorUserId: entry.actorUserId,
-    action: entry.action,
-    targetType: entry.targetType,
-    targetId: entry.targetId,
-    before: entry.before ?? null,
-    after: entry.after ?? null,
-  });
-}
+/** A database or transaction handle. */
+export type DbHandle = Pick<
+  Database,
+  "select" | "insert" | "update" | "delete"
+>;
 
 /**
  * Gives the creator of a project or team the matching lead role, so they can
  * manage what they just made.
  */
 export async function assignCreatorLeadRole(
-  db: Database,
+  tx: DbHandle,
+  audit: AuditContext,
   input: {
     organizationId: string;
     userId: string;
     systemKey: "project_lead" | "team_lead";
     scopeType: "project" | "team";
     scopeId: string;
+    scopeName: string;
   },
 ) {
-  const [role] = await db
-    .select({ id: roles.id })
+  const [role] = await tx
+    .select({ id: roles.id, name: roles.name })
     .from(roles)
     .where(
       and(
@@ -74,7 +61,7 @@ export async function assignCreatorLeadRole(
     return;
   }
 
-  const [assignment] = await db
+  const [assignment] = await tx
     .insert(roleAssignments)
     .values({
       organizationId: input.organizationId,
@@ -89,15 +76,55 @@ export async function assignCreatorLeadRole(
     .returning();
 
   if (assignment) {
-    await logPermissionChange(db, {
-      organizationId: input.organizationId,
-      actorUserId: input.userId,
+    await audit.record(tx, {
       action: "assignment.created",
-      targetType: input.scopeType,
-      targetId: input.scopeId,
-      after: { role: input.systemKey, userId: input.userId },
+      target: {
+        id: assignment.id,
+        label: `${role.name} on ${input.scopeName}`,
+      },
+      projectId: input.scopeType === "project" ? input.scopeId : null,
+      teamId: input.scopeType === "team" ? input.scopeId : null,
+      metadata: {
+        roleId: role.id,
+        roleName: role.name,
+        principalType: "user",
+        principalId: input.userId,
+        scopeType: input.scopeType,
+        scopeId: input.scopeId,
+        creator: true,
+      },
     });
   }
+}
+
+/** Longest gap between two recorded edits of the same doc by the same person. */
+export const docEditDebounceMs = 10 * 60 * 1000;
+
+/**
+ * Whether the person already has a `doc.updated` event for the doc inside the
+ * debounce window. The store is append-only, so a later edit inside the window
+ * is simply not recorded and the first event stands.
+ */
+export async function hasRecentDocEdit(
+  tx: DbHandle,
+  input: { organizationId: string; docId: string; userId: string },
+) {
+  const since = new Date(Date.now() - docEditDebounceMs);
+  const [recent] = await tx
+    .select({ id: activityEvents.id })
+    .from(activityEvents)
+    .where(
+      and(
+        eq(activityEvents.organizationId, input.organizationId),
+        eq(activityEvents.action, "doc.updated"),
+        eq(activityEvents.targetId, input.docId),
+        eq(activityEvents.actorUserId, input.userId),
+        gt(activityEvents.createdAt, since),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(recent);
 }
 
 /**

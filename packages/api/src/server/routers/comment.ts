@@ -8,11 +8,7 @@ import {
 } from "../../types/zod-schema";
 import { permissionProcedure, router } from "../trpc";
 import { taskByKey } from "../resources";
-import {
-  getCurrentMember,
-  getTaskForActiveOrganization,
-  recordTaskActivity,
-} from "./task-helpers";
+import { getCurrentMember, getTaskForActiveOrganization } from "./task-helpers";
 
 export const commentRouter = router({
   getTaskComments: permissionProcedure("tasks.view", taskByKey("taskKey"), {
@@ -49,7 +45,7 @@ export const commentRouter = router({
   createTaskComment: permissionProcedure(
     "tasks.comment",
     taskByKey("taskKey"),
-    { module: "tasks" },
+    { module: "tasks", audit: ["task.comment_added"] },
   )
     .input(createTaskCommentSchema)
     .mutation(async ({ ctx, input }) => {
@@ -57,29 +53,33 @@ export const commentRouter = router({
       const task = await getTaskForActiveOrganization(ctx, input.taskKey);
       const member = await getCurrentMember(ctx);
 
-      const [comment] = await db
-        .insert(taskComments)
-        .values({
-          organizationId: activeOrganization.id,
-          taskId: task.id,
-          authorMemberId: member.id,
-          body: input.body,
-        })
-        .returning();
+      const comment = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(taskComments)
+          .values({
+            organizationId: activeOrganization.id,
+            taskId: task.id,
+            authorMemberId: member.id,
+            body: input.body,
+          })
+          .returning();
 
-      if (!comment) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create comment.",
+        if (!row) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create comment.",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "task.comment_added",
+          target: { id: task.id, label: task.key },
+          projectId: task.projectId,
+          teamId: task.teamId,
+          metadata: { commentId: row.id, name: task.name },
         });
-      }
 
-      await recordTaskActivity(ctx, {
-        organizationId: activeOrganization.id,
-        taskId: task.id,
-        actorMemberId: member.id,
-        type: "comment.created",
-        commentId: comment.id,
+        return row;
       });
 
       return comment;

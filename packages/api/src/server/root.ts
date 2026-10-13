@@ -3,6 +3,7 @@ import { organizationRouter } from "./routers/organization";
 import { permissionsRouter } from "./routers/permissions";
 import { userRouter } from "./routers/user";
 import { activityRouter } from "./routers/activity";
+import { auditRouter } from "./routers/audit";
 import { commentRouter } from "./routers/comment";
 import { docsRouter } from "./routers/doc";
 import { fileRouter } from "./routers/file";
@@ -22,6 +23,7 @@ export const appRouter = router({
     };
   }),
   activity: activityRouter,
+  audit: auditRouter,
   comment: commentRouter,
   docs: docsRouter,
   file: fileRouter,

@@ -23,6 +23,7 @@ import {
 
 import { ensureSystemRoles } from "@zentro/auth";
 import { appRouter } from "../../src/server/root";
+import { createAuditContext, type AuditContext } from "../../src/server/audit";
 import { createPermissionContext } from "../../src/server/permissions";
 import { loadEnabledModules } from "../../src/server/modules";
 import type { TRPCContext } from "../../src/types";
@@ -288,7 +289,13 @@ export class World {
   async caller(
     user: TestUser,
     org: TestOrg,
-    options: { memberOrder?: "asc" | "desc" } = {},
+    options: {
+      memberOrder?: "asc" | "desc";
+      /** Extra request headers, such as a client address. */
+      headers?: Record<string, string>;
+      /** Wraps the audit context, for tests that make recording fail. */
+      wrapAudit?: (audit: AuditContext) => AuditContext;
+    } = {},
   ) {
     const rows = await db
       .select({ member: members, user: users })
@@ -313,10 +320,21 @@ export class World {
 
     const headers = await this.sessionHeaders(user, org);
 
+    for (const [name, value] of Object.entries(options.headers ?? {})) {
+      headers.set(name, value);
+    }
+
+    const audit = createAuditContext({
+      organizationId: org.id,
+      userId: user.id,
+      headers,
+    });
+
     return appRouter.createCaller({
       db,
       headers,
       permissions: createPermissionContext(db, org.id, user.id),
+      audit: options.wrapAudit ? options.wrapAudit(audit) : audit,
       session: {
         session: {
           id: randomUUID(),
@@ -345,6 +363,10 @@ export class World {
       db,
       headers: new Headers(),
       permissions: createPermissionContext(db, null, user.id),
+      audit: createAuditContext({
+        organizationId: null,
+        userId: user.id,
+      }),
       session: {
         session: {
           id: randomUUID(),
@@ -420,6 +442,7 @@ export function anonymousCaller() {
     db,
     headers: new Headers(),
     permissions: createPermissionContext(db, null, null),
+    audit: createAuditContext({ organizationId: null, userId: null }),
     session: null,
     user: null,
     activeOrganization: null,

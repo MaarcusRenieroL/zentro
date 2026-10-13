@@ -36,6 +36,7 @@ const fieldActions: Record<string, string> = {
   status: "changed the status of",
   priority: "changed the priority of",
   assignedToMemberId: "changed the assignee of",
+  assignee: "changed the assignee of",
   dueAt: "changed the due date of",
 };
 

@@ -15,9 +15,9 @@ import {
   sql,
 } from "@zentro/db/drizzle";
 import {
+  activityEvents,
   members,
   projects,
-  taskActivityEvents,
   tasks,
   teams,
   users,
@@ -41,8 +41,8 @@ import {
 import { loadProjectById, projectFromInput, taskByKey } from "../resources";
 import {
   getChangedTaskFields,
-  getCurrentMember,
   getTaskForActiveOrganization,
+  recordTaskChanges,
 } from "./task-helpers";
 
 function isUniqueViolation(error: unknown) {
@@ -58,6 +58,7 @@ export const taskRouter = router({
   createTask: permissionProcedure("tasks.create", projectFromInput, {
     module: "tasks",
     also: ["tasks.assign"],
+    audit: ["task.created"],
   })
     .input(createTaskSchema)
     .mutation(async ({ ctx, input }) => {
@@ -175,11 +176,15 @@ export const taskRouter = router({
             });
           }
 
-          await tx.insert(taskActivityEvents).values({
-            organizationId: activeOrganization.id,
-            taskId: task.id,
-            actorMemberId: member.id,
-            type: "task.created",
+          await ctx.audit.record(tx, {
+            action: "task.created",
+            target: { id: task.id, label: task.key },
+            projectId: project.id,
+            teamId: project.teamId,
+            metadata: {
+              name: task.name,
+              ...(assignedToMemberId ? { assignedToMemberId } : {}),
+            },
           });
 
           return task;
@@ -424,15 +429,15 @@ export const taskRouter = router({
       // completion timestamp that is kept up to date.
       db
         .select({ count: count() })
-        .from(taskActivityEvents)
-        .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
+        .from(activityEvents)
+        .innerJoin(tasks, eq(sql`${tasks.id}::text`, activityEvents.targetId))
         .where(
           and(
             active,
-            eq(taskActivityEvents.organizationId, organizationId),
-            eq(taskActivityEvents.field, "status"),
-            eq(taskActivityEvents.toValue, "done"),
-            gte(taskActivityEvents.createdAt, weekAgo),
+            eq(activityEvents.organizationId, organizationId),
+            eq(activityEvents.action, "task.status_changed"),
+            sql`${activityEvents.metadata}->'changes'->0->>'to' = 'done'`,
+            gte(activityEvents.createdAt, weekAgo),
           ),
         ),
       db
@@ -464,28 +469,55 @@ export const taskRouter = router({
         .limit(6),
       db
         .select({
-          id: taskActivityEvents.id,
-          type: taskActivityEvents.type,
-          field: taskActivityEvents.field,
-          toValue: taskActivityEvents.toValue,
-          createdAt: taskActivityEvents.createdAt,
+          id: activityEvents.id,
+          action: activityEvents.action,
+          metadata: activityEvents.metadata,
+          createdAt: activityEvents.createdAt,
           actor: users.name,
           taskKey: tasks.key,
           taskName: tasks.name,
         })
-        .from(taskActivityEvents)
-        .innerJoin(tasks, eq(tasks.id, taskActivityEvents.taskId))
-        .leftJoin(members, eq(members.id, taskActivityEvents.actorMemberId))
-        .leftJoin(users, eq(users.id, members.userId))
+        .from(activityEvents)
+        .innerJoin(tasks, eq(sql`${tasks.id}::text`, activityEvents.targetId))
+        .leftJoin(users, eq(users.id, activityEvents.actorUserId))
         .where(
           and(
-            eq(taskActivityEvents.organizationId, organizationId),
+            eq(activityEvents.organizationId, organizationId),
+            eq(activityEvents.targetType, "task"),
+            eq(activityEvents.auditOnly, false),
             isNull(tasks.deletedAt),
             inArray(tasks.projectId, viewableProjectIds),
           ),
         )
-        .orderBy(desc(taskActivityEvents.createdAt))
-        .limit(20),
+        .orderBy(desc(activityEvents.createdAt), desc(activityEvents.id))
+        .limit(20)
+        .then((rows) =>
+          rows.map((row) => {
+            const change = (
+              row.metadata?.changes as
+                | Array<{ field: string; to: string | null }>
+                | undefined
+            )?.[0];
+
+            return {
+              id: row.id,
+              // The shape the overview has always had.
+              type:
+                row.action === "task.comment_added"
+                  ? "comment.created"
+                  : row.action === "task.created" ||
+                      row.action === "task.deleted"
+                    ? row.action
+                    : "task.updated",
+              field: change?.field ?? null,
+              toValue: change?.to ?? null,
+              createdAt: row.createdAt,
+              actor: row.actor,
+              taskKey: row.taskKey,
+              taskName: row.taskName,
+            };
+          }),
+        ),
     ]);
 
     const [overdueCount] = await db
@@ -512,6 +544,7 @@ export const taskRouter = router({
   updateTaskByKey: permissionProcedure("tasks.update_own", taskByKey("key"), {
     module: "tasks",
     also: ["tasks.assign"],
+    audit: ["task.updated", "task.status_changed", "task.assigned"],
   })
     .input(updateTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
@@ -526,8 +559,6 @@ export const taskRouter = router({
           teamId: previousTask.teamId,
         });
       }
-      const actorMember = await getCurrentMember(ctx);
-
       if (values.assignedToMemberId) {
         const [assignee] = await db
           .select({ id: members.id })
@@ -586,38 +617,35 @@ export const taskRouter = router({
 
       const changes = getChangedTaskFields(previousTask, values);
 
-      const [updatedTask] = await db
-        .update(tasks)
-        .set(updateValues)
-        .where(
-          and(
-            eq(tasks.key, key),
-            eq(tasks.organizationId, activeOrganization.id),
-            isNull(tasks.deletedAt),
-          ),
-        )
-        .returning({ id: tasks.id });
+      const updatedTask = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(tasks)
+          .set(updateValues)
+          .where(
+            and(
+              eq(tasks.key, key),
+              eq(tasks.organizationId, activeOrganization.id),
+              isNull(tasks.deletedAt),
+            ),
+          )
+          .returning({ id: tasks.id });
 
-      if (!updatedTask) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Task not found.",
-        });
-      }
+        if (!row) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Task not found.",
+          });
+        }
 
-      if (changes.length) {
-        await db.insert(taskActivityEvents).values(
-          changes.map((change) => ({
-            organizationId: activeOrganization.id,
-            taskId: updatedTask.id,
-            actorMemberId: actorMember.id,
-            type: "task.updated",
-            field: change.field,
-            fromValue: change.fromValue,
-            toValue: change.toValue,
-          })),
-        );
-      }
+        if (changes.length) {
+          await recordTaskChanges(ctx, tx, previousTask, changes);
+        } else {
+          // Nothing changed, so there is nothing to record.
+          ctx.audit.skipped("task.updated");
+        }
+
+        return row;
+      });
 
       const [task] = await db
         .select({
@@ -653,40 +681,44 @@ export const taskRouter = router({
     }),
   deleteTaskByKey: permissionProcedure("tasks.delete_own", taskByKey("key"), {
     module: "tasks",
+    audit: ["task.deleted"],
   })
     .input(deleteTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
       const task = await getTaskForActiveOrganization(ctx, input.key);
-      const actorMember = await getCurrentMember(ctx);
+      const deletedTask = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(tasks)
+          .set({
+            deletedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(tasks.id, task.id),
+              eq(tasks.organizationId, activeOrganization.id),
+              isNull(tasks.deletedAt),
+            ),
+          )
+          .returning({ id: tasks.id, key: tasks.key });
 
-      const [deletedTask] = await db
-        .update(tasks)
-        .set({
-          deletedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(tasks.id, task.id),
-            eq(tasks.organizationId, activeOrganization.id),
-            isNull(tasks.deletedAt),
-          ),
-        )
-        .returning({ id: tasks.id, key: tasks.key });
+        if (!row) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Task not found.",
+          });
+        }
 
-      if (!deletedTask) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Task not found.",
+        await ctx.audit.record(tx, {
+          action: "task.deleted",
+          target: { id: task.id, label: task.key },
+          projectId: task.projectId,
+          teamId: task.teamId,
+          metadata: { name: task.name },
         });
-      }
 
-      await db.insert(taskActivityEvents).values({
-        organizationId: activeOrganization.id,
-        taskId: task.id,
-        actorMemberId: actorMember.id,
-        type: "task.deleted",
+        return row;
       });
 
       return deletedTask;

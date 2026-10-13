@@ -82,6 +82,7 @@ export default function ProjectPage() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
           <ProjectTabs
+            projectId={project.id}
             description={project.description}
             totalTasks={project.totalTasks}
             totalDocs={project.totalDocs}

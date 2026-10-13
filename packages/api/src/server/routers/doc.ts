@@ -33,7 +33,8 @@ import {
   updateDocTitleSchema,
 } from "../../types/zod-schema";
 import type { TRPCContext } from "../../types";
-import { visibleDocsCondition } from "../access";
+import { hasRecentDocEdit, visibleDocsCondition } from "../access";
+import { buildChanges } from "@zentro/audit";
 import { listProcedure, permissionProcedure, router } from "../trpc";
 import {
   docByCommentId,
@@ -53,7 +54,13 @@ async function getDocForActiveOrganization({
   id: string;
 }) {
   const [doc] = await ctx.db
-    .select({ id: docs.id })
+    .select({
+      id: docs.id,
+      title: docs.title,
+      slug: docs.slug,
+      projectId: docs.projectId,
+      teamId: docs.teamId,
+    })
     .from(docs)
     .where(
       and(
@@ -281,6 +288,7 @@ export const docsRouter = router({
     }),
   create: permissionProcedure("docs.create", projectFromInput, {
     module: "docs",
+    audit: ["doc.created"],
   })
     .input(createDocSchema)
     .mutation(async ({ ctx, input }) => {
@@ -372,136 +380,236 @@ export const docsRouter = router({
           });
         }
 
+        await ctx.audit.record(tx, {
+          action: "doc.created",
+          target: { id: doc.id, label: doc.title },
+          projectId: doc.projectId,
+          teamId: doc.teamId,
+          metadata: { slug: doc.slug },
+        });
+
         return doc;
       });
     }),
   updateDocTitle: permissionProcedure("docs.update_own", docById("id"), {
     module: "docs",
+    audit: ["doc.updated"],
   })
     .input(updateDocTitleSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, activeOrganization } = ctx;
+      const { db, user, activeOrganization } = ctx;
       const { id, title } = input;
 
-      const [updatedDoc] = await db
-        .update(docs)
-        .set({
-          title,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(docs.id, id),
-            eq(docs.organizationId, activeOrganization.id),
-            isNull(docs.deletedAt),
-          ),
-        )
-        .returning();
+      return db.transaction(async (tx) => {
+        const [previous] = await tx
+          .select({ title: docs.title })
+          .from(docs)
+          .where(
+            and(
+              eq(docs.id, id),
+              eq(docs.organizationId, activeOrganization.id),
+              isNull(docs.deletedAt),
+            ),
+          )
+          .limit(1);
 
-      if (!updatedDoc) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Doc not found.",
-        });
-      }
+        const [updatedDoc] = await tx
+          .update(docs)
+          .set({
+            title,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(docs.id, id),
+              eq(docs.organizationId, activeOrganization.id),
+              isNull(docs.deletedAt),
+            ),
+          )
+          .returning();
 
-      return updatedDoc;
+        if (!updatedDoc) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Doc not found.",
+          });
+        }
+
+        if (
+          await hasRecentDocEdit(tx, {
+            organizationId: activeOrganization.id,
+            docId: updatedDoc.id,
+            userId: user.id,
+          })
+        ) {
+          ctx.audit.skipped("doc.updated");
+        } else {
+          await ctx.audit.record(tx, {
+            action: "doc.updated",
+            target: { id: updatedDoc.id, label: updatedDoc.title },
+            projectId: updatedDoc.projectId,
+            teamId: updatedDoc.teamId,
+            metadata: { slug: updatedDoc.slug },
+            changes: buildChanges(
+              { title: previous?.title },
+              { title: updatedDoc.title },
+            ),
+          });
+        }
+
+        return updatedDoc;
+      });
     }),
   updateDocContent: permissionProcedure("docs.update_own", docById("id"), {
     module: "docs",
+    audit: ["doc.updated"],
   })
     .input(updateDocContentSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, activeOrganization } = ctx;
+      const { db, user, activeOrganization } = ctx;
       const { id, content } = input;
 
-      const [updatedDoc] = await db
-        .update(docs)
-        .set({
-          content,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(docs.id, id),
-            eq(docs.organizationId, activeOrganization.id),
-            isNull(docs.deletedAt),
-          ),
-        )
-        .returning();
+      return db.transaction(async (tx) => {
+        const [updatedDoc] = await tx
+          .update(docs)
+          .set({
+            content,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(docs.id, id),
+              eq(docs.organizationId, activeOrganization.id),
+              isNull(docs.deletedAt),
+            ),
+          )
+          .returning();
 
-      if (!updatedDoc) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Doc not found.",
-        });
-      }
+        if (!updatedDoc) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Doc not found.",
+          });
+        }
 
-      return updatedDoc;
+        if (
+          await hasRecentDocEdit(tx, {
+            organizationId: activeOrganization.id,
+            docId: updatedDoc.id,
+            userId: user.id,
+          })
+        ) {
+          ctx.audit.skipped("doc.updated");
+        } else {
+          await ctx.audit.record(tx, {
+            action: "doc.updated",
+            target: { id: updatedDoc.id, label: updatedDoc.title },
+            projectId: updatedDoc.projectId,
+            teamId: updatedDoc.teamId,
+            metadata: { slug: updatedDoc.slug, fields: ["content"] },
+          });
+        }
+
+        return updatedDoc;
+      });
     }),
   delete: permissionProcedure("docs.trash_own", docById("id"), {
     module: "docs",
+    audit: ["doc.trashed"],
   })
     .input(deleteDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
       const { id } = input;
 
-      const [deletedDoc] = await db
-        .update(docs)
-        .set({
-          deletedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(docs.organizationId, activeOrganization.id),
-            eq(docs.id, id),
-            isNull(docs.deletedAt),
-          ),
-        )
-        .returning({ id: docs.id, slug: docs.slug });
+      return db.transaction(async (tx) => {
+        const [deletedDoc] = await tx
+          .update(docs)
+          .set({
+            deletedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(docs.organizationId, activeOrganization.id),
+              eq(docs.id, id),
+              isNull(docs.deletedAt),
+            ),
+          )
+          .returning({
+            id: docs.id,
+            slug: docs.slug,
+            title: docs.title,
+            projectId: docs.projectId,
+            teamId: docs.teamId,
+          });
 
-      if (!deletedDoc) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Doc not found",
+        if (!deletedDoc) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Doc not found",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "doc.trashed",
+          target: { id: deletedDoc.id, label: deletedDoc.title },
+          projectId: deletedDoc.projectId,
+          teamId: deletedDoc.teamId,
+          metadata: { slug: deletedDoc.slug },
         });
-      }
 
-      return deletedDoc;
+        return { id: deletedDoc.id, slug: deletedDoc.slug };
+      });
     }),
   restore: permissionProcedure("docs.restore", docById("id"), {
     module: "docs",
+    audit: ["doc.restored"],
   })
     .input(restoreDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
       const { id } = input;
 
-      const [restoredDoc] = await db
-        .update(docs)
-        .set({
-          deletedAt: null,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(docs.organizationId, activeOrganization.id),
-            eq(docs.id, id),
-            isNotNull(docs.deletedAt),
-          ),
-        )
-        .returning({ id: docs.id, slug: docs.slug });
+      return db.transaction(async (tx) => {
+        const [restoredDoc] = await tx
+          .update(docs)
+          .set({
+            deletedAt: null,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(docs.organizationId, activeOrganization.id),
+              eq(docs.id, id),
+              isNotNull(docs.deletedAt),
+            ),
+          )
+          .returning({
+            id: docs.id,
+            slug: docs.slug,
+            title: docs.title,
+            projectId: docs.projectId,
+            teamId: docs.teamId,
+          });
 
-      if (!restoredDoc) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Doc not found",
+        if (!restoredDoc) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Doc not found",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "doc.restored",
+          target: { id: restoredDoc.id, label: restoredDoc.title },
+          projectId: restoredDoc.projectId,
+          teamId: restoredDoc.teamId,
+          metadata: { slug: restoredDoc.slug },
         });
-      }
 
-      return restoredDoc;
+        return { id: restoredDoc.id, slug: restoredDoc.slug };
+      });
     }),
   getComments: permissionProcedure("docs.view", docById("docId"), {
     module: "docs",
@@ -537,6 +645,7 @@ export const docsRouter = router({
     }),
   createComment: permissionProcedure("docs.comment", docById("docId"), {
     module: "docs",
+    audit: ["doc.comment_added"],
   })
     .input(createDocCommentSchema)
     .mutation(async ({ ctx, input }) => {
@@ -544,55 +653,90 @@ export const docsRouter = router({
       const doc = await getDocForActiveOrganization({ ctx, id: input.docId });
       const member = await getCurrentMember(ctx);
 
-      const [comment] = await db
-        .insert(docComments)
-        .values({
-          organizationId: activeOrganization.id,
-          docId: doc.id,
-          authorMemberId: member.id,
-          body: input.body,
-        })
-        .returning();
+      const comment = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(docComments)
+          .values({
+            organizationId: activeOrganization.id,
+            docId: doc.id,
+            authorMemberId: member.id,
+            body: input.body,
+          })
+          .returning();
 
-      if (!comment) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create comment.",
+        if (!row) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create comment.",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "doc.comment_added",
+          target: { id: doc.id, label: doc.title },
+          projectId: doc.projectId,
+          teamId: doc.teamId,
+          metadata: { commentId: row.id, slug: doc.slug },
         });
-      }
+
+        return row;
+      });
 
       return comment;
     }),
   resolveComment: permissionProcedure("docs.comment", docByCommentId(), {
     module: "docs",
+    audit: ["doc.comment_resolved"],
   })
     .input(resolveDocCommentSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
 
-      const [comment] = await db
-        .update(docComments)
-        .set({
-          resolvedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(docComments.id, input.id),
-            eq(docComments.organizationId, activeOrganization.id),
-            isNull(docComments.deletedAt),
-            isNull(docComments.resolvedAt),
-          ),
-        )
-        .returning();
+      return db.transaction(async (tx) => {
+        const [comment] = await tx
+          .update(docComments)
+          .set({
+            resolvedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(docComments.id, input.id),
+              eq(docComments.organizationId, activeOrganization.id),
+              isNull(docComments.deletedAt),
+              isNull(docComments.resolvedAt),
+            ),
+          )
+          .returning();
 
-      if (!comment) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Comment not found.",
+        if (!comment) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Comment not found.",
+          });
+        }
+
+        const [doc] = await tx
+          .select({
+            id: docs.id,
+            title: docs.title,
+            slug: docs.slug,
+            projectId: docs.projectId,
+            teamId: docs.teamId,
+          })
+          .from(docs)
+          .where(eq(docs.id, comment.docId))
+          .limit(1);
+
+        await ctx.audit.record(tx, {
+          action: "doc.comment_resolved",
+          target: { id: comment.docId, label: doc?.title },
+          projectId: doc?.projectId,
+          teamId: doc?.teamId,
+          metadata: { commentId: comment.id, slug: doc?.slug },
         });
-      }
 
-      return comment;
+        return comment;
+      });
     }),
 });
