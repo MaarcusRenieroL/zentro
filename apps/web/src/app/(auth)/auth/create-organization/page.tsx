@@ -19,7 +19,7 @@ import {
   CreateOrganizationFormValues,
   createOrganizationSchema,
 } from "~/src/features/auth/lib/zod-schema";
-import { slugify } from "@zentro/utils";
+import { slugify, slugifyInput } from "@zentro/utils";
 import { useRouter } from "next/navigation";
 import { paths } from "~/src/lib/paths";
 
@@ -193,7 +193,7 @@ export default function CreateOrganizationPage() {
                       onBlur={field.onBlur}
                       onChange={(event) => {
                         setSlugEdited(true);
-                        field.onChange(slugify(event.target.value));
+                        field.onChange(slugifyInput(event.target.value));
                       }}
                     />
                     {workspaceSlug && (

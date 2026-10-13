@@ -37,7 +37,7 @@ import { useTrpcClient } from "@zentro/api/react";
 import { useCallback, useEffect, useState } from "react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { LoadingState } from "@zentro/ui/components/loading-state";
-import { slugify } from "@zentro/utils";
+import { slugify, slugifyInput } from "@zentro/utils";
 
 type CreateProjectModalProps = {
   onProjectCreated: () => void | Promise<void>;
@@ -242,7 +242,7 @@ export const CreateProjectModal = ({
                           onBlur={field.onBlur}
                           onChange={(event) => {
                             setSlugEdited(true);
-                            field.onChange(slugify(event.target.value));
+                            field.onChange(slugifyInput(event.target.value));
                           }}
                         />
                         {slug && (
