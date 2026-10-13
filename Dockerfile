@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 #
-# One Dockerfile for every Next.js app in the monorepo.
-#   docker build --build-arg APP=web -t zentro-web .
+# Dockerfile for the Next.js app (apps/web) in the monorepo.
+#   docker build -t zentro-web .
 #   docker build --target migrator -t zentro-migrator .
 #
 # NEXT_PUBLIC_* values are inlined into the client bundle at build time, so
@@ -18,7 +18,6 @@ WORKDIR /repo
 # ---- deps: install with a cached store, keyed on the lockfile ----
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/authenticator/package.json apps/authenticator/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/api/package.json packages/api/package.json
 COPY packages/auth/package.json packages/auth/package.json
@@ -39,14 +38,8 @@ CMD ["pnpm", "db:migrate"]
 
 # ---- build ----
 FROM deps AS build
-ARG APP
 ARG NEXT_PUBLIC_BASE_URL=http://localhost:3000
-ARG NEXT_PUBLIC_AUTHENTICATOR_URL=http://localhost:3001
-# Baked into next.config rewrites at build time.
-ARG AUTHENTICATOR_INTERNAL_URL=http://authenticator:3001
-ENV AUTHENTICATOR_INTERNAL_URL=$AUTHENTICATOR_INTERNAL_URL \
-     NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL \
-    NEXT_PUBLIC_AUTHENTICATOR_URL=$NEXT_PUBLIC_AUTHENTICATOR_URL \
+ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production \
     BETTER_AUTH_URL=http://build.invalid \
@@ -54,20 +47,17 @@ ENV AUTHENTICATOR_INTERNAL_URL=$AUTHENTICATOR_INTERNAL_URL \
     DATABASE_URL=postgres://build:build@build.invalid:5432/build \
     RESEND_API_KEY=re_build_placeholder
 COPY . .
-RUN test -n "$APP" || (echo "Pass --build-arg APP=<web|authenticator>" && exit 1)
-RUN pnpm --filter "@zentro/${APP}" build
+RUN pnpm --filter @zentro/web build
 
 # ---- runtime: Next standalone output only ----
 FROM node:22-alpine AS runner
-ARG APP
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME=0.0.0.0 \
-    APP=$APP
+    HOSTNAME=0.0.0.0
 WORKDIR /repo
 RUN addgroup -S app && adduser -S app -G app
-COPY --from=build --chown=app:app /repo/apps/${APP}/.next/standalone ./
-COPY --from=build --chown=app:app /repo/apps/${APP}/.next/static ./apps/${APP}/.next/static
-COPY --from=build --chown=app:app /repo/apps/${APP}/public ./apps/${APP}/public
+COPY --from=build --chown=app:app /repo/apps/web/.next/standalone ./
+COPY --from=build --chown=app:app /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=app:app /repo/apps/web/public ./apps/web/public
 USER app
-CMD node apps/${APP}/server.js
+CMD node apps/web/server.js

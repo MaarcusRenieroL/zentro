@@ -8,17 +8,9 @@ name: zentro
 x-app-env: &app-env
   DATABASE_URL: postgres://zentro:${POSTGRES_PASSWORD:-zentro}@db:5432/zentro
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET (32+ chars) in .env}
-  BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3001}
+  BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
   NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
   RESEND_API_KEY: ${RESEND_API_KEY:?set RESEND_API_KEY in .env}
-  AUTHENTICATOR_INTERNAL_URL: http://authenticator:3001
-
-x-app-build: &app-build
-  context: .
-  args:
-    NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
-    NEXT_PUBLIC_AUTHENTICATOR_URL: ${NEXT_PUBLIC_AUTHENTICATOR_URL:-http://localhost:3001}
-    AUTHENTICATOR_INTERNAL_URL: http://authenticator:3001
 
 services:
   db:
@@ -50,40 +42,20 @@ services:
         condition: service_healthy
     restart: "no"
 
-  authenticator:
-    profiles: [full]
-    build:
-      <<: *app-build
-      args:
-        APP: authenticator
-        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
-        NEXT_PUBLIC_AUTHENTICATOR_URL: ${NEXT_PUBLIC_AUTHENTICATOR_URL:-http://localhost:3001}
-        AUTHENTICATOR_INTERNAL_URL: http://authenticator:3001
-    environment:
-      <<: *app-env
-      PORT: "3001"
-    ports:
-      - "3001:3001"
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-
   web:
     profiles: [full]
     build:
-      <<: *app-build
+      context: .
       args:
-        APP: web
         NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
-        NEXT_PUBLIC_AUTHENTICATOR_URL: ${NEXT_PUBLIC_AUTHENTICATOR_URL:-http://localhost:3001}
-        AUTHENTICATOR_INTERNAL_URL: http://authenticator:3001
     environment:
       <<: *app-env
       PORT: "3000"
     ports:
       - "3000:3000"
     depends_on:
-      - authenticator
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
