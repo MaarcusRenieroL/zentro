@@ -12,3 +12,12 @@ export type Density = (typeof densities)[number];
 export function parseDensity(value: string | undefined | null): Density {
   return value === "comfortable" ? "comfortable" : "compact";
 }
+
+// Brand colors for places that cannot read CSS variables (icons, social
+// images). They are the signal color and its text color in sRGB.
+export const brandColors = {
+  accent: "#5941c2",
+  onAccent: "#fcfbf8",
+  paper: themeColors.light,
+  ink: "#2b2723",
+} as const;

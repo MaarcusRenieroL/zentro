@@ -13,6 +13,7 @@ const roots = ["apps/web/src", "packages/ui/src"];
 const tokenLayer = [
   "packages/ui/src/styles/globals.css",
   "packages/ui/src/lib/theme-colors.ts",
+  "packages/ui/src/components/logo.tsx",
 ];
 
 const palette =
