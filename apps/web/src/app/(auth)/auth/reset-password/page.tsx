@@ -35,14 +35,14 @@ function ResetPasswordForm() {
   const {
     handleSubmit,
     control,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       newPassword: "",
       confirmNewPassword: "",
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const password = useWatch({ control, name: "newPassword" }) ?? "";
@@ -238,11 +238,7 @@ function ResetPasswordForm() {
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={
-                isSubmitting ||
-                !isValid ||
-                !passwordRequirements.every((requirement) => requirement.met)
-              }
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">

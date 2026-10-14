@@ -33,13 +33,13 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
     control,
     handleSubmit,
     reset,
-    formState: { errors, isDirty, isSubmitting, isValid },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<GeneralSectionFormValues>({
     resolver: zodResolver(generalSectionSchema),
     defaultValues: {
       name: organization.name,
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const handleCancel = () => {
@@ -176,7 +176,7 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
               <Button
                 type="submit"
                 className="w-full sm:w-auto"
-                disabled={isSubmitting || !isValid}
+                disabled={isSubmitting}
               >
                 <CheckCircle2Icon className="size-4" />
                 Save changes

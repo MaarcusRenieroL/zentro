@@ -82,7 +82,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
     handleSubmit,
     reset,
     watch,
-    formState: { errors, isDirty, isSubmitting, isValid },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<ProjectGeneralSectionFormValues>({
     resolver: zodResolver(projectGeneralSectionSchema),
     defaultValues: {
@@ -91,7 +91,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
       description: project.description ?? "",
       teamId: project.teamId,
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const preview = watch();
@@ -426,7 +426,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
               <Button
                 type="submit"
                 className="w-full sm:w-auto"
-                disabled={isSubmitting || !isValid}
+                disabled={isSubmitting}
               >
                 <CheckCircle2Icon className="size-4" />
                 {isSubmitting ? "Saving..." : "Save changes"}

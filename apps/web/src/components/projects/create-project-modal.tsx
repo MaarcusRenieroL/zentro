@@ -88,7 +88,7 @@ const CreateProjectModalInner = ({
     control,
     reset,
     setValue,
-    formState: { isValid, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<CreateProjectFormValues>({
     resolver: zodResolver(createProjectSchema),
     defaultValues: {
@@ -97,7 +97,7 @@ const CreateProjectModalInner = ({
       description: "",
       teamId: null,
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const slug = useWatch({ control, name: "slug" }) ?? "";
@@ -368,10 +368,7 @@ const CreateProjectModalInner = ({
               <Button
                 type="submit"
                 disabled={
-                  isSubmitting ||
-                  !isValid ||
-                  isChecking ||
-                  visibleAvailability !== true
+                  isSubmitting || isChecking || visibleAvailability !== true
                 }
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >

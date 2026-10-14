@@ -25,13 +25,13 @@ export default function ForgotPasswordPage(): JSX.Element {
     handleSubmit,
     control,
     getValues,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const onSubmit = async (formValues: ForgotPasswordFormValues) => {
@@ -173,7 +173,7 @@ export default function ForgotPasswordPage(): JSX.Element {
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isSubmitting || !isValid}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">

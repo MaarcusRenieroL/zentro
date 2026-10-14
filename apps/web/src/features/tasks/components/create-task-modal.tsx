@@ -97,7 +97,7 @@ const CreateTaskModalInner: FC<Props> = ({
     handleSubmit,
     reset,
     setValue,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
   } = useForm<CreateTaskFormValues>({
     resolver: zodResolver(createTaskSchema),
     defaultValues: {
@@ -154,7 +154,7 @@ const CreateTaskModalInner: FC<Props> = ({
         if (!defaultProjectId && activeProjects[0]) {
           setValue("projectId", activeProjects[0].id, {
             shouldDirty: true,
-            shouldValidate: true,
+            shouldValidate: false,
           });
         }
       } catch {
@@ -450,8 +450,7 @@ const CreateTaskModalInner: FC<Props> = ({
                   isSubmitting ||
                   isLoadingProjects ||
                   isLoadingMembers ||
-                  !projects.length ||
-                  !isValid
+                  !projects.length
                 }
               >
                 {isSubmitting ? (

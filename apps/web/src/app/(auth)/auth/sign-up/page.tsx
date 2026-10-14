@@ -26,7 +26,7 @@ export default function SignupPage() {
   const {
     handleSubmit,
     control,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -34,7 +34,7 @@ export default function SignupPage() {
       email: "",
       password: "",
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const password = useWatch({ control, name: "password" }) ?? "";
@@ -214,11 +214,7 @@ export default function SignupPage() {
 
             <Button
               type="submit"
-              disabled={
-                !isValid ||
-                isSubmitting ||
-                !passwordRequirements.every((requirement) => requirement.met)
-              }
+              disabled={isSubmitting}
               className="w-full"
               suppressHydrationWarning
             >

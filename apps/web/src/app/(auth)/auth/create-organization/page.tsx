@@ -34,14 +34,14 @@ export default function CreateOrganizationPage() {
     handleSubmit,
     control,
     setValue,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
   } = useForm<CreateOrganizationFormValues>({
     resolver: zodResolver(createOrganizationSchema),
     defaultValues: {
       name: "",
       slug: "",
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const name = useWatch({ control, name: "name" }) ?? "";
@@ -232,10 +232,7 @@ export default function CreateOrganizationPage() {
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={
-                isSubmitting ||
-                checkingSlug ||
-                !isValid ||
-                visibleSlugAvailability !== true
+                isSubmitting || checkingSlug || visibleSlugAvailability !== true
               }
             >
               {isSubmitting ? (

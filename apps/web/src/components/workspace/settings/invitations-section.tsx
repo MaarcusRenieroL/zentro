@@ -52,7 +52,7 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
     handleSubmit,
     control,
     reset,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
   } = useForm<InviteMemberFormValues>({
     resolver: zodResolver(inviteMemberSchema),
     defaultValues: {
@@ -204,7 +204,7 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
 
             <Button
               type="submit"
-              disabled={isSubmitting || !isValid}
+              disabled={isSubmitting}
               className="w-full md:col-span-2 xl:col-span-1 xl:mt-7 xl:w-auto"
             >
               {isSubmitting ? (

@@ -83,8 +83,9 @@ export function TopBar({ enabledModules, modules, user, links }: Props) {
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                // One primary action per screen: on Today that is Start.
-                variant={pathname === paths.dashboard() ? "outline" : "default"}
+                // One filled primary per screen: the page owns it, so the
+                // global Create is always the quiet one.
+                variant="outline"
               >
                 <PlusIcon />
                 Create

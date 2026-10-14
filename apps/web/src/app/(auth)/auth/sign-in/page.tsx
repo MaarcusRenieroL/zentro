@@ -32,14 +32,14 @@ export default function LoginPage() {
   const {
     handleSubmit,
     control,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
   } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
       email: "",
       password: "",
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   const onSubmit = async (formValues: SignInFormValues) => {
@@ -149,7 +149,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={!isValid || isSubmitting}
+              disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
