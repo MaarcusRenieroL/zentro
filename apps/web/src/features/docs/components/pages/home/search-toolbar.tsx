@@ -60,7 +60,11 @@ export const SearchToolbar: FC = () => {
               </button>
             ) : null}
           </div>
-          <Button type="submit" className="w-full rounded-full sm:w-auto">
+          <Button
+            type="submit"
+            variant="secondary"
+            className="w-full rounded-full sm:w-auto"
+          >
             <SearchIcon className="size-4" />
             Search
           </Button>

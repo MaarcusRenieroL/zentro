@@ -44,7 +44,7 @@ export const ProjectTabs: FC<Props> = ({
     <div className="w-full">
       <Tabs defaultValue="overview" className="flex-col gap-0">
         <div className="mb-4">
-          <TabsList>
+          <TabsList className="w-full justify-start overflow-x-auto sm:w-fit">
             <TabsTrigger value="overview">
               <LayoutDashboardIcon aria-hidden="true" />
               Overview

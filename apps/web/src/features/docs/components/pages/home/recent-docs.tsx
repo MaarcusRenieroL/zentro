@@ -95,11 +95,11 @@ export const RecentDocs: FC = () => {
             className="min-h-44 rounded-xl transition-shadow hover:shadow-md"
             size="sm"
           >
-            <CardHeader className="gap-3">
+            <CardHeader className="grid-cols-[minmax(0,1fr)] gap-3">
               <div className="flex items-start gap-3">
                 <Link
                   href={paths.doc(doc.slug)}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-signal-subtle text-signal"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-tint-docs text-ink"
                 >
                   <FileTextIcon className="size-4" />
                 </Link>
@@ -119,7 +119,9 @@ export const RecentDocs: FC = () => {
             <CardContent className="mt-auto flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <Badge variant="outline">{getDocProject(doc)}</Badge>
-                <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+                {doc.teamName ? (
+                  <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+                ) : null}
               </div>
               <div className="flex min-w-0 items-center gap-2">
                 <Avatar className="size-6">

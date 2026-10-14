@@ -369,7 +369,7 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
         </h1>
       </header>
 
-      <div className="grid gap-(--gap) lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-(--gap) lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-4">
         <div className="relative flex flex-col gap-4">
           <div
             aria-hidden="true"

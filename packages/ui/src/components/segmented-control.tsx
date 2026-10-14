@@ -28,7 +28,7 @@ export function SegmentedControl<T extends string>({
       aria-label={label}
       data-slot="segmented-control"
       className={cn(
-        "inline-flex h-[calc(var(--control-h)+4px)] items-center gap-0.5 rounded-full bg-sunken p-1",
+        "inline-flex h-[calc(var(--control-h)+4px)] w-fit items-center gap-0.5 self-start rounded-full bg-sunken p-1",
         className,
       )}
       onKeyDown={(event) => {

@@ -149,7 +149,9 @@ export const AllDocs: FC = () => {
                           <Badge variant="outline">{getDocProject(doc)}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+                          {doc.teamName ? (
+                            <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+                          ) : null}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -231,7 +233,9 @@ export const AllDocs: FC = () => {
                 </CardHeader>
                 <CardContent className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline">{getDocProject(doc)}</Badge>
-                  <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+                  {doc.teamName ? (
+                    <Badge variant="secondary">{getDocTeam(doc)}</Badge>
+                  ) : null}
                   <span className="inline-flex items-center gap-1">
                     <ClockIcon className="size-3" />
                     {formatDocDate(doc.updatedAt)}

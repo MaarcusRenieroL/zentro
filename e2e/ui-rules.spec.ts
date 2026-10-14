@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import {
   createProjectViaUi,
+  createTaskViaUi,
   registerWithOrganization,
   uniqueName,
 } from "./helpers";
@@ -174,16 +175,89 @@ test("no screen shows more than one filled primary button", async ({
     await page.goto(route);
     await page.waitForLoadState("networkidle");
 
-    const filled = await page
-      .locator('[data-slot="button"][data-variant="default"]:visible')
-      .evaluateAll((buttons) =>
-        buttons
-          .filter((button) => !(button as HTMLButtonElement).disabled)
-          .map((button) => (button.textContent ?? "").trim()),
-      );
+    await page.waitForTimeout(1000);
+
+    // Judged by what is painted: any visible button or link filled with the
+    // accent. Switches are toggles, not buttons.
+    const filled = await page.evaluate(() => {
+      const probe = document.createElement("div");
+
+      probe.style.background = "var(--signal)";
+      document.body.appendChild(probe);
+
+      const accent = getComputedStyle(probe).backgroundColor;
+
+      probe.remove();
+
+      return Array.from(document.querySelectorAll("button, a"))
+        .filter((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            style.visibility !== "hidden" &&
+            style.backgroundColor === accent &&
+            element.getAttribute("role") !== "switch" &&
+            !(element as HTMLButtonElement).disabled
+          );
+        })
+        .map((element) => (element.textContent ?? "").trim());
+    });
 
     expect(filled, `${route}: ${filled.join(" | ")}`).toHaveLength(
       Math.min(filled.length, 1),
     );
   }
+});
+
+test("Today: an empty workspace asks for a task, then start and finish work", async ({
+  page,
+}) => {
+  await registerWithOrganization(page, {
+    label: "today",
+    orgName: uniqueName("Today"),
+  });
+  await createProjectViaUi(page, uniqueName("Today project"));
+
+  // No tasks at all: no celebration, a way to create one.
+  await page.goto("/dashboard");
+  await expect(page.getByText("No tasks yet.")).toBeVisible();
+  await expect(page.getByText("Nothing left today.")).toHaveCount(0);
+  await expect(page.getByText("Nothing planned").first()).toBeVisible();
+
+  const name = uniqueName("Ship it");
+
+  await createTaskViaUi(page, name);
+
+  // A task nobody owns can be pulled in, started, and finished.
+  await page.goto("/dashboard");
+  await page.getByRole("button", { name: /pull in/i }).click();
+  await expect(page.getByRole("button", { name: /^start/i })).toBeVisible();
+  await page.getByRole("button", { name: /^start/i }).click();
+  await expect(page.getByRole("button", { name: /mark done/i })).toBeVisible();
+  await expect(page.getByRole("timer")).toBeVisible();
+  await page.getByRole("button", { name: /mark done/i }).click();
+  await expect(page.getByText("Nothing left today.")).toBeVisible({
+    timeout: 10_000,
+  });
+});
+
+test("keyboard focus is visible on sign-in", async ({ page }) => {
+  await page.goto("/auth/sign-in");
+  await page.keyboard.press("Tab");
+
+  const outline = await page.evaluate(() => {
+    const style = getComputedStyle(document.activeElement as Element);
+
+    return {
+      width: parseFloat(style.outlineWidth),
+      shadow: style.boxShadow,
+      tag: document.activeElement?.tagName,
+    };
+  });
+
+  expect(outline.tag).not.toBe("BODY");
+  expect(outline.width > 0 || outline.shadow !== "none").toBe(true);
 });

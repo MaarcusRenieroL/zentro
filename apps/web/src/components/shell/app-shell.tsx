@@ -71,7 +71,7 @@ export function AppShell({
               <main
                 id="main"
                 tabIndex={-1}
-                className="mx-auto w-full max-w-[1440px] flex-1 px-(--gutter) py-6 outline-none"
+                className="mx-auto w-full max-w-[1440px] min-w-0 flex-1 overflow-x-clip px-(--gutter) py-6 outline-none"
               >
                 <div
                   key={`${pathname}:${version}`}
