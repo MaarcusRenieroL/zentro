@@ -64,6 +64,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
+import { cn } from "@zentro/ui/lib/utils";
 
 import {
   DocDetail,
@@ -237,7 +238,10 @@ function DocToolbar({ editor, canEdit, onAction, onHeading }: ToolbarProps) {
       aria-label={label}
       aria-pressed={pressed}
       onClick={run}
-      className={pressed ? "bg-selected text-signal" : "text-ink-2"}
+      className={cn(
+        "size-8",
+        pressed ? "bg-selected text-signal" : "text-ink-2",
+      )}
     >
       <Icon className="size-4" />
     </Button>
@@ -270,7 +274,10 @@ function DocToolbar({ editor, canEdit, onAction, onHeading }: ToolbarProps) {
             size="icon-sm"
             aria-label="Link"
             aria-pressed={active.link}
-            className={active.link ? "bg-selected text-signal" : "text-ink-2"}
+            className={cn(
+              "size-8",
+              active.link ? "bg-selected text-signal" : "text-ink-2",
+            )}
           >
             <LinkIcon className="size-4" />
           </Button>

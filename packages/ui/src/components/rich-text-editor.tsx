@@ -8,6 +8,7 @@ import {
   Heading1Icon,
   Heading2Icon,
   Heading3Icon,
+  MoreHorizontalIcon,
   HighlighterIcon,
   ItalicIcon,
   LinkIcon,
@@ -31,11 +32,20 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import type { LucideIcon } from "lucide-react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { cn } from "../lib/utils";
 import { Button } from "./shadcn/button";
-import { Separator } from "./shadcn/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./shadcn/dropdown-menu";
+import { Input } from "./shadcn/input";
+import { Popover, PopoverContent, PopoverTrigger } from "./shadcn/popover";
 
 type RichTextEditorProps = {
   value: string;
@@ -226,44 +236,40 @@ type RichTextToolbarProps = {
   disabled: boolean;
 };
 
+/**
+ * Six everyday actions stay in view; the rest is behind More. Every command
+ * keeps its keyboard shortcut (the editor provides them), so nothing is lost.
+ */
 function RichTextToolbar({ editor, disabled }: RichTextToolbarProps) {
+  const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [linkOpen, setLinkOpen] = useState(false);
+
+  const applyLink = () => {
+    const href = /^(https?:\/\/|mailto:)/.test(url.trim())
+      ? url.trim()
+      : `https://${url.trim()}`;
+
+    try {
+      new URL(href);
+    } catch {
+      setUrlError("Enter a web address like https://example.com");
+
+      return;
+    }
+
+    setUrlError(null);
+    editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
+    setUrl("");
+    setLinkOpen(false);
+  };
+
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b bg-muted/30 p-2">
-      <ToolbarButton
-        label="Paragraph"
-        active={editor.isActive("paragraph")}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().setParagraph().run()}
-      >
-        <PilcrowIcon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Heading 1"
-        active={editor.isActive("heading", { level: 1 })}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-      >
-        <Heading1Icon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Heading 2"
-        active={editor.isActive("heading", { level: 2 })}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-      >
-        <Heading2Icon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Heading 3"
-        active={editor.isActive("heading", { level: 3 })}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-      >
-        <Heading3Icon className="size-4" />
-      </ToolbarButton>
-
-      <Separator orientation="vertical" className="mx-1 h-6" />
-
+    <div
+      role="toolbar"
+      aria-label="Formatting"
+      className="flex items-center gap-1 border-b border-hairline bg-sunken/40 p-1.5"
+    >
       <ToolbarButton
         label="Bold"
         active={editor.isActive("bold")}
@@ -281,34 +287,7 @@ function RichTextToolbar({ editor, disabled }: RichTextToolbarProps) {
         <ItalicIcon className="size-4" />
       </ToolbarButton>
       <ToolbarButton
-        label="Underline"
-        active={editor.isActive("underline")}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-      >
-        <UnderlineIcon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Strikethrough"
-        active={editor.isActive("strike")}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-      >
-        <StrikethroughIcon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Highlight"
-        active={editor.isActive("highlight")}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleHighlight().run()}
-      >
-        <HighlighterIcon className="size-4" />
-      </ToolbarButton>
-
-      <Separator orientation="vertical" className="mx-1 h-6" />
-
-      <ToolbarButton
-        label="Bullet list"
+        label="Bulleted list"
         active={editor.isActive("bulletList")}
         disabled={disabled}
         onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -316,15 +295,7 @@ function RichTextToolbar({ editor, disabled }: RichTextToolbarProps) {
         <ListIcon className="size-4" />
       </ToolbarButton>
       <ToolbarButton
-        label="Numbered list"
-        active={editor.isActive("orderedList")}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-      >
-        <ListOrderedIcon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Task list"
+        label="Checklist"
         active={editor.isActive("taskList")}
         disabled={disabled}
         onClick={() => editor.chain().focus().toggleTaskList().run()}
@@ -332,47 +303,184 @@ function RichTextToolbar({ editor, disabled }: RichTextToolbarProps) {
         <CheckIcon className="size-4" />
       </ToolbarButton>
       <ToolbarButton
-        label="Quote"
-        active={editor.isActive("blockquote")}
+        label="Code"
+        active={editor.isActive("code")}
         disabled={disabled}
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-      >
-        <QuoteIcon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Code block"
-        active={editor.isActive("codeBlock")}
-        disabled={disabled}
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        onClick={() => editor.chain().focus().toggleCode().run()}
       >
         <CodeIcon className="size-4" />
       </ToolbarButton>
-      <ToolbarButton
-        label="Link"
-        active={editor.isActive("link")}
-        disabled={disabled}
-        onClick={() => setLink(editor)}
-      >
-        <LinkIcon className="size-4" />
-      </ToolbarButton>
+      <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant={editor.isActive("link") ? "secondary" : "ghost"}
+            size="icon-sm"
+            className="size-8"
+            disabled={disabled}
+            aria-label="Link"
+            title="Link"
+          >
+            <LinkIcon className="size-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 space-y-3 p-3">
+          <Input
+            aria-label="Web address"
+            placeholder="https://example.com"
+            value={url}
+            aria-invalid={Boolean(urlError)}
+            onChange={(event) => setUrl(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                applyLink();
+              }
+            }}
+          />
+          {urlError ? (
+            <p role="alert" className="text-xs text-danger-text">
+              {urlError}
+            </p>
+          ) : null}
+          <div className="flex gap-2">
+            <Button size="sm" type="button" onClick={applyLink}>
+              Add link
+            </Button>
+            {editor.isActive("link") ? (
+              <Button
+                size="sm"
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  editor.chain().focus().unsetLink().run();
+                  setLinkOpen(false);
+                }}
+              >
+                Remove
+              </Button>
+            ) : null}
+          </div>
+        </PopoverContent>
+      </Popover>
 
-      <Separator orientation="vertical" className="mx-1 h-6" />
-
-      <ToolbarButton
-        label="Undo"
-        disabled={disabled || !editor.can().undo()}
-        onClick={() => editor.chain().focus().undo().run()}
-      >
-        <Undo2Icon className="size-4" />
-      </ToolbarButton>
-      <ToolbarButton
-        label="Redo"
-        disabled={disabled || !editor.can().redo()}
-        onClick={() => editor.chain().focus().redo().run()}
-      >
-        <Redo2Icon className="size-4" />
-      </ToolbarButton>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            className="ml-auto shrink-0 text-ink-2"
+          >
+            <MoreHorizontalIcon className="size-4" />
+            More
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <MoreItem
+            icon={PilcrowIcon}
+            label="Paragraph"
+            onSelect={() => editor.chain().focus().setParagraph().run()}
+          />
+          <MoreItem
+            icon={Heading1Icon}
+            label="Heading 1"
+            onSelect={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            }
+          />
+          <MoreItem
+            icon={Heading2Icon}
+            label="Heading 2"
+            onSelect={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
+          />
+          <MoreItem
+            icon={Heading3Icon}
+            label="Heading 3"
+            onSelect={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
+          />
+          <DropdownMenuSeparator />
+          <MoreItem
+            icon={UnderlineIcon}
+            label="Underline"
+            hint="Ctrl+U"
+            onSelect={() => editor.chain().focus().toggleUnderline().run()}
+          />
+          <MoreItem
+            icon={StrikethroughIcon}
+            label="Strikethrough"
+            hint="Ctrl+Shift+S"
+            onSelect={() => editor.chain().focus().toggleStrike().run()}
+          />
+          <MoreItem
+            icon={HighlighterIcon}
+            label="Highlight"
+            hint="Ctrl+Shift+H"
+            onSelect={() => editor.chain().focus().toggleHighlight().run()}
+          />
+          <DropdownMenuSeparator />
+          <MoreItem
+            icon={ListOrderedIcon}
+            label="Numbered list"
+            onSelect={() => editor.chain().focus().toggleOrderedList().run()}
+          />
+          <MoreItem
+            icon={QuoteIcon}
+            label="Quote"
+            onSelect={() => editor.chain().focus().toggleBlockquote().run()}
+          />
+          <MoreItem
+            icon={CodeIcon}
+            label="Code block"
+            onSelect={() => editor.chain().focus().toggleCodeBlock().run()}
+          />
+          <DropdownMenuSeparator />
+          <MoreItem
+            icon={Undo2Icon}
+            label="Undo"
+            hint="Ctrl+Z"
+            disabled={!editor.can().undo()}
+            onSelect={() => editor.chain().focus().undo().run()}
+          />
+          <MoreItem
+            icon={Redo2Icon}
+            label="Redo"
+            hint="Ctrl+Shift+Z"
+            disabled={!editor.can().redo()}
+            onSelect={() => editor.chain().focus().redo().run()}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
+  );
+}
+
+function MoreItem({
+  icon: Icon,
+  label,
+  hint,
+  disabled,
+  onSelect,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+  disabled?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <DropdownMenuItem disabled={disabled} onSelect={onSelect} className="gap-2">
+      <Icon className="size-4" aria-hidden="true" />
+      {label}
+      {hint ? (
+        <span className="ml-auto font-mono text-[11px] text-ink-3">{hint}</span>
+      ) : null}
+    </DropdownMenuItem>
   );
 }
 
@@ -396,6 +504,7 @@ function ToolbarButton({
       type="button"
       variant={active ? "secondary" : "ghost"}
       size="icon-sm"
+      className="size-8"
       disabled={disabled}
       aria-label={label}
       title={label}
@@ -404,20 +513,4 @@ function ToolbarButton({
       {children}
     </Button>
   );
-}
-
-function setLink(editor: Editor) {
-  const previousUrl = editor.getAttributes("link").href as string | undefined;
-  const url = window.prompt("Link URL", previousUrl ?? "");
-
-  if (url === null) {
-    return;
-  }
-
-  if (url === "") {
-    editor.chain().focus().extendMarkRange("link").unsetLink().run();
-    return;
-  }
-
-  editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
 }
