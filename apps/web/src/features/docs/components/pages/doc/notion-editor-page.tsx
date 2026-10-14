@@ -674,7 +674,12 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
-  const [commentsOpen, setCommentsOpen] = useState(true);
+  // Open beside the doc on wide screens; on a phone it would cover the page.
+  const [commentsOpen, setCommentsOpen] = useState(false);
+
+  useEffect(() => {
+    setCommentsOpen(window.matchMedia("(min-width: 1280px)").matches);
+  }, []);
   const [tableRows] = useState(3);
   const [tableColumns] = useState(3);
   const loadedEditorDocIdRef = useRef<string | null>(null);

@@ -207,9 +207,7 @@ export const ProjectList = ({
                     </Link>
                   </h3>
                   <p className="truncate font-mono text-xs text-ink-3">
-                    {project.taskKeyPrefix
-                      ? `${project.taskKeyPrefix}-`
-                      : project.slug}
+                    {project.taskKeyPrefix ?? project.slug}
                   </p>
                 </div>
 
@@ -266,7 +264,7 @@ export const ProjectList = ({
                 {project.description || "No description provided."}
               </p>
 
-              {project.totalTasks != null ? (
+              {project.totalTasks ? (
                 <div className="flex flex-col gap-1.5">
                   <Progress
                     value={
