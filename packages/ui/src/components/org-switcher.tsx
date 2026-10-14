@@ -1,17 +1,17 @@
 "use client";
 
-import { FC } from "react";
-import { Building2, Check, ChevronsUpDown, Plus } from "lucide-react";
+import { FC, useId, useMemo, useState } from "react";
+import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "lucide-react";
 
+import { cn } from "@zentro/ui/lib/utils";
+import { Input } from "@zentro/ui/shadcn/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@zentro/ui/shadcn/dropdown-menu";
-import { Button } from "@zentro/ui/shadcn/button";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@zentro/ui/shadcn/popover";
+
+import { OrgAvatar } from "./org-avatar";
 
 type Organization = {
   id: string;
@@ -24,104 +24,135 @@ type Props = {
   activeOrgSlug: string;
   createOrganizationHref?: string;
   onSwitchOrganization: (organizationId: string) => void | Promise<void>;
+  className?: string;
 };
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
-}
-
+/** The organization menu: a searchable list with squircle marks. */
 export const OrgSwitcher: FC<Props> = ({
   organizations,
   activeOrgSlug,
   createOrganizationHref,
   onSwitchOrganization,
+  className,
 }) => {
-  const activeOrganization =
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const listId = useId();
+  const active =
     organizations.find((org) => org.slug === activeOrgSlug) ?? organizations[0];
+  const shown = useMemo(
+    () =>
+      organizations.filter((org) =>
+        org.name.toLowerCase().includes(query.trim().toLowerCase()),
+      ),
+    [organizations, query],
+  );
 
-  if (!activeOrganization) {
+  if (!active) {
     return null;
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="h-10 max-w-[220px] justify-start gap-2 px-2 sm:max-w-[280px]"
-        >
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
-            {getInitials(activeOrganization.name) || (
-              <Building2 className="h-4 w-4" />
-            )}
-          </span>
-          <span className="min-w-0 flex-1 text-left">
-            <span className="block truncate text-sm font-medium">
-              {activeOrganization.name}
-            </span>
-          </span>
-          <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72">
-        <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-        {organizations.map((organization) => {
-          const isActive = organization.slug === activeOrgSlug;
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
 
-          return (
-            <DropdownMenuItem
-              key={organization.id}
-              className="gap-3 py-2"
-              onSelect={
-                isActive
-                  ? undefined
-                  : () => void onSwitchOrganization(organization.id)
-              }
+        if (!next) setQuery("");
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Organization: ${active.name}`}
+          aria-haspopup="listbox"
+          data-slot="org-switcher"
+          className={cn(
+            "flex h-10 w-full min-w-0 items-center gap-2 rounded-md px-1.5 text-left outline-none transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0",
+            className,
+          )}
+        >
+          <OrgAvatar name={active.name} seed={active.id} />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink group-data-[collapsible=icon]:hidden">
+            {active.name}
+          </span>
+          <ChevronsUpDownIcon
+            className="size-3.5 shrink-0 text-ink-3 group-data-[collapsible=icon]:hidden"
+            aria-hidden="true"
+          />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 gap-1 p-1.5">
+        {organizations.length > 4 ? (
+          <Input
+            autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Find an organization"
+            aria-label="Find an organization"
+            className="mb-1"
+          />
+        ) : null}
+        <div
+          id={listId}
+          role="listbox"
+          aria-label="Organizations"
+          className="flex flex-col gap-0.5"
+        >
+          {shown.map((organization) => {
+            const isActive = organization.slug === active.slug;
+
+            return (
+              <button
+                key={organization.id}
+                type="button"
+                role="option"
+                aria-selected={isActive}
+                onClick={() => {
+                  setOpen(false);
+
+                  if (!isActive) void onSwitchOrganization(organization.id);
+                }}
+                className="flex h-9 items-center gap-2 rounded-md px-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <OrgAvatar
+                  name={organization.name}
+                  seed={organization.id}
+                  size="sm"
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  {organization.name}
+                </span>
+                {isActive ? (
+                  <CheckIcon
+                    className="size-4 text-signal"
+                    aria-hidden="true"
+                  />
+                ) : null}
+              </button>
+            );
+          })}
+          {!shown.length ? (
+            <p className="px-2 py-3 text-center text-xs text-ink-3">
+              No organization matches.
+            </p>
+          ) : null}
+        </div>
+        {createOrganizationHref ? (
+          <>
+            <div className="my-1 h-px bg-hairline" />
+            <a
+              href={createOrganizationHref}
+              className="flex h-9 items-center gap-2 rounded-md px-1.5 text-sm text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {isActive ? (
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
-                      {getInitials(organization.name) || (
-                        <Building2 className="h-4 w-4" />
-                      )}
-                    </span>
-                    <span className="block truncate font-medium">
-                      {organization.name}
-                    </span>
-                  </div>
-                  <Check className="ml-auto h-4 w-4 text-primary" />
-                </div>
-              ) : (
-                <>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
-                    {getInitials(organization.name) || (
-                      <Building2 className="h-4 w-4" />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">
-                      {organization.name}
-                    </span>
-                  </span>
-                </>
-              )}
-            </DropdownMenuItem>
-          );
-        })}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="gap-2">
-          <a href={createOrganizationHref}>
-            <Plus className="h-4 w-4" />
-            Create organization
-          </a>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+              <span className="flex size-6 items-center justify-center rounded-[28%] border border-dashed border-border-strong">
+                <PlusIcon className="size-3.5" aria-hidden="true" />
+              </span>
+              Create organization
+            </a>
+          </>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 };

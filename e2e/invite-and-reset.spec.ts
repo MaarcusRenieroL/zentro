@@ -61,16 +61,16 @@ test("a user who already belongs to an organization accepts an invitation by lin
 
   // Both organizations are in the switcher and the new one is active.
   await expect(
-    invitee.page
-      .locator("header")
-      .getByRole("button", { name: new RegExp(ownerOrg) }),
+    invitee.page.getByRole("button", {
+      name: new RegExp(`^Organization: ${ownerOrg}`),
+    }),
   ).toBeVisible();
   await openOrgSwitcher(invitee.page);
   await expect(
-    invitee.page.getByRole("menuitem", { name: new RegExp(ownerOrg) }),
+    invitee.page.getByRole("option", { name: new RegExp(ownerOrg) }),
   ).toBeVisible();
   await expect(
-    invitee.page.getByRole("menuitem", { name: new RegExp(inviteeOrg) }),
+    invitee.page.getByRole("option", { name: new RegExp(inviteeOrg) }),
   ).toBeVisible();
 
   // The owner sees the new member.
@@ -142,9 +142,9 @@ test("a new user without an organization sees and accepts pending invitations", 
   await newcomer.page.getByRole("button", { name: /join/i }).click();
   await expect(newcomer.page).toHaveURL(/\/dashboard/);
   await expect(
-    newcomer.page
-      .locator("header")
-      .getByRole("button", { name: new RegExp(ownerOrg) }),
+    newcomer.page.getByRole("button", {
+      name: new RegExp(`^Organization: ${ownerOrg}`),
+    }),
   ).toBeVisible();
 
   await newcomer.context.close();

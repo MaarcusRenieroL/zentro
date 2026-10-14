@@ -59,7 +59,7 @@ test.describe("two organizations", () => {
 
     // Second organization for the same user, created through the switcher.
     await openOrgSwitcher(page);
-    await page.getByRole("menuitem", { name: "Create organization" }).click();
+    await page.getByRole("link", { name: "Create organization" }).click();
     await expect(page).toHaveURL(/\/auth\/create-organization/);
     await createOrganization(page, orgB);
 

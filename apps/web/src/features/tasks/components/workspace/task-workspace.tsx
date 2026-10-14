@@ -127,7 +127,7 @@ export const TaskWorkspace: FC<Props> = ({
     teamFilter !== "all";
 
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+    <section className="flex w-full flex-col gap-6">
       <TaskWorkspaceHeader
         title={title}
         description={description}

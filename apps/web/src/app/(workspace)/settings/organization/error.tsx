@@ -15,8 +15,8 @@ export default function OrganizationSettingsError({ error, reset }: Props) {
   }, [error]);
 
   return (
-    <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 sm:gap-8">
+    <section>
+      <div className="flex w-full flex-col gap-6">
         <div className="flex min-h-[360px] items-center justify-center rounded-md border border-dashed bg-card/40 p-6 text-center">
           <div className="flex max-w-md flex-col items-center">
             <div className="flex size-12 items-center justify-center rounded-md bg-destructive/10 text-destructive">

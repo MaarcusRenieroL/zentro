@@ -1,21 +1,15 @@
 import { JSX } from "react";
-import { DashboardNavbar } from "~/src/components/layout/dashboard-navbar";
+import { cookies } from "next/headers";
 
-import { buildNavSections, filterNavSections } from "@zentro/modules";
 import { effectivePermissions, getCatalogKeys } from "@zentro/permissions";
 
 import { PermissionProvider } from "~/src/components/permissions/permission-provider";
-
-import { paths } from "~/src/lib/paths";
+import { AppShell } from "~/src/components/shell/app-shell";
 import { getDashboardContext } from "~/src/lib/dashboard-context";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@zentro/ui/components/shadcn/sidebar";
-import { TooltipProvider } from "@zentro/ui/components/shadcn/tooltip";
-import { WorkspaceSidebar } from "~/src/components/layout/workspace-sidebar";
+import { paths } from "~/src/lib/paths";
+import { buildShell } from "~/src/lib/shell-data";
 
-export default async function DashboardLayout({
+export default async function WorkspaceLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -29,12 +23,9 @@ export default async function DashboardLayout({
     reachable,
   } = await getDashboardContext();
   const permissions = effectivePermissions(snapshot, getCatalogKeys());
-  // Navigation follows what the user can reach, so a role on a single project
-  // still shows Projects, Tasks and Docs.
-  const sections = filterNavSections(
-    buildNavSections(new Set(enabledModules)),
-    (key) => reachable[key] ?? false,
-  );
+  const { modules } = buildShell(enabledModules, reachable);
+  const sidebarOpen = (await cookies()).get("sidebar_state")?.value !== "false";
+  const settings = modules.find((item) => item.id === "settings");
 
   return (
     <PermissionProvider
@@ -45,30 +36,26 @@ export default async function DashboardLayout({
         reachable,
       }}
     >
-      <TooltipProvider>
-        <SidebarProvider defaultOpen>
-          <WorkspaceSidebar sections={sections} />
-
-          <SidebarInset>
-            <div className="min-h-screen bg-background text-foreground">
-              <DashboardNavbar
-                orgSlug={organization.slug}
-                organizations={organizations.map((org) => ({
-                  id: org.id,
-                  name: org.name,
-                  slug: org.slug,
-                }))}
-                createOrganizationHref={paths.auth.createOrganization()}
-                user={{
-                  name: session.user.name,
-                  email: session.user.email,
-                }}
-              />
-              <main>{children}</main>
-            </div>
-          </SidebarInset>
-        </SidebarProvider>
-      </TooltipProvider>
+      <AppShell
+        modules={modules}
+        enabledModules={enabledModules}
+        organizations={organizations.map((org) => ({
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+        }))}
+        activeOrgSlug={organization.slug}
+        user={{ name: session.user.name, email: session.user.email }}
+        links={{
+          settingsHref: settings?.href ?? null,
+          membersHref: reachable["members.view"]
+            ? paths.membersSettings()
+            : null,
+        }}
+        sidebarOpen={sidebarOpen}
+      >
+        {children}
+      </AppShell>
     </PermissionProvider>
   );
 }

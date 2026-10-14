@@ -127,11 +127,7 @@ export async function registerWithOrganization(
 }
 
 export async function signOut(page: Page) {
-  // The avatar is the dropdown trigger itself (`asChild`), so click that.
-  await page
-    .locator('header [data-slot="dropdown-menu-trigger"]')
-    .filter({ has: page.locator('[data-slot="avatar-fallback"]') })
-    .click();
+  await page.getByRole("button", { name: "Account menu" }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/auth\/sign-in/);
 }
@@ -181,20 +177,17 @@ export async function createDocViaUi(page: Page, title: string) {
   await expect(page.getByText(title).first()).toBeVisible();
 }
 
-/** Opens the org switcher in the header. */
+/** Opens the org switcher in the sidebar. */
 export async function openOrgSwitcher(page: Page) {
-  await page
-    .locator('header [data-slot="dropdown-menu-trigger"]')
-    .first()
-    .click();
+  await page.getByRole("button", { name: /^Organization:/ }).click();
 }
 
 export async function switchOrganization(page: Page, name: string) {
   await openOrgSwitcher(page);
-  await page.getByRole("menuitem", { name: new RegExp(name) }).click();
+  await page.getByRole("option", { name: new RegExp(name) }).click();
   await expect(page).toHaveURL(/\/dashboard/);
   await expect(
-    page.locator("header").getByRole("button", { name: new RegExp(name) }),
+    page.getByRole("button", { name: new RegExp(`^Organization: ${name}`) }),
   ).toBeVisible();
 }
 

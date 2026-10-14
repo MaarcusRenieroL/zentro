@@ -41,7 +41,7 @@ test.describe("task overview", () => {
     await createTaskViaUi(page, taskA);
 
     await openOrgSwitcher(page);
-    await page.getByRole("menuitem", { name: "Create organization" }).click();
+    await page.getByRole("link", { name: "Create organization" }).click();
     await createOrganization(page, orgB);
     await createProjectViaUi(page, uniqueName("Proj"));
     await createTaskViaUi(page, taskB);
@@ -149,33 +149,52 @@ test("the dashboard shows numbers computed from the database", async ({
   await expect(page.getByText("1 doc updated")).toBeVisible();
 });
 
-test("the sidebar highlights exactly one item per route", async ({ page }) => {
+test("the sidebar has one level and exactly one active item per route", async ({
+  page,
+}) => {
   await registerWithOrganization(page, {
     label: "sidebar",
     orgName: uniqueName("Sidebar"),
   });
 
-  const routes: Array<[string, string]> = [
-    ["/dashboard", "Dashboard"],
-    ["/projects", "All projects"],
-    ["/projects?status=active", "Active projects"],
-    ["/tasks", "All tasks"],
-    ["/tasks/overview", "Overview"],
-    ["/tasks?status=done", "Completed"],
-    ["/docs", "All docs"],
-    ["/docs/recent", "Recent"],
-    ["/settings/organization/modules", "Modules"],
+  // [route, active module in the sidebar, active page in the section nav]
+  const routes: Array<[string, string, string | null]> = [
+    ["/dashboard", "Dashboard", null],
+    ["/projects", "Projects", "All projects"],
+    ["/projects?status=active", "Projects", "Active projects"],
+    ["/tasks", "Tasks", "All tasks"],
+    ["/tasks/overview", "Tasks", "Overview"],
+    ["/tasks?status=done", "Tasks", "Completed"],
+    ["/docs", "Docs", "All docs"],
+    ["/docs/recent", "Docs", "Recent"],
+    ["/settings/organization/modules", "Settings", null],
   ];
 
-  for (const [route, label] of routes) {
+  for (const [route, module, section] of routes) {
     await page.goto(route);
 
-    const active = page.locator(
-      '[data-sidebar="menu-button"][data-active="true"], [data-sidebar="menu-sub-button"][data-active="true"]',
+    const sidebar = page.locator('[data-slot="sidebar"]').first();
+    const active = sidebar.locator(
+      '[data-sidebar="menu-button"][data-active="true"]',
     );
 
+    // One level: no nested sub-items, and exactly one active module.
+    await expect(
+      sidebar.locator('[data-sidebar="menu-sub-button"]'),
+      route,
+    ).toHaveCount(0);
     await expect(active, route).toHaveCount(1);
-    await expect(active, route).toContainText(label);
+    await expect(active, route).toContainText(module);
+
+    if (section) {
+      const current = page
+        .locator('[data-slot="section-nav"]')
+        .first()
+        .locator('[aria-current="page"]');
+
+      await expect(current, route).toHaveCount(1);
+      await expect(current, route).toContainText(section);
+    }
   }
 });
 

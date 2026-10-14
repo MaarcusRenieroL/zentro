@@ -2,7 +2,7 @@ import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
 
 export function ProjectPageLoading() {
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:gap-8 xl:px-10">
+    <section className="flex w-full flex-col gap-6">
       <div className="rounded-md border bg-card/50 p-5 shadow-sm">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 gap-4">
@@ -70,8 +70,8 @@ export function ProjectPageLoading() {
 
 export function ProjectSettingsLoading() {
   return (
-    <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 sm:gap-8">
+    <section>
+      <div className="flex w-full flex-col gap-6">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Skeleton className="size-12 shrink-0 rounded-md sm:size-14" />
           <div className="min-w-0 flex-1 space-y-2">

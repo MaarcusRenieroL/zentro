@@ -2,8 +2,8 @@ import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
 
 export default function Loading() {
   return (
-    <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 sm:gap-8">
+    <section>
+      <div className="flex w-full flex-col gap-6">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <Skeleton className="size-12 shrink-0 rounded-md sm:size-14" />
           <div className="min-w-0 flex-1 space-y-2">

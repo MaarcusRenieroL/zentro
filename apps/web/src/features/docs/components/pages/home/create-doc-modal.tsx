@@ -35,15 +35,27 @@ import { createDocSlug } from "../../../lib/docs";
 type CreateDocModalProps = {
   triggerLabel?: string;
   triggerVariant?: ComponentProps<typeof Button>["variant"];
+  /** Control the dialog from outside (the Create menu), with no trigger button. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 };
 
 function CreateDocModalInner({
   triggerLabel = "New doc",
   triggerVariant,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: CreateDocModalProps) {
   const router = useRouter();
   const trpc = useTrpcClient();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (value: boolean) => {
+    setInternalOpen(value);
+    onOpenChange?.(value);
+  };
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>(
     [],
   );
@@ -123,12 +135,14 @@ function CreateDocModalInner({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant={triggerVariant}>
-          <PlusIcon className="size-4" />
-          {triggerLabel}
-        </Button>
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          <Button variant={triggerVariant}>
+            <PlusIcon className="size-4" />
+            {triggerLabel}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Create doc</DialogTitle>

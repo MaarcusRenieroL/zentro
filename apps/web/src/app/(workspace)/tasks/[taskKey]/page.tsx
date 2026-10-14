@@ -199,7 +199,7 @@ export default function TaskDetailPage() {
 
 function TaskDetailLoading() {
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8 xl:px-10">
+    <section className="flex w-full flex-col gap-6">
       <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className="h-[520px] animate-pulse rounded-md bg-muted" />

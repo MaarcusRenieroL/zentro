@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { paths } from "~/src/lib/paths";
 import { useTrpcClient } from "@zentro/api/react";
 import { ProjectDetail } from "~/src/lib/types";
@@ -20,6 +21,8 @@ export default function ProjectPage() {
   const [enabledModules, setEnabledModules] = useState<string[]>([]);
 
   const trpc = useTrpcClient();
+
+  usePageCrumb(`/projects/${params.slug}`, project?.name);
 
   useEffect(() => {
     let isMounted = true;
@@ -62,7 +65,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:gap-8 xl:px-10">
+    <section className="flex w-full flex-col gap-6">
       <ProjectHeader
         slug={project.slug}
         projectId={project.id}

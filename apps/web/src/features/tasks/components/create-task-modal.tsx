@@ -51,6 +51,10 @@ type Props = {
   defaultStatus?: CreateTaskFormValues["status"];
   trigger?: React.ReactNode;
   onTaskCreated?: () => void | Promise<void>;
+  /** Control the dialog from outside (the Create menu), with no trigger button. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 };
 
 const unassignedValue = "unassigned";
@@ -72,9 +76,17 @@ const CreateTaskModalInner: FC<Props> = ({
   defaultStatus = "todo",
   trigger,
   onTaskCreated,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }) => {
   const trpc = useTrpcClient();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (value: boolean) => {
+    setInternalOpen(value);
+    onOpenChange?.(value);
+  };
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
@@ -202,14 +214,16 @@ const CreateTaskModalInner: FC<Props> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="w-full sm:w-fit">
-            <PlusIcon className="size-4" />
-            Create task
-          </Button>
-        )}
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button className="w-full sm:w-fit">
+              <PlusIcon className="size-4" />
+              Create task
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
         <form onSubmit={handleSubmit(onSubmit)}>

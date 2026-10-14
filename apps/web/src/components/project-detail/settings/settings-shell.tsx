@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { paths } from "~/src/lib/paths";
 import {
   AlertTriangleIcon,
@@ -32,6 +33,9 @@ function getInitials(name: string) {
 
 export const SettingsShell: FC<Props> = ({ project, children }) => {
   const pathname = usePathname();
+
+  usePageCrumb(`/projects/${project.slug}`, project.name);
+
   const settingsNavItems = [
     {
       href: paths.projectGeneralSettings(project.slug),
@@ -51,8 +55,8 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
   ];
 
   return (
-    <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 sm:gap-8">
+    <section>
+      <div className="flex w-full flex-col gap-6">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-md border bg-card text-base font-semibold text-foreground shadow-sm sm:size-14 sm:text-lg">
             {getInitials(project.name) || <Building2Icon className="size-6" />}

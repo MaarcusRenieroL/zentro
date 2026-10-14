@@ -42,6 +42,10 @@ import { slugify, slugifyInput } from "@zentro/utils";
 
 type CreateProjectModalProps = {
   onProjectCreated: () => void | Promise<void>;
+  /** Control the dialog from outside (the Create menu), with no trigger button. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 };
 
 type TeamOption = {
@@ -52,8 +56,16 @@ type TeamOption = {
 
 const CreateProjectModalInner = ({
   onProjectCreated,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: CreateProjectModalProps) => {
-  const [open, setOpen] = useState<boolean>(false);
+  const [internalOpen, setInternalOpen] = useState<boolean>(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = (value: boolean) => {
+    setInternalOpen(value);
+    onOpenChange?.(value);
+  };
   const [slugEdited, setSlugEdited] = useState(false);
   const [teams, setTeams] = useState<TeamOption[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
@@ -167,12 +179,14 @@ const CreateProjectModalInner = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-          <PlusIcon className="h-4 w-4" />
-          New project
-        </Button>
-      </DialogTrigger>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          <Button className="gap-2">
+            <PlusIcon className="h-4 w-4" />
+            New project
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-2xl">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>

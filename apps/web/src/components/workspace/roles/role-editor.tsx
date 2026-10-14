@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeftIcon, SearchIcon } from "lucide-react";
@@ -53,6 +54,8 @@ export const RoleEditor: FC<{ roleId: string }> = ({ roleId }) => {
   const myPermissions = usePermissionMap();
   const canUpdate = usePermission("roles.update");
   const [role, setRole] = useState<Role | null>(null);
+
+  usePageCrumb(`/settings/organization/roles/${roleId}`, role?.name);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

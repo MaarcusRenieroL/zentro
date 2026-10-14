@@ -70,6 +70,7 @@ import {
 } from "../../../lib/docs";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
+import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { CommentsPanel } from "./comments-panel";
 
 const slashCommands = [
@@ -568,6 +569,8 @@ export function NotionEditorPage({ slug }: { slug: string }) {
       setContent(htmlToMarkdown(editor.getHTML()));
     },
   });
+
+  usePageCrumb(`/docs/${slug}`, doc ? getDocTitle(doc.title) : null);
 
   const docResource = {
     projectId: doc?.projectId ?? undefined,

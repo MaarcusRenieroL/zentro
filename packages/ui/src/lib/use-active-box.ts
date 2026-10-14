@@ -50,7 +50,7 @@ export function useActiveBox(
     mutations.observe(container, {
       attributes: true,
       subtree: true,
-      attributeFilter: ["data-state", "aria-current"],
+      attributeFilter: ["data-state", "aria-current", "data-active"],
     });
 
     const resize = new ResizeObserver(measure);

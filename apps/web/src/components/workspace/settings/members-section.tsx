@@ -241,7 +241,11 @@ export const MembersSection: FC<Props> = ({
           className: "text-muted-foreground",
         },
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
+          // The time can tick over between the server render and hydration.
+          <span
+            suppressHydrationWarning
+            className="text-sm text-muted-foreground"
+          >
             {formatRelativeDate(row.original.createdAt)}
           </span>
         ),

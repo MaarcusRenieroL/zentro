@@ -249,7 +249,10 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
                     </div>
 
                     <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center lg:justify-end">
-                      <span className="text-xs text-muted-foreground">
+                      <span
+                        suppressHydrationWarning
+                        className="text-xs text-muted-foreground"
+                      >
                         Expires{" "}
                         {formatRelativeDate(invitation.expiresAt ?? null)}
                       </span>

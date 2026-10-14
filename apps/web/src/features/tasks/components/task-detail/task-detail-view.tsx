@@ -67,7 +67,7 @@ export function TaskDetailView({
   const canComment = useAnyPermission(["tasks.comment"], resource);
 
   return (
-    <section className="mx-auto flex w-full max-w-[1680px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:px-10">
+    <section className="flex w-full flex-col gap-6">
       <TaskDetailHeader task={task} />
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
