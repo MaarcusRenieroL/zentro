@@ -180,6 +180,9 @@ export function LandingPage() {
   const [vw, setVw] = useState(1440);
   const [reduced, setReduced] = useState(false);
   const [projOff, setProjOff] = useState(true);
+  const [tick, setTick] = useState(0);
+  const [ringIn, setRingIn] = useState(false);
+  const [pulseAt, setPulseAt] = useState(0);
 
   // Theme: remembered, and "system" follows the OS.
   useEffect(() => {
@@ -201,6 +204,25 @@ export function LandingPage() {
 
     return () => query.removeEventListener("change", update);
   }, []);
+
+  // The product window is alive: the timer runs, the ring fills once, the
+  // team pulse walks down its rows. All of it stops under reduced motion.
+  useEffect(() => {
+    if (reduced) return;
+
+    setRingIn(true);
+
+    const clock = setInterval(() => setTick((value) => value + 1), 1000);
+    const walk = setInterval(
+      () => setPulseAt((value) => (value + 1) % 4),
+      2200,
+    );
+
+    return () => {
+      clearInterval(clock);
+      clearInterval(walk);
+    };
+  }, [reduced]);
 
   const chooseMode = (next: Mode) => {
     setMode(next);
@@ -309,6 +331,16 @@ export function LandingPage() {
   const endOn = f.s6c >= 0.999;
   const auditProgress = m ? f.s5 : f.s5x;
   const mx = 2;
+  const base = 1 * 3600 + 24 * 60 + 36 + tick;
+  const timer = [
+    Math.floor(base / 3600),
+    Math.floor((base % 3600) / 60),
+    base % 60,
+  ]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
+  const ringPct = reduced || ringIn ? 62.5 : 0;
+  const rise = (ms: number): CSSProperties => ({ animationDelay: `${ms}ms` });
 
   return (
     <div
@@ -388,7 +420,7 @@ export function LandingPage() {
             ))}
           </nav>
         ) : null}
-        <div style={{ flex: 1 }} />
+        <div className="l-rise" style={{ flex: 1 }} />
         {!m ? (
           <>
             <div
@@ -427,7 +459,11 @@ export function LandingPage() {
             </Link>
           </>
         ) : null}
-        <Link href={paths.auth.signUp()} style={primaryPill(38, 18, 14)}>
+        <Link
+          href={paths.auth.signUp()}
+          className="l-btn"
+          style={primaryPill(38, 18, 14)}
+        >
           Start free
         </Link>
         {m ? (
@@ -471,6 +507,7 @@ export function LandingPage() {
         >
           <div
             aria-hidden="true"
+            className="l-drift"
             style={{
               position: "absolute",
               top: 0,
@@ -484,6 +521,7 @@ export function LandingPage() {
           />
           <div
             aria-hidden="true"
+            className="l-drift"
             style={{
               position: "absolute",
               top: 0,
@@ -542,10 +580,11 @@ export function LandingPage() {
               top: 146,
             }}
           >
-            <div style={node("hero")} />
+            <div className="l-ping" style={node("hero")} />
           </div>
 
           <h1
+            className="l-rise"
             style={{
               position: "relative",
               margin: 0,
@@ -570,6 +609,7 @@ export function LandingPage() {
               gap: "var(--heroGap)",
               marginTop: 56,
               alignItems: "flex-start",
+              ...rise(180),
             }}
           >
             <div
@@ -598,11 +638,16 @@ export function LandingPage() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                 <Link
                   href={paths.auth.signUp()}
+                  className="l-btn"
                   style={primaryPill(48, 24, 15)}
                 >
                   Start free
                 </Link>
-                <a href="#modules" style={ghostPill(48, 22, 15)}>
+                <a
+                  href="#modules"
+                  className="l-btn"
+                  style={ghostPill(48, 22, 15)}
+                >
                   See the modules
                 </a>
               </div>
@@ -641,6 +686,7 @@ export function LandingPage() {
             >
               <div
                 aria-hidden="true"
+                className="l-breathe"
                 style={{
                   position: "absolute",
                   left: "-10%",
@@ -945,9 +991,10 @@ export function LandingPage() {
                                   fontSize: 44,
                                   letterSpacing: "-0.03em",
                                   lineHeight: 1,
+                                  fontVariantNumeric: "tabular-nums",
                                 }}
                               >
-                                01:24:36
+                                {timer}
                               </div>
                               <div
                                 style={{
@@ -961,6 +1008,8 @@ export function LandingPage() {
                                 }}
                               >
                                 <span
+                                  data-dim=""
+                                  className="l-blink"
                                   style={{
                                     width: 6,
                                     height: 6,
@@ -1152,8 +1201,10 @@ export function LandingPage() {
                               width: 104,
                               height: 104,
                               borderRadius: "50%",
-                              background:
-                                "conic-gradient(var(--green) 0 62.5%, var(--line) 62.5% 100%)",
+                              background: `conic-gradient(var(--green) 0 ${ringPct}%, var(--line) ${ringPct}% 100%)`,
+                              transition: reduced
+                                ? "none"
+                                : "background 1.4s cubic-bezier(.2,.7,.2,1)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -1278,14 +1329,21 @@ export function LandingPage() {
                               Onboarding v2
                             </span>
                           </div>
-                          {PULSE.map(([initials, name, task, dot, bg]) => (
+                          {PULSE.map(([initials, name, task, dot, bg], pi) => (
                             <div
                               key={name}
                               style={{
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 10,
-                                padding: "9px 0",
+                                padding: "9px 6px",
+                                margin: "0 -6px",
+                                borderRadius: 8,
+                                background:
+                                  !reduced && pulseAt === pi
+                                    ? "var(--tile2)"
+                                    : "transparent",
+                                transition: "background .5s",
                                 borderTop: "1px solid var(--line2)",
                               }}
                             >
@@ -1325,6 +1383,11 @@ export function LandingPage() {
                                 </div>
                               </div>
                               <span
+                                className={
+                                  !reduced && pulseAt === pi
+                                    ? "l-blink"
+                                    : undefined
+                                }
                                 style={{
                                   flex: "none",
                                   width: 8,
@@ -2201,6 +2264,7 @@ export function LandingPage() {
                           <div
                             key={tn}
                             data-dim={isLive ? undefined : ""}
+                            className={isLive ? "l-lift" : undefined}
                             style={{
                               gridColumn: `span ${m ? mcols : cols}`,
                               gridRow: !m && rows > 1 ? `span ${rows}` : "auto",
@@ -2629,6 +2693,7 @@ export function LandingPage() {
                           </span>
                         ) : (
                           <span
+                            data-dim=""
                             aria-label="No access"
                             style={{
                               width: 10,
@@ -3130,6 +3195,7 @@ export function LandingPage() {
             }}
           >
             <div
+              className={endOn ? "l-ping" : undefined}
               style={{
                 width: 14,
                 height: 14,
@@ -3191,10 +3257,18 @@ export function LandingPage() {
                   "var(--ctaJ)" as CSSProperties["justifyContent"],
               }}
             >
-              <Link href={paths.auth.signUp()} style={primaryPill(56, 30, 16)}>
+              <Link
+                href={paths.auth.signUp()}
+                className="l-btn"
+                style={primaryPill(56, 30, 16)}
+              >
                 Start free
               </Link>
-              <a href="#modules" style={ghostPill(56, 26, 16)}>
+              <a
+                href="#modules"
+                className="l-btn"
+                style={ghostPill(56, 26, 16)}
+              >
                 See the modules
               </a>
             </div>
