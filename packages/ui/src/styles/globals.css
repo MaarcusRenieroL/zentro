@@ -678,3 +678,85 @@
   --cat-subtle: oklch(var(--cat-subtle-l) var(--cat-subtle-c) var(--cat-h, 25));
   --cat-text: oklch(var(--cat-text-l) var(--cat-text-c) var(--cat-h, 25));
 }
+
+/*
+ * Landing page theme ("The Thread"). Scoped to the landing root so it never
+ * touches the app tokens; the marketing page has its own dark and light.
+ */
+.landing-dark {
+  color-scheme: dark;
+  --bg: #0a0a0f;
+  --band: #0c0c13;
+  --tile: #111118;
+  --tile2: #17171f;
+  --line: #25253a;
+  --line2: #1a1a29;
+  --ink: #f3f2f8;
+  --ink2: #a6a5bb;
+  --ink3: #8584a0;
+  --accent: #9b7fff;
+  --accent-ink: #0a0a0f;
+  --btn: #9b7fff;
+  --btn-ink: #0a0a0f;
+  --nav-bg: rgb(10 10 15 / 72%);
+  --halo: rgb(123 92 255 / 40%);
+  --beam: rgb(155 127 255 / 6%);
+  --wash: transparent;
+  --track: rgb(155 127 255 / 30%);
+  --glow: 0 0 12px rgb(155 127 255 / 65%);
+  --glass: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 4%),
+    rgb(255 255 255 / 0%) 45%
+  );
+  --sky: rgb(220 235 255 / 14%);
+  --lav: rgb(233 228 255 / 14%);
+  --peach: rgb(255 230 210 / 14%);
+  --mint: rgb(216 243 230 / 14%);
+  --rosep: rgb(255 221 228 / 14%);
+  --chip-bg: rgb(255 255 255 / 6%);
+  --amber: #f5b84a;
+  --cyan: #56d4e6;
+  --green: #57d98a;
+  --rose: #fb7a8e;
+  --shadow: none;
+  --frame: #0e0e15;
+  --knob-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+.landing-light {
+  color-scheme: light;
+  --bg: #f6f5f1;
+  --band: #efede7;
+  --tile: #ffffff;
+  --tile2: #f8f7f3;
+  --line: #e4e1d9;
+  --line2: #ece9e2;
+  --ink: #141318;
+  --ink2: #5d5b67;
+  --ink3: #7b7885;
+  --accent: #5b3fe0;
+  --accent-ink: #ffffff;
+  --btn: #141318;
+  --btn-ink: #ffffff;
+  --nav-bg: rgb(246 245 241 / 82%);
+  --halo: rgb(91 63 224 / 18%);
+  --beam: transparent;
+  --wash: rgb(233 228 255 / 80%);
+  --track: rgb(91 63 224 / 32%);
+  --glow: 0 0 8px rgb(91 63 224 / 35%);
+  --glass: none;
+  --sky: #dcebff;
+  --lav: #e9e4ff;
+  --peach: #ffe6d2;
+  --mint: #d8f3e6;
+  --rosep: #ffdde4;
+  --chip-bg: rgb(255 255 255 / 75%);
+  --amber: #b36a00;
+  --cyan: #08819e;
+  --green: #178a45;
+  --rose: #d6284f;
+  --shadow: 0 1px 2px rgb(20 19 24 / 4%), 0 16px 36px -18px rgb(20 19 24 / 14%);
+  --frame: #ffffff;
+  --knob-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+}
