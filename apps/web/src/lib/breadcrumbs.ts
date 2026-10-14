@@ -3,7 +3,7 @@ import type { BreadcrumbEntry } from "@zentro/ui/components/breadcrumbs";
 type Crumb = { label: string; mono?: boolean };
 
 const labels: Record<string, string> = {
-  dashboard: "Dashboard",
+  dashboard: "Today",
   projects: "Projects",
   tasks: "Tasks",
   docs: "Docs",
@@ -80,7 +80,5 @@ export function getBreadcrumbs(
     }
   }
 
-  return entries.length
-    ? entries
-    : [{ label: "Dashboard", href: "/dashboard" }];
+  return entries.length ? entries : [{ label: "Today", href: "/dashboard" }];
 }

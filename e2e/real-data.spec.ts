@@ -129,7 +129,8 @@ test("the dashboard shows numbers computed from the database", async ({
     slug: `counted-doc-${Math.random().toString(36).slice(2, 6)}`,
   });
 
-  await page.goto("/dashboard");
+  // The workspace numbers live on Overview (owners and admins).
+  await page.goto("/overview");
 
   const overview = page
     .getByRole("heading", { name: "Workspace overview" })
@@ -159,7 +160,8 @@ test("the sidebar has one level and exactly one active item per route", async ({
 
   // [route, active module in the sidebar, active page in the section nav]
   const routes: Array<[string, string, string | null]> = [
-    ["/dashboard", "Dashboard", null],
+    ["/dashboard", "Today", null],
+    ["/overview", "Overview", null],
     ["/projects", "Projects", "All projects"],
     ["/projects?status=active", "Projects", "Active projects"],
     ["/tasks", "Tasks", "All tasks"],

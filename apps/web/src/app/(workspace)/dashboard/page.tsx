@@ -1,29 +1,35 @@
 import { JSX } from "react";
 
-import { ActivitySection } from "~/src/components/workspace/dashboard/activity-section";
-import { OverviewSection } from "~/src/components/workspace/dashboard/overview-section";
-import { getDashboardData } from "~/src/lib/dashboard-data";
+import { TodayView } from "~/src/features/today/today-view";
 import { getDashboardContext } from "~/src/lib/dashboard-context";
+import { getDashboardData } from "~/src/lib/dashboard-data";
+import { getTodayData } from "~/src/lib/today-data";
 
-export default async function DashboardPage(): Promise<JSX.Element> {
+export default async function TodayPage(): Promise<JSX.Element> {
   const { organization, session, enabledModules, snapshot } =
     await getDashboardContext();
-  const dashboardData = await getDashboardData({
-    organizationId: organization.id,
-    userId: session.user.id,
-    enabledModules: new Set(enabledModules),
-    snapshot,
-  });
+  const modules = new Set(enabledModules);
+  const [today, dashboard] = await Promise.all([
+    getTodayData({
+      organizationId: organization.id,
+      userId: session.user.id,
+      enabledModules: modules,
+      snapshot,
+    }),
+    getDashboardData({
+      organizationId: organization.id,
+      userId: session.user.id,
+      enabledModules: modules,
+      snapshot,
+    }),
+  ]);
 
   return (
-    <section className="flex w-full flex-col gap-6">
-      <ActivitySection
-        activityPills={dashboardData.activityPills}
-        orgName={organization.name}
-        name={session.user.name}
-        workspaceStats={dashboardData.workspaceStats}
-      />
-      <OverviewSection data={dashboardData} />
-    </section>
+    <TodayView
+      firstName={session.user.name.split(" ")[0] ?? session.user.name}
+      data={today}
+      recentWork={dashboard.recentWork}
+      links={dashboard.links}
+    />
   );
 }

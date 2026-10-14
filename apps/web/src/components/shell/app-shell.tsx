@@ -60,11 +60,14 @@ export function AppShell({
               modules={modules}
               organizations={organizations}
               activeOrgSlug={activeOrgSlug}
-              user={user}
-              links={links}
             />
-            <SidebarInset className="bg-surface">
-              <TopBar enabledModules={enabledModules} />
+            <SidebarInset className="bg-canvas">
+              <TopBar
+                enabledModules={enabledModules}
+                modules={modules}
+                user={user}
+                links={links}
+              />
               <main
                 id="main"
                 tabIndex={-1}

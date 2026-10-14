@@ -30,11 +30,16 @@ export function useActiveBox(
       return;
     }
 
+    // Measured against the container, whatever the active element's own
+    // offsetParent is (a list item that is itself positioned, for one).
+    const from = container.getBoundingClientRect();
+    const to = active.getBoundingClientRect();
+
     setBox({
-      left: active.offsetLeft,
-      width: active.offsetWidth,
-      top: active.offsetTop,
-      height: active.offsetHeight,
+      left: to.left - from.left + container.scrollLeft,
+      width: to.width,
+      top: to.top - from.top + container.scrollTop,
+      height: to.height,
     });
   }, [containerRef, activeSelector]);
 

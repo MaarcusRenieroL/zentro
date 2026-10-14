@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ChevronDownIcon, PlusIcon } from "lucide-react";
+import { ChevronDownIcon, PlusIcon, SearchIcon } from "lucide-react";
 
 import { Breadcrumbs } from "@zentro/ui/components/breadcrumbs";
 import { NotificationPopover } from "@zentro/ui/components/notification-popover";
+import { Kbd } from "@zentro/ui/components/kbd";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   DropdownMenu,
@@ -26,14 +27,21 @@ import { CreateTaskModal } from "~/src/features/tasks/components/create-task-mod
 import { getBreadcrumbs } from "~/src/lib/breadcrumbs";
 import { paths } from "~/src/lib/paths";
 
+import type { ShellModule } from "./app-sidebar";
 import { useCrumbs } from "./breadcrumb-context";
+import { CommandPalette } from "./command-palette";
 import { useShell } from "./shell-context";
+import { UserMenu } from "./user-menu";
 
 type Props = {
   enabledModules: string[];
+  modules: ShellModule[];
+  user: { name: string; email: string };
+  links: { settingsHref: string | null; membersHref: string | null };
 };
 
-export function TopBar({ enabledModules }: Props) {
+export function TopBar({ enabledModules, modules, user, links }: Props) {
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const pathname = usePathname();
   const crumbs = useCrumbs();
   const { refreshPage } = useShell();
@@ -50,7 +58,7 @@ export function TopBar({ enabledModules }: Props) {
   return (
     <header
       data-slot="top-bar"
-      className="sticky top-0 z-(--z-sticky) flex h-[calc(var(--control-h)+1.25rem)] items-center gap-3 rounded-t-2xl bg-surface/85 px-(--gutter) backdrop-blur-md"
+      className="sticky top-0 z-(--z-sticky) flex h-12 items-center gap-3 border-b border-hairline bg-canvas/85 px-(--gutter) backdrop-blur-md"
     >
       <SidebarTrigger />
       <div className="hidden min-w-0 flex-1 sm:block">
@@ -59,11 +67,25 @@ export function TopBar({ enabledModules }: Props) {
           items={getBreadcrumbs(pathname, crumbs)}
         />
       </div>
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Search or jump to"
+          className="hidden h-8 w-56 items-center gap-2 rounded-full border border-border-strong bg-surface px-3 text-left text-sm text-ink-3 outline-none transition-colors hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring md:flex"
+        >
+          <SearchIcon className="size-3.5" aria-hidden="true" />
+          <span className="flex-1 truncate">Search or jump to</span>
+          <Kbd>⌘K</Kbd>
+        </button>
         {canCreate ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm">
+              <Button
+                size="sm"
+                // One primary action per screen: on Today that is Start.
+                variant={pathname === paths.dashboard() ? "outline" : "default"}
+              >
                 <PlusIcon />
                 Create
                 <ChevronDownIcon className="opacity-70" />
@@ -89,7 +111,37 @@ export function TopBar({ enabledModules }: Props) {
           </DropdownMenu>
         ) : null}
         <NotificationPopover />
+        <UserMenu user={user} links={links} />
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        modules={modules}
+        actions={[
+          ...(canTask
+            ? [
+                {
+                  id: "task",
+                  label: "New task",
+                  run: () => setCreating("task"),
+                },
+              ]
+            : []),
+          ...(canDoc
+            ? [{ id: "doc", label: "New doc", run: () => setCreating("doc") }]
+            : []),
+          ...(canProject
+            ? [
+                {
+                  id: "project",
+                  label: "New project",
+                  run: () => setCreating("project"),
+                },
+              ]
+            : []),
+        ]}
+      />
 
       {/* The existing create dialogs, opened from the menu. */}
       <CreateTaskModal

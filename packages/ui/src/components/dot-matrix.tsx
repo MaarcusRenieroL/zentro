@@ -27,9 +27,9 @@ export function DotMatrix({
       role="img"
       aria-label={label}
       data-slot="dot-matrix"
-      className={cn("inline-flex flex-col gap-2", className)}
+      className={cn("flex w-full flex-col gap-2", className)}
     >
-      <div className="flex gap-1.5">
+      <div className="flex justify-between">
         {values.map((value, column) => {
           const lit = Math.round((value / peak) * rows);
 
@@ -40,7 +40,7 @@ export function DotMatrix({
                   key={row}
                   aria-hidden="true"
                   className={cn(
-                    "size-2 rounded-full",
+                    "size-2.5 rounded-full",
                     row < lit ? "bg-status-done" : "bg-pressed",
                   )}
                   style={
@@ -55,11 +55,11 @@ export function DotMatrix({
         })}
       </div>
       {labels ? (
-        <div className="flex gap-1.5">
+        <div className="flex justify-between">
           {labels.map((text, index) => (
             <span
               key={index}
-              className="w-2 text-center font-mono text-[10px] text-ink-3"
+              className="w-2.5 text-center font-mono text-[10px] text-ink-3"
             >
               {text}
             </span>

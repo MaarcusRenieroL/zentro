@@ -23,7 +23,9 @@ export default async function WorkspaceLayout({
     reachable,
   } = await getDashboardContext();
   const permissions = effectivePermissions(snapshot, getCatalogKeys());
-  const { modules } = buildShell(enabledModules, reachable);
+  const { modules } = buildShell(enabledModules, reachable, {
+    overview: snapshot.baseRole === "owner" || snapshot.baseRole === "admin",
+  });
   const sidebarOpen = (await cookies()).get("sidebar_state")?.value !== "false";
   const settings = modules.find((item) => item.id === "settings");
 

@@ -4,7 +4,15 @@ import type { ShellModule } from "~/src/components/shell/app-sidebar";
 
 type Reachable = Record<string, boolean>;
 
-const order = ["dashboard", "projects", "tasks", "docs", "settings"];
+const order = [
+  "dashboard",
+  "tasks",
+  "projects",
+  "docs",
+  "team",
+  "overview",
+  "settings",
+];
 
 /**
  * What the sidebar and the page-level navigation show, from the module
@@ -12,11 +20,16 @@ const order = ["dashboard", "projects", "tasks", "docs", "settings"];
  * module's sub-pages for its own pages. Permission and module gating is the
  * same as it has always been.
  */
-export function buildShell(enabledModules: string[], reachable: Reachable) {
+export function buildShell(
+  enabledModules: string[],
+  reachable: Reachable,
+  options: { overview?: boolean } = {},
+) {
   const enabled = new Set(enabledModules);
   const allowed = (link: { permission?: string }) =>
     !link.permission || (reachable[link.permission] ?? false);
   const modules: ShellModule[] = [];
+  const teamHref = "/settings/organization/members";
   const moduleNav: Record<string, ModuleNavLink[]> = {};
 
   for (const manifest of listModules()) {
@@ -26,7 +39,9 @@ export function buildShell(enabledModules: string[], reachable: Reachable) {
 
     if (manifest.id === "settings") {
       // Every settings page is one entry; the settings layout lists the pages.
-      const first = items.find(allowed);
+      const first =
+        items.find((item) => allowed(item) && item.href !== teamHref) ??
+        items.find(allowed);
 
       if (first) {
         modules.push({
@@ -46,13 +61,35 @@ export function buildShell(enabledModules: string[], reachable: Reachable) {
 
       modules.push({
         id: manifest.id,
-        label: item.label,
+        // The dashboard is the Today screen.
+        label: manifest.id === "dashboard" ? "Today" : item.label,
         href: item.href,
         icon: item.icon,
         base: manifest.basePath,
       });
       moduleNav[manifest.id] = (item.children ?? []).filter(allowed);
     }
+  }
+
+  // People live under settings, but they are a first-class place to go.
+  if (enabled.has("settings") && reachable["members.view"]) {
+    modules.push({
+      id: "team",
+      label: "Team",
+      href: teamHref,
+      icon: "Users",
+      base: teamHref,
+    });
+  }
+
+  if (options.overview) {
+    modules.push({
+      id: "overview",
+      label: "Overview",
+      href: "/overview",
+      icon: "Gauge",
+      base: "/overview",
+    });
   }
 
   modules.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));

@@ -10,7 +10,7 @@ type StatProps = {
   className?: string;
 };
 
-/** A big serif numeral with a mono label and an optional trend pill. */
+/** A big serif numeral, its label under it, and an optional trend pill. */
 export function Stat({
   label,
   value,
@@ -18,18 +18,19 @@ export function Stat({
   className,
 }: StatProps): ReactElement {
   return (
-    <div data-slot="stat" className={cn("flex flex-col gap-2", className)}>
-      <span className="eyebrow">{label}</span>
-      <div className="flex items-end gap-3">
-        <span className="font-serif-italic text-5xl leading-none text-ink tabular-nums">
-          {value}
+    <div
+      data-slot="stat"
+      className={cn("flex flex-col items-start gap-1.5", className)}
+    >
+      <span className="font-serif-italic text-5xl leading-none text-ink tabular-nums">
+        {value}
+      </span>
+      <span className="text-sm text-ink-2">{label}</span>
+      {trend ? (
+        <span className="mt-1 rounded-full bg-sunken px-2 py-0.5 font-mono text-[11px] text-ink-2">
+          {trend}
         </span>
-        {trend ? (
-          <span className="mb-1 rounded-full bg-success-subtle px-2 py-0.5 font-mono text-[11px] text-success-text">
-            {trend}
-          </span>
-        ) : null}
-      </div>
+      ) : null}
     </div>
   );
 }

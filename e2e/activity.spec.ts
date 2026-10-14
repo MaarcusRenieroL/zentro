@@ -73,11 +73,9 @@ test("actions show up in the feeds and the audit log, and exports download", asy
     page.getByText(/status from To do to In progress/i).first(),
   ).toBeVisible();
 
-  // Dashboard feed, in sentences.
+  // The Today team pulse says who started what.
   await page.goto("/dashboard");
-  await expect(
-    page.getByText(`moved ${task.key} from To do to In progress`),
-  ).toBeVisible();
+  await expect(page.getByText(`started ${task.key}`)).toBeVisible();
 
   // Project Activity tab.
   await page.goto(`/projects/${project.slug}`);
