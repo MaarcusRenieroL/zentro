@@ -6,11 +6,12 @@ import { cn } from "@zentro/ui/lib/utils";
 import { Spinner } from "../spinner";
 
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-transparent text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-[var(--duration-fast)] outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-canvas active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-danger [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-transparent text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-[var(--duration-fast)] outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-canvas active:not-aria-[haspopup]:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-signal-hover",
+        default:
+          "bg-primary text-primary-foreground enabled:hover:bg-signal-hover disabled:not-aria-busy:bg-pressed disabled:not-aria-busy:text-ink-disabled disabled:not-aria-busy:opacity-100",
         secondary:
           "border-transparent bg-sunken text-ink hover:bg-hover aria-expanded:bg-hover",
         outline:

@@ -27,6 +27,7 @@ import { Button } from "@zentro/ui/shadcn/button";
 import { cn } from "@zentro/ui/lib/utils";
 import { describeFocusReason, formatDueDate, rankTasks } from "@zentro/utils";
 
+import { CreateTaskModal } from "~/src/features/tasks/components/create-task-modal";
 import { useReachable } from "~/src/components/permissions/permission-provider";
 import type { DashboardWorkItem } from "~/src/lib/dashboard-data";
 import type { TodayData, TodayTask } from "~/src/lib/today-data";
@@ -117,6 +118,7 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
   const trpc = useTrpcClient();
   const router = useRouter();
   const canAssign = useReachable("tasks.assign");
+  const canCreateTask = useReachable("tasks.create");
   const [tasks, setTasks] = useState<TodayTask[]>(data.tasks);
   const [done, setDone] = useState(data.doneToday);
   const [celebrating, setCelebrating] = useState<string | null>(null);
@@ -175,6 +177,15 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
       new Date(item.dueAt).getTime() < today + dayMs &&
       new Date(item.dueAt).getTime() >= today,
   ).length;
+  const overdue = tasks.filter(
+    (item) => item.dueAt && new Date(item.dueAt).getTime() < today,
+  ).length;
+  const counts = [
+    overdue ? `${overdue} overdue` : null,
+    dueToday || !overdue ? `${dueToday} due today` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const planned =
     done +
     tasks.filter(
@@ -350,7 +361,7 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
       <header className="flex flex-col gap-2">
         <p className="eyebrow" suppressHydrationWarning>
           {greeting ? `${greeting.date} · ` : ""}
-          {dueToday} due today
+          {counts}
         </p>
         <h1 className="font-display text-4xl leading-tight text-ink sm:text-[2.5rem]">
           {greeting?.hello ?? "Welcome back"},{" "}
@@ -450,31 +461,48 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
               </div>
             ) : (
               <div className="flex min-h-72 flex-col items-start justify-center gap-4">
-                <h2 className="font-serif-italic text-6xl leading-none text-ink">
-                  Nothing left today.
-                </h2>
-                <p className="max-w-md text-base text-ink-2">
-                  {done > 0
-                    ? `${done} finished. The rest of the day is yours.`
-                    : "No open tasks are assigned to you."}
-                </p>
-                {data.unassignedNext && canAssign ? (
-                  <button
-                    type="button"
-                    onClick={pullNext}
-                    className="inline-flex items-center gap-2 rounded-sm text-sm text-ink-2 underline decoration-line-strong underline-offset-4 outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    Pull in <TaskKey>{data.unassignedNext.key}</TaskKey>{" "}
-                    {data.unassignedNext.name}
-                  </button>
-                ) : links.tasks ? (
-                  <Link
-                    href={links.tasks}
-                    className="text-sm text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink"
-                  >
-                    Look through all tasks
-                  </Link>
-                ) : null}
+                {data.hasAnyTasks ? (
+                  <>
+                    <h2 className="font-serif-italic text-6xl leading-none text-ink">
+                      Nothing left today.
+                    </h2>
+                    <p className="max-w-md text-base text-ink-2">
+                      {done > 0
+                        ? `${done} finished. The rest of the day is yours.`
+                        : "No open tasks are assigned to you."}
+                    </p>
+                    {data.unassignedNext && canAssign ? (
+                      <button
+                        type="button"
+                        onClick={pullNext}
+                        className="inline-flex items-center gap-2 rounded-sm text-sm text-ink-2 underline decoration-line-strong underline-offset-4 outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        Pull in <TaskKey>{data.unassignedNext.key}</TaskKey>{" "}
+                        {data.unassignedNext.name}
+                      </button>
+                    ) : links.tasks ? (
+                      <Link
+                        href={links.tasks}
+                        className="text-sm text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink"
+                      >
+                        Look through all tasks
+                      </Link>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="font-serif-italic text-6xl leading-none text-ink">
+                      No tasks yet.
+                    </h2>
+                    <p className="max-w-md text-base text-ink-2">
+                      Create the first task and it will show up here, ready to
+                      start.
+                    </p>
+                    {canCreateTask ? (
+                      <CreateTaskModal onTaskCreated={() => router.refresh()} />
+                    ) : null}
+                  </>
+                )}
               </div>
             )}
           </Tile>
@@ -522,11 +550,15 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
               <div className="flex flex-col gap-1">
                 <p className="text-sm text-ink">
                   {done === 0
-                    ? "Nothing finished yet."
+                    ? total === 0
+                      ? "Nothing on today's plan."
+                      : "Nothing finished yet."
                     : `${done} finished today.`}
                 </p>
                 <p className="font-mono text-xs text-ink-3">
-                  {Math.max(total - done, 0)} left on the plan
+                  {total === 0
+                    ? "Nothing planned"
+                    : `${Math.max(total - done, 0)} left on the plan`}
                 </p>
               </div>
             </div>

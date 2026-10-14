@@ -61,6 +61,8 @@ export type TodayData = {
   week: Array<{ label: string; count: number }>;
   /** The top open task nobody owns, offered when nothing is left. */
   unassignedNext: { key: string; name: string } | null;
+  /** Whether the organization has any task this person can see. */
+  hasAnyTasks: boolean;
 };
 
 function startOfToday() {
@@ -104,6 +106,7 @@ export async function getTodayData({
     pulse: [],
     week: [],
     unassignedNext: null,
+    hasAnyTasks: false,
   };
 
   if (!enabledModules.has("tasks")) return empty;
@@ -156,95 +159,107 @@ export async function getTodayData({
     visible,
   );
 
-  const [open, doneRows, pulseRows, weekRows, unowned] = await Promise.all([
-    memberId
-      ? db
-          .select({
-            id: tasks.id,
-            key: tasks.key,
-            name: tasks.name,
-            status: tasks.status,
-            priority: tasks.priority,
-            dueAt: tasks.dueAt,
-            createdAt: tasks.createdAt,
-            updatedAt: tasks.updatedAt,
-            projectName: projects.name,
-            projectSlug: projects.slug,
-          })
-          .from(tasks)
-          .innerJoin(projects, eq(projects.id, tasks.projectId))
-          .where(
-            and(
-              eq(tasks.organizationId, organizationId),
-              tasksVisible,
-              eq(tasks.assignedToMemberId, memberId),
-              ne(tasks.status, "done"),
-              isNull(tasks.deletedAt),
-              isNull(tasks.archivedAt),
-            ),
-          )
-          .orderBy(asc(tasks.createdAt))
-          .limit(60)
-      : Promise.resolve([]),
-    db
-      .select({ targetId: activityEvents.targetId })
-      .from(activityEvents)
-      .where(
-        and(
-          eq(activityEvents.organizationId, organizationId),
-          eq(activityEvents.targetType, "task"),
-          eq(activityEvents.action, "task.status_changed"),
-          eq(activityEvents.actorUserId, userId),
-          gte(activityEvents.createdAt, todayStart),
-          sql`${activityEvents.metadata} -> 'changes' -> 0 ->> 'to' = 'done'`,
-        ),
-      )
-      .groupBy(activityEvents.targetId),
-    db
-      .select({
-        id: activityEvents.id,
-        action: activityEvents.action,
-        targetId: activityEvents.targetId,
-        targetLabel: activityEvents.targetLabel,
-        metadata: activityEvents.metadata,
-        createdAt: activityEvents.createdAt,
-        actorName: users.name,
-        actorEmail: users.email,
-      })
-      .from(activityEvents)
-      .leftJoin(users, eq(users.id, activityEvents.actorUserId))
-      .where(and(taskEvent, gte(activityEvents.createdAt, todayStart)))
-      .orderBy(desc(activityEvents.createdAt), desc(activityEvents.id))
-      .limit(10),
-    db
-      .select({
-        day: sql<string>`to_char(${activityEvents.createdAt}, 'YYYY-MM-DD')`,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(activityEvents)
-      .where(and(taskEvent, gte(activityEvents.createdAt, weekStart)))
-      .groupBy(sql`to_char(${activityEvents.createdAt}, 'YYYY-MM-DD')`),
-    memberId
-      ? db
-          .select({ key: tasks.key, name: tasks.name })
-          .from(tasks)
-          .where(
-            and(
-              eq(tasks.organizationId, organizationId),
-              tasksVisible,
-              isNull(tasks.assignedToMemberId),
-              ne(tasks.status, "done"),
-              isNull(tasks.deletedAt),
-              isNull(tasks.archivedAt),
-            ),
-          )
-          .orderBy(
-            sql`case ${tasks.priority} when 'high' then 0 when 'medium' then 1 else 2 end`,
-            asc(tasks.createdAt),
-          )
-          .limit(1)
-      : Promise.resolve([]),
-  ]);
+  const [open, doneRows, pulseRows, weekRows, unowned, anyTask] =
+    await Promise.all([
+      memberId
+        ? db
+            .select({
+              id: tasks.id,
+              key: tasks.key,
+              name: tasks.name,
+              status: tasks.status,
+              priority: tasks.priority,
+              dueAt: tasks.dueAt,
+              createdAt: tasks.createdAt,
+              updatedAt: tasks.updatedAt,
+              projectName: projects.name,
+              projectSlug: projects.slug,
+            })
+            .from(tasks)
+            .innerJoin(projects, eq(projects.id, tasks.projectId))
+            .where(
+              and(
+                eq(tasks.organizationId, organizationId),
+                tasksVisible,
+                eq(tasks.assignedToMemberId, memberId),
+                ne(tasks.status, "done"),
+                isNull(tasks.deletedAt),
+                isNull(tasks.archivedAt),
+              ),
+            )
+            .orderBy(asc(tasks.createdAt))
+            .limit(60)
+        : Promise.resolve([]),
+      db
+        .select({ targetId: activityEvents.targetId })
+        .from(activityEvents)
+        .where(
+          and(
+            eq(activityEvents.organizationId, organizationId),
+            eq(activityEvents.targetType, "task"),
+            eq(activityEvents.action, "task.status_changed"),
+            eq(activityEvents.actorUserId, userId),
+            gte(activityEvents.createdAt, todayStart),
+            sql`${activityEvents.metadata} -> 'changes' -> 0 ->> 'to' = 'done'`,
+          ),
+        )
+        .groupBy(activityEvents.targetId),
+      db
+        .select({
+          id: activityEvents.id,
+          action: activityEvents.action,
+          targetId: activityEvents.targetId,
+          targetLabel: activityEvents.targetLabel,
+          metadata: activityEvents.metadata,
+          createdAt: activityEvents.createdAt,
+          actorName: users.name,
+          actorEmail: users.email,
+        })
+        .from(activityEvents)
+        .leftJoin(users, eq(users.id, activityEvents.actorUserId))
+        .where(and(taskEvent, gte(activityEvents.createdAt, todayStart)))
+        .orderBy(desc(activityEvents.createdAt), desc(activityEvents.id))
+        .limit(10),
+      db
+        .select({
+          day: sql<string>`to_char(${activityEvents.createdAt}, 'YYYY-MM-DD')`,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(activityEvents)
+        .where(and(taskEvent, gte(activityEvents.createdAt, weekStart)))
+        .groupBy(sql`to_char(${activityEvents.createdAt}, 'YYYY-MM-DD')`),
+      memberId
+        ? db
+            .select({ key: tasks.key, name: tasks.name })
+            .from(tasks)
+            .where(
+              and(
+                eq(tasks.organizationId, organizationId),
+                tasksVisible,
+                isNull(tasks.assignedToMemberId),
+                ne(tasks.status, "done"),
+                isNull(tasks.deletedAt),
+                isNull(tasks.archivedAt),
+              ),
+            )
+            .orderBy(
+              sql`case ${tasks.priority} when 'high' then 0 when 'medium' then 1 else 2 end`,
+              asc(tasks.createdAt),
+            )
+            .limit(1)
+        : Promise.resolve([]),
+      db
+        .select({ id: tasks.id })
+        .from(tasks)
+        .where(
+          and(
+            eq(tasks.organizationId, organizationId),
+            tasksVisible,
+            isNull(tasks.deletedAt),
+          ),
+        )
+        .limit(1),
+    ]);
 
   // When each in-progress task was started: its latest move into "in-progress".
   const runningIds = open
@@ -319,5 +334,6 @@ export async function getTodayData({
       })),
     week,
     unassignedNext: unowned[0] ?? null,
+    hasAnyTasks: anyTask.length > 0,
   };
 }
