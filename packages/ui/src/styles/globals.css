@@ -4,71 +4,90 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Zentro design tokens: "Soft layers".
+ * Zentro design tokens: "Momentum".
  *
- * Cool slate neutrals, one blue signal color that marks what is actionable or
- * active, rounded surfaces that sit on a tinted frame with soft shadows. Every
- * value below is checked by packages/ui/test/tokens.test.ts in both themes.
+ * Soft bento on a warm ground in light, near-black with a blue-violet cast in
+ * dark. Color means state: grey untouched, amber moving, cyan waiting, green
+ * finished, rose late. Violet (the accent) is only for the primary action,
+ * focus and links. Every pair below is checked by
+ * packages/ui/test/tokens.test.ts in both themes.
+ *
+ * Names kept from the earlier system so every component keeps working:
+ *   canvas = bg, surface = surface-1, sunken = surface-2, selected = accent-soft,
+ *   signal = accent, hairline = line, border-strong = control border.
+ * Theme is the `.dark` class (next-themes), density is `data-density`.
  */
 :root {
   color-scheme: light;
 
   /* Surfaces */
-  --canvas: oklch(0.945 0.014 255);
-  --surface: oklch(0.998 0.002 255);
-  --raised: oklch(0.999 0.002 255);
-  --sunken: oklch(0.972 0.008 255);
-  --sidebar: oklch(0.945 0.014 255);
-  --overlay: oklch(0.999 0.002 255);
-  --hover: oklch(0.955 0.009 255);
-  --selected: oklch(0.935 0.02 258);
+  --canvas: #f6f5f1;
+  --surface: #ffffff;
+  --raised: #ffffff;
+  --sunken: #efede8;
+  --pressed: #e5e2db;
+  --sidebar: #ffffff;
+  --overlay: #ffffff;
+  --hover: #efede8;
+  --selected: #ece8ff;
 
-  /* Borders */
-  --hairline: oklch(0.8 0.014 255);
-  --border-default: oklch(0.8 0.013 255);
-  --border-strong: oklch(0.62 0.014 255);
+  /* Borders. `line` is the hairline; `line-strong` is the Thread and dividers;
+     `border-strong` is the 3:1 control border for inputs. */
+  --hairline: #e4e1da;
+  --line-strong: #c9c6bd;
+  --border-default: #d4d1c8;
+  --border-strong: #8a8780;
 
   /* Text */
-  --ink: oklch(0.22 0.012 255);
-  --ink-2: oklch(0.4 0.014 255);
-  --ink-3: oklch(0.48 0.014 255);
-  --ink-disabled: oklch(0.64 0.01 255);
-  --ink-inverse: oklch(0.975 0.006 255);
+  --ink: #17161c;
+  --ink-2: #55526a;
+  --ink-3: #66647c;
+  --ink-disabled: #a4a1b3;
+  --ink-inverse: #f2f2f7;
 
-  /* Signal (accent) */
-  --signal: oklch(0.48 0.19 258);
-  --signal-hover: oklch(0.43 0.2 258);
-  --signal-strong: oklch(0.38 0.18 258);
-  --signal-subtle: oklch(0.94 0.03 258);
-  --on-signal: oklch(0.99 0.004 255);
+  /* Accent ("signal") */
+  --signal: #5b3fe0;
+  --signal-hover: #4d33c7;
+  --signal-strong: #3e28a8;
+  --signal-subtle: #ece8ff;
+  --on-signal: #ffffff;
 
-  /* Semantic scales: subtle background, solid, text, text on solid */
-  --success-subtle: oklch(0.95 0.045 150);
-  --success: oklch(0.52 0.13 150);
-  --success-text: oklch(0.38 0.1 150);
-  --on-success: oklch(0.99 0.004 255);
-  --warning-subtle: oklch(0.955 0.055 80);
-  --warning: oklch(0.7 0.14 75);
-  --warning-text: oklch(0.42 0.09 65);
-  --on-warning: oklch(0.2 0.03 255);
-  --danger-subtle: oklch(0.95 0.035 25);
-  --danger: oklch(0.52 0.19 28);
-  --danger-text: oklch(0.46 0.17 28);
-  --on-danger: oklch(0.99 0.004 255);
-  --info-subtle: oklch(0.95 0.03 212);
-  --info: oklch(0.52 0.14 212);
-  --info-text: oklch(0.4 0.12 212);
-  --on-info: oklch(0.99 0.004 255);
+  /* State scales: subtle background, solid, text, text on solid */
+  --success-subtle: #ddf5ea;
+  --success: #087a4e;
+  --success-text: #086a44;
+  --on-success: #ffffff;
+  --warning-subtle: #fff0d6;
+  --warning: #a35c00;
+  --warning-text: #8a4d00;
+  --on-warning: #ffffff;
+  --danger-subtle: #ffe3e9;
+  --danger: #c21f43;
+  --danger-text: #b01a3b;
+  --on-danger: #ffffff;
+  --info-subtle: #ddf1fa;
+  --info: #0b7fa8;
+  --info-text: #086487;
+  --on-info: #ffffff;
 
-  /* Status and priority glyphs */
+  /* Task state glyphs. Priority is ink, never a state color. */
   --status-backlog: var(--ink-3);
-  --status-todo: var(--ink-2);
-  --status-progress: oklch(0.62 0.15 75);
+  --status-todo: #8a8aa0;
+  --status-progress: var(--warning);
   --status-review: var(--info);
   --status-done: var(--success);
   --priority-low: var(--ink-3);
   --priority-medium: var(--ink-2);
-  --priority-high: oklch(0.55 0.17 40);
+  --priority-high: var(--ink);
+
+  /* Module tint tiles: identity colors for tile headers and icon chips only */
+  --tint-projects: #dcebff;
+  --tint-tasks: #e9e4ff;
+  --tint-docs: #ffe6d2;
+  --tint-teams: #d8f3e6;
+  --tint-audit: #ffdde4;
+  --tint-line-alpha: 55%;
+  --tint-chip: #ffffff;
 
   /* Categorical palette (teams, projects): solid, subtle background, text */
   --cat-l: 0.62;
@@ -78,66 +97,87 @@
   --cat-text-l: 0.4;
   --cat-text-c: 0.09;
 
-  /* Charts: muted, derived from the same system */
-  --chart-1: oklch(0.56 0.1 258);
-  --chart-2: oklch(0.6 0.08 212);
-  --chart-3: oklch(0.6 0.09 150);
-  --chart-4: oklch(0.7 0.1 75);
-  --chart-5: oklch(0.58 0.1 28);
+  /* Charts */
+  --chart-1: #5b3fe0;
+  --chart-2: #0b7fa8;
+  --chart-3: #087a4e;
+  --chart-4: #a35c00;
+  --chart-5: #c21f43;
 
-  --focus-ring: oklch(0.48 0.19 258);
-  --selection: oklch(0.88 0.06 258);
-  --scrim: oklch(0.2 0.01 255 / 40%);
-  --shadow-color: 255 30% 12%;
+  --focus-ring: #5b3fe0;
+  --selection: #d9d1ff;
+  --scrim: rgb(23 22 28 / 40%);
+  --shadow-color: 250 14% 10%;
+  --shadow-k: 1;
+  --edge-highlight: inset 0 1px 0 rgb(255 255 255 / 0%);
+
+  /* Glow: a faint lavender wash in light, a violet halo in dark */
+  --halo: radial-gradient(
+    closest-side,
+    rgb(91 63 224 / 14%),
+    rgb(91 63 224 / 0%)
+  );
+  --beam: rgb(91 63 224 / 6%);
+  --done-glow: rgb(8 122 78 / 35%);
 }
 
 .dark {
   color-scheme: dark;
 
-  --canvas: oklch(0.14 0.008 255);
-  --surface: oklch(0.2 0.009 255);
-  --raised: oklch(0.245 0.008 255);
-  --sunken: oklch(0.17 0.008 255);
-  --sidebar: oklch(0.14 0.008 255);
-  --overlay: oklch(0.265 0.009 255);
-  --hover: oklch(0.245 0.008 255);
-  --selected: oklch(0.29 0.04 258);
+  --canvas: #0a0a0f;
+  --surface: #111118;
+  --raised: #181821;
+  --sunken: #181821;
+  --pressed: #20202c;
+  --sidebar: #111118;
+  --overlay: #181821;
+  --hover: #181821;
+  --selected: #1e1838;
 
-  --hairline: oklch(0.5 0.009 255);
-  --border-default: oklch(0.52 0.01 255);
-  --border-strong: oklch(0.58 0.01 255);
+  --hairline: #25253a;
+  --line-strong: #3a3a52;
+  --border-default: #30304a;
+  --border-strong: #6a6a88;
 
-  --ink: oklch(0.95 0.006 255);
-  --ink-2: oklch(0.78 0.008 255);
-  --ink-3: oklch(0.68 0.008 255);
-  --ink-disabled: oklch(0.5 0.008 255);
-  --ink-inverse: oklch(0.17 0.006 255);
+  --ink: #f2f2f7;
+  --ink-2: #a0a0b4;
+  --ink-3: #8686a0;
+  --ink-disabled: #5c5c72;
+  --ink-inverse: #0a0a0f;
 
-  --signal: oklch(0.7 0.17 258);
-  --signal-hover: oklch(0.75 0.16 258);
-  --signal-strong: oklch(0.82 0.12 258);
-  --signal-subtle: oklch(0.3 0.06 258);
-  --on-signal: oklch(0.15 0.02 258);
+  --signal: #9b7fff;
+  --signal-hover: #ad96ff;
+  --signal-strong: #c4b3ff;
+  --signal-subtle: #1e1838;
+  --on-signal: #0a0a0f;
 
-  --success-subtle: oklch(0.29 0.05 150);
-  --success: oklch(0.7 0.15 150);
-  --success-text: oklch(0.82 0.13 150);
-  --on-success: oklch(0.15 0.02 150);
-  --warning-subtle: oklch(0.3 0.055 75);
-  --warning: oklch(0.78 0.14 78);
-  --warning-text: oklch(0.86 0.12 80);
-  --on-warning: oklch(0.18 0.03 255);
-  --danger-subtle: oklch(0.29 0.06 25);
-  --danger: oklch(0.68 0.19 28);
-  --danger-text: oklch(0.78 0.15 28);
-  --on-danger: oklch(0.15 0.02 28);
-  --info-subtle: oklch(0.29 0.05 212);
-  --info: oklch(0.72 0.13 212);
-  --info-text: oklch(0.82 0.1 212);
-  --on-info: oklch(0.15 0.02 212);
+  --success-subtle: #0f2a22;
+  --success: #2ee59d;
+  --success-text: #5cf0b6;
+  --on-success: #0a0a0f;
+  --warning-subtle: #2b2110;
+  --warning: #ffb224;
+  --warning-text: #ffc457;
+  --on-warning: #0a0a0f;
+  --danger-subtle: #2e1019;
+  --danger: #ff5c7a;
+  --danger-text: #ff8099;
+  --on-danger: #0a0a0f;
+  --info-subtle: #0e2430;
+  --info: #4cc9f0;
+  --info-text: #7cd8f5;
+  --on-info: #0a0a0f;
 
-  --status-progress: oklch(0.78 0.14 78);
-  --priority-high: oklch(0.72 0.15 40);
+  --status-todo: #6b6b82;
+
+  /* Tints sit at about 14% over surface, with a tint-colored border at 30% */
+  --tint-projects: color-mix(in srgb, #dcebff 14%, var(--surface));
+  --tint-tasks: color-mix(in srgb, #e9e4ff 14%, var(--surface));
+  --tint-docs: color-mix(in srgb, #ffe6d2 14%, var(--surface));
+  --tint-teams: color-mix(in srgb, #d8f3e6 14%, var(--surface));
+  --tint-audit: color-mix(in srgb, #ffdde4 14%, var(--surface));
+  --tint-line-alpha: 30%;
+  --tint-chip: #20202c;
 
   --cat-l: 0.72;
   --cat-c: 0.12;
@@ -146,16 +186,26 @@
   --cat-text-l: 0.84;
   --cat-text-c: 0.1;
 
-  --chart-1: oklch(0.7 0.11 258);
-  --chart-2: oklch(0.72 0.09 212);
-  --chart-3: oklch(0.72 0.1 150);
-  --chart-4: oklch(0.8 0.1 78);
-  --chart-5: oklch(0.7 0.11 28);
+  --chart-1: #9b7fff;
+  --chart-2: #4cc9f0;
+  --chart-3: #2ee59d;
+  --chart-4: #ffb224;
+  --chart-5: #ff5c7a;
 
-  --focus-ring: oklch(0.75 0.15 258);
-  --selection: oklch(0.4 0.09 258);
-  --scrim: oklch(0.05 0.005 255 / 60%);
-  --shadow-color: 0 0% 0%;
+  --focus-ring: #9b7fff;
+  --selection: #3a2a78;
+  --scrim: rgb(0 0 0 / 60%);
+  --shadow-color: 250 30% 2%;
+  --shadow-k: 0.5;
+  --edge-highlight: inset 0 1px 0 rgb(255 255 255 / 5%);
+
+  --halo: radial-gradient(
+    closest-side,
+    rgb(155 127 255 / 34%),
+    rgb(155 127 255 / 0%)
+  );
+  --beam: rgb(155 127 255 / 10%);
+  --done-glow: rgb(46 229 157 / 45%);
 }
 
 /* Categorical hues */
@@ -170,60 +220,69 @@
   --cat-8-h: 350;
 }
 
-/* Density: Compact is the default; Comfortable is an option. */
+/* Density: Comfortable is the default; Compact is an option. */
 :root,
-[data-density="compact"] {
-  --control-h: 2rem;
-  --row-table: 2rem;
-  --row-list: 2.25rem;
-  --nav-item: 1.75rem;
-  --density-body: 0.8125rem;
-  --density-label: 0.75rem;
-  --gutter: 1.75rem;
-  --card-pad: 1rem;
-  --gap: 0.875rem;
+[data-density="comfortable"] {
+  --control-h: 2.75rem;
+  --row-h: 3rem;
+  --row-table: 3rem;
+  --row-list: 3rem;
+  --nav-item: 2.5rem;
+  --density-body: 0.9375rem;
+  --density-body-lh: 1.4667;
+  --density-label: 0.8125rem;
+  --gutter: 2rem;
+  --pad-tile: 1.5rem;
+  --card-pad: 1.5rem;
+  --gap: 1rem;
   --title-size: 2rem;
+  --sidebar-w: 16.5rem;
 }
 
-[data-density="comfortable"] {
-  --control-h: 2.25rem;
-  --row-table: 2.5rem;
-  --row-list: 2.75rem;
-  --nav-item: 2rem;
-  --density-body: 0.875rem;
-  --density-label: 0.78125rem;
-  --gutter: 2rem;
-  --card-pad: 1.25rem;
-  --gap: 1rem;
-  --title-size: 2.25rem;
+[data-density="compact"] {
+  --control-h: 2rem;
+  --row-h: 2.25rem;
+  --row-table: 2.25rem;
+  --row-list: 2.25rem;
+  --nav-item: 1.875rem;
+  --density-body: 0.8125rem;
+  --density-body-lh: 1.5385;
+  --density-label: 0.75rem;
+  --gutter: 1.5rem;
+  --pad-tile: 1rem;
+  --card-pad: 1rem;
+  --gap: 0.5rem;
+  --title-size: 1.75rem;
+  --sidebar-w: 14rem;
 }
 
 /* Touch devices: controls stay comfortable to hit, whatever the setting. */
 @media (pointer: coarse) {
   :root,
   [data-density] {
-    --control-h: 2.5rem;
-    --nav-item: 2.5rem;
-    --row-table: 2.75rem;
-    --row-list: 2.75rem;
+    --control-h: 2.75rem;
+    --nav-item: 2.75rem;
+    --row-table: 3rem;
+    --row-list: 3rem;
   }
 }
 
 @theme inline {
   /* Type */
   --font-sans:
-    var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    var(--font-geist), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono:
-    var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas,
     monospace;
   --font-display:
-    var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui,
+    var(--font-bricolage), var(--font-geist), ui-sans-serif, system-ui,
     sans-serif;
+  --font-serif: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
 
   /* The two text sizes the UI uses follow the density setting. */
   --text-sm: var(--density-body);
-  --text-sm--line-height: 1.45;
+  --text-sm--line-height: var(--density-body-lh);
   --text-xs: var(--density-label);
   --text-xs--line-height: 1.4;
 
@@ -234,6 +293,14 @@
   --color-sunken: var(--sunken);
   --color-overlay: var(--overlay);
   --color-hover: var(--hover);
+  --color-pressed: var(--pressed);
+  --color-line-strong: var(--line-strong);
+  --color-tint-projects: var(--tint-projects);
+  --color-tint-tasks: var(--tint-tasks);
+  --color-tint-docs: var(--tint-docs);
+  --color-tint-teams: var(--tint-teams);
+  --color-tint-audit: var(--tint-audit);
+  --color-tint-chip: var(--tint-chip);
   --color-selected: var(--selected);
   --color-hairline: var(--hairline);
   --color-border-default: var(--border-default);
@@ -312,28 +379,30 @@
   --color-sidebar-border: var(--hairline);
   --color-sidebar-ring: var(--focus-ring);
 
-  /* Radii: controls 6px, cards 10px, dialogs 14px */
+  /* Radii: small chip 8, control 12, tile 20, hero tile 28, pill 999 */
   --radius-xs: 6px;
   --radius-sm: 8px;
-  --radius-md: 10px;
+  --radius-md: 12px;
   --radius-lg: 14px;
-  --radius-xl: 18px;
-  --radius-2xl: 26px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
 
-  /* Shadows are for floating layers only */
-  --shadow-xs: 0 1px 1px hsl(var(--shadow-color) / 5%);
+  /* Shadows are for floating layers only; dark mode halves them and gets its
+     depth from lighter surfaces plus a faint top highlight. */
+  --shadow-xs: 0 1px 1px hsl(var(--shadow-color) / calc(5% * var(--shadow-k)));
   --shadow-sm:
-    0 1px 2px hsl(var(--shadow-color) / 7%),
-    0 2px 6px -2px hsl(var(--shadow-color) / 8%);
+    0 1px 2px hsl(var(--shadow-color) / calc(7% * var(--shadow-k))),
+    0 2px 6px -2px hsl(var(--shadow-color) / calc(8% * var(--shadow-k)));
   --shadow-md:
-    0 2px 4px hsl(var(--shadow-color) / 6%),
-    0 8px 20px -6px hsl(var(--shadow-color) / 12%);
+    0 2px 4px hsl(var(--shadow-color) / calc(6% * var(--shadow-k))),
+    0 8px 20px -6px hsl(var(--shadow-color) / calc(12% * var(--shadow-k)));
   --shadow-lg:
-    0 8px 24px -6px hsl(var(--shadow-color) / 16%),
-    0 2px 6px hsl(var(--shadow-color) / 8%);
+    0 8px 24px -6px hsl(var(--shadow-color) / calc(16% * var(--shadow-k))),
+    0 2px 6px hsl(var(--shadow-color) / calc(8% * var(--shadow-k)));
   --shadow-xl:
-    0 16px 40px -8px hsl(var(--shadow-color) / 22%),
-    0 4px 10px hsl(var(--shadow-color) / 10%);
+    0 16px 40px -8px hsl(var(--shadow-color) / calc(22% * var(--shadow-k))),
+    0 4px 10px hsl(var(--shadow-color) / calc(10% * var(--shadow-k)));
 
   /* Layers */
   --z-sticky: 20;
@@ -347,6 +416,9 @@
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --animate-fade-up: fade-up 200ms var(--ease-out) both;
+  --animate-pulse-in: pulse-in 240ms var(--ease-out) both;
+  --animate-live: live-dot 2s ease-in-out infinite;
+  --animate-ring-pulse: ring-pulse 700ms var(--ease-out) both;
 }
 
 @keyframes fade-up {
@@ -363,8 +435,9 @@
 @layer base {
   :root {
     --duration-fast: 120ms;
-    --duration-base: 180ms;
-    --duration-slow: 220ms;
+    --duration-base: 160ms;
+    --duration-slow: 200ms;
+    --duration-fill: 600ms;
   }
 
   * {
@@ -430,8 +503,8 @@
 
 @layer utilities {
   .font-display {
-    font-weight: 600;
-    letter-spacing: -0.025em;
+    font-weight: 700;
+    letter-spacing: -0.03em;
   }
 
   .font-figure {
@@ -440,6 +513,108 @@
   }
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Editorial accent: greeting, one headline word, empty states, big numerals */
+  .font-serif-italic {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* Mono eyebrow, counts and dates */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* Bento tile: hairline border, big radius, faint top highlight in dark */
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--edge-highlight);
+  }
+  .tile-hero {
+    border-radius: var(--radius-2xl);
+  }
+
+  /* Glass tile for dark showcase surfaces */
+  .glass {
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--edge-highlight);
+    backdrop-filter: blur(14px);
+  }
+
+  /* The one halo per screen */
+  .halo {
+    background: var(--halo);
+    pointer-events: none;
+  }
+
+  /* Faint vertical light beams (landing only) */
+  .beams {
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent 0 12%,
+        var(--beam) 12.5%,
+        transparent 18%
+      ),
+      linear-gradient(
+        90deg,
+        transparent 0 42%,
+        var(--beam) 46%,
+        transparent 52%
+      ),
+      linear-gradient(
+        90deg,
+        transparent 0 74%,
+        var(--beam) 79%,
+        transparent 84%
+      );
+    mask-image: linear-gradient(to bottom, black, transparent 85%);
+  }
+
+  .hide-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+@keyframes pulse-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes live-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--done-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+@keyframes ring-pulse {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
   }
 }
 

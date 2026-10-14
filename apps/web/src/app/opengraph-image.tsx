@@ -11,7 +11,7 @@ export const contentType = "image/png";
 
 export default async function OpengraphImage() {
   const serif = await readFile(
-    path.join(process.cwd(), "src/app/fonts/inter-latin-700-normal.woff"),
+    path.join(process.cwd(), "src/app/fonts/geist-latin-700-normal.woff"),
   );
 
   return new ImageResponse(
@@ -45,7 +45,7 @@ export default async function OpengraphImage() {
       </div>
       <div
         style={{
-          fontFamily: "Inter",
+          fontFamily: "Geist",
           fontSize: 112,
           lineHeight: 1.02,
           maxWidth: 940,
@@ -56,7 +56,7 @@ export default async function OpengraphImage() {
     </div>,
     {
       ...size,
-      fonts: [{ name: "Inter", data: serif, style: "normal" }],
+      fonts: [{ name: "Geist", data: serif, style: "normal" }],
     },
   );
 }

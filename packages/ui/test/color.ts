@@ -90,11 +90,35 @@ export function resolve(
       expand(read(key)),
     );
   const value = expand(read(name.startsWith("--") ? name : `--${name}`));
+  const hex = value.match(/^#([0-9a-f]{6})$/i);
+
+  if (hex) return hexToLinear(hex[1]!);
+
   const match = value.match(/oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
 
   if (!match) throw new Error(`Cannot parse ${name}: ${value}`);
 
   return oklchToLinear(Number(match[1]), Number(match[2]), Number(match[3]));
+}
+
+function hexToLinear(hex: string): Rgb {
+  const channel = (index: number) => {
+    const value = parseInt(hex.slice(index, index + 2), 16) / 255;
+
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+
+  return [channel(0), channel(2), channel(4)];
+}
+
+/** OKLab lightness of a token, for hex and oklch values alike. */
+export function lightnessOf(theme: Theme, name: string, extra = {}) {
+  const [r, g, b] = resolve(theme, name, extra);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+
+  return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
 }
 
 const luminance = ([r, g, b]: Rgb) => 0.2126 * r + 0.7152 * g + 0.0722 * b;

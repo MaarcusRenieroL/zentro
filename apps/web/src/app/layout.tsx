@@ -14,12 +14,12 @@ import "./globals.css";
 import { ThemeProvider } from "../components/providers/theme-provider";
 import { AppTRPCProvider } from "../components/providers/trpc-provider";
 
-// Inter for the interface, Bricolage Grotesque for headlines, JetBrains Mono
-// for keys and figures. Variable fonts, self-hosted so builds never need the
-// network.
+// Geist for the interface, Bricolage Grotesque for display type, Geist Mono for
+// keys, timers and figures, Instrument Serif for the editorial accent.
+// Variable fonts, self-hosted so builds never need the network.
 const sans = localFont({
-  src: "./fonts/inter-latin-wght-normal.woff2",
-  variable: "--font-inter",
+  src: "./fonts/geist-latin-wght-normal.woff2",
+  variable: "--font-geist",
   weight: "100 900",
   display: "swap",
 });
@@ -30,9 +30,25 @@ const display = localFont({
   display: "swap",
 });
 const mono = localFont({
-  src: "./fonts/jetbrains-mono-latin-wght-normal.woff2",
-  variable: "--font-jetbrains-mono",
-  weight: "100 800",
+  src: "./fonts/geist-mono-latin-wght-normal.woff2",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+  display: "swap",
+});
+const serif = localFont({
+  src: [
+    {
+      path: "./fonts/instrument-serif-latin-400-normal.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/instrument-serif-latin-400-italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+  ],
+  variable: "--font-instrument-serif",
   display: "swap",
 });
 
@@ -64,7 +80,7 @@ export default async function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-density={density}
-      className={`h-full antialiased ${sans.variable} ${mono.variable} ${display.variable}`}
+      className={`h-full antialiased ${sans.variable} ${mono.variable} ${display.variable} ${serif.variable}`}
     >
       <body className="font-sans antialiased">
         <ThemeProvider

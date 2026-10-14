@@ -22,7 +22,7 @@ export function applyDensity(density: Density) {
 }
 
 export function useDensity() {
-  const [density, setDensity] = useState<Density>("compact");
+  const [density, setDensity] = useState<Density>("comfortable");
 
   useEffect(() => {
     setDensity(parseDensity(document.documentElement.dataset.density));
@@ -83,10 +83,10 @@ export const DensityMenuItems: FC = () => {
         value={density}
         onValueChange={(value) => setDensity(parseDensity(value))}
       >
-        <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
         <DropdownMenuRadioItem value="comfortable">
           Comfortable
         </DropdownMenuRadioItem>
+        <DropdownMenuRadioItem value="compact">Compact</DropdownMenuRadioItem>
       </DropdownMenuRadioGroup>
     </>
   );
