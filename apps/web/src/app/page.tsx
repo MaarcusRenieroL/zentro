@@ -9,9 +9,13 @@ import { LandingFooter } from "../components/landing-page/footer";
 import { Hero } from "../components/landing-page/hero";
 import { LandingShell } from "../components/landing-page/landing-shell";
 import {
+  ModulesSection,
+  ReplacesSection,
+} from "../components/landing-page/modules-section";
+import { PickSection } from "../components/landing-page/pick-section";
+import {
   ClosingCta,
   ControlSection,
-  FeatureGrid,
   TeamSection,
   ThreadSection,
   TodaySection,
@@ -28,11 +32,13 @@ export default async function Home(): Promise<JSX.Element> {
     <LandingShell>
       <main>
         <Hero />
+        <ModulesSection />
+        <ReplacesSection />
         <TodaySection />
         <TeamSection />
         <ThreadSection />
         <ControlSection />
-        <FeatureGrid />
+        <PickSection />
         <ClosingCta />
       </main>
       <LandingFooter />

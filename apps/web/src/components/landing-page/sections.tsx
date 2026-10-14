@@ -1,11 +1,7 @@
 import Link from "next/link";
 import {
   BookOpenIcon,
-  CalendarIcon,
   CheckIcon,
-  Columns3Icon,
-  CommandIcon,
-  ListIcon,
   MessageSquareIcon,
   PaperclipIcon,
   VideoIcon,
@@ -56,7 +52,7 @@ function Heading({
 export function TodaySection() {
   return (
     <section className="border-y border-hairline bg-surface px-5 py-24 sm:py-32">
-      <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-center gap-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <Reveal>
           <Heading
             id="today"
@@ -153,7 +149,7 @@ export function TeamSection() {
             See the team
           </Heading>
         </Reveal>
-        <div className="mt-14 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <div className="mt-14 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <Reveal>
             <Tile title="Team pulse" className="h-full">
               <TeamPulse
@@ -248,7 +244,7 @@ const thread = [
 export function ThreadSection() {
   return (
     <section className="border-y border-hairline bg-surface px-5 py-24 sm:py-32">
-      <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
+      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-center gap-14 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
         <Reveal className="order-2 lg:order-1">
           <div className="tile tile-hero p-6 sm:p-10">
             <Thread>
@@ -315,62 +311,64 @@ export function ControlSection() {
             Roles and the audit
           </Heading>
         </Reveal>
-        <div className="mt-14 grid gap-4 lg:grid-cols-2">
+        <div className="mt-14 grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-2">
           <Reveal>
             <Tile title="Permission matrix" flush className="h-full">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-hairline">
-                    <th
-                      scope="col"
-                      className="px-(--pad-tile) py-3 text-left font-medium text-ink-2"
-                    >
-                      Permission
-                    </th>
-                    {roles.map((role) => (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[22rem] text-sm">
+                  <thead>
+                    <tr className="border-b border-hairline">
                       <th
-                        key={role}
                         scope="col"
-                        className="px-2 py-3 text-center font-medium text-ink-2"
+                        className="px-(--pad-tile) py-3 text-left font-medium text-ink-2"
                       >
-                        {role}
+                        Permission
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {grants.map(([label, row]) => (
-                    <tr
-                      key={label}
-                      className="border-b border-hairline last:border-b-0"
-                    >
-                      <th
-                        scope="row"
-                        className="px-(--pad-tile) py-3 text-left font-normal text-ink"
-                      >
-                        {label}
-                      </th>
-                      {row.map((granted, index) => (
-                        <td key={index} className="px-2 py-3 text-center">
-                          {granted ? (
-                            <CheckIcon
-                              className="mx-auto size-4 text-status-done"
-                              aria-label="Allowed"
-                            />
-                          ) : (
-                            <span
-                              className="font-mono text-ink-disabled"
-                              aria-label="Not allowed"
-                            >
-                              –
-                            </span>
-                          )}
-                        </td>
+                      {roles.map((role) => (
+                        <th
+                          key={role}
+                          scope="col"
+                          className="px-2 py-3 text-center font-medium text-ink-2"
+                        >
+                          {role}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {grants.map(([label, row]) => (
+                      <tr
+                        key={label}
+                        className="border-b border-hairline last:border-b-0"
+                      >
+                        <th
+                          scope="row"
+                          className="px-(--pad-tile) py-3 text-left font-normal text-ink"
+                        >
+                          {label}
+                        </th>
+                        {row.map((granted, index) => (
+                          <td key={index} className="px-2 py-3 text-center">
+                            {granted ? (
+                              <CheckIcon
+                                className="mx-auto size-4 text-status-done"
+                                aria-label="Allowed"
+                              />
+                            ) : (
+                              <span
+                                className="font-mono text-ink-disabled"
+                                aria-label="Not allowed"
+                              >
+                                –
+                              </span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </Tile>
           </Reveal>
           <Reveal delay={0.1}>
@@ -409,139 +407,6 @@ export function ControlSection() {
                 ))}
               </ol>
             </Tile>
-          </Reveal>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function GlowTile({
-  children,
-  caption,
-  className,
-}: {
-  children: ReactNode;
-  caption: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "glass relative isolate flex flex-col justify-between gap-8 overflow-hidden p-7",
-        className,
-      )}
-    >
-      <div
-        aria-hidden="true"
-        className="halo absolute top-0 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 -translate-y-1/3 opacity-80"
-      />
-      <div className="flex min-h-40 items-center justify-center">
-        {children}
-      </div>
-      <p className="text-sm text-ink-2">{caption}</p>
-    </div>
-  );
-}
-
-/** Four glass tiles, each with its own short caption. */
-export function FeatureGrid() {
-  return (
-    <section className="border-y border-hairline bg-surface px-5 py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl">
-        <Reveal>
-          <Heading
-            accent="way you want"
-            lead="Zentro bends to how your team works, without turning into a project of its own."
-          >
-            See your work the
-          </Heading>
-        </Reveal>
-        <div className="mt-14 grid gap-4 md:grid-cols-2">
-          <Reveal>
-            <GlowTile
-              caption={
-                <>
-                  <strong className="font-medium text-ink">
-                    Board, list or calendar.
-                  </strong>{" "}
-                  Show only the tasks assigned to you.
-                </>
-              }
-            >
-              <div className="-rotate-2 flex flex-col gap-2">
-                {[Columns3Icon, ListIcon, CalendarIcon].map((Icon, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 rounded-xl border border-hairline bg-surface px-4 py-3 text-sm text-ink"
-                    style={{ marginLeft: index * 14 }}
-                  >
-                    <Icon className="size-4 text-ink-3" aria-hidden="true" />
-                    {["Board", "List", "Calendar"][index]}
-                  </div>
-                ))}
-              </div>
-            </GlowTile>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <GlowTile
-              caption={
-                <>
-                  <strong className="font-medium text-ink">
-                    Jump anywhere.
-                  </strong>{" "}
-                  Press the shortcut and type where you want to go.
-                </>
-              }
-            >
-              <div className="flex w-full max-w-xs items-center gap-3 rounded-full border border-signal bg-surface px-4 py-3 text-sm text-ink-3">
-                <CommandIcon className="size-4" aria-hidden="true" />
-                <span className="flex-1">Go to, create, or switch theme</span>
-                <Kbd>⌘K</Kbd>
-              </div>
-            </GlowTile>
-          </Reveal>
-          <Reveal>
-            <GlowTile
-              caption={
-                <>
-                  <strong className="font-medium text-ink">
-                    Docs beside the work.
-                  </strong>{" "}
-                  Write with the six actions you use every day.
-                </>
-              }
-            >
-              <div className="w-full max-w-xs rounded-xl border border-hairline bg-surface p-4">
-                <p className="font-display text-xl text-ink">Launch notes</p>
-                <p className="mt-2 text-sm text-ink-2">
-                  We send Thursday, after{" "}
-                  <strong className="font-semibold text-ink">legal</strong>{" "}
-                  signs off.
-                </p>
-              </div>
-            </GlowTile>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <GlowTile
-              caption={
-                <>
-                  <strong className="font-medium text-ink">
-                    Comfortable or compact.
-                  </strong>{" "}
-                  Light, dark, or whatever your system says.
-                </>
-              }
-            >
-              <div className="flex gap-3">
-                <div className="rounded-xl border border-hairline bg-surface px-5 py-4 text-sm text-ink">
-                  Comfortable
-                </div>
-                <div className="rounded-xl border border-hairline bg-surface px-4 py-2 text-xs text-ink-2">
-                  Compact
-                </div>
-              </div>
-            </GlowTile>
           </Reveal>
         </div>
       </div>

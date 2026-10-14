@@ -108,7 +108,7 @@ export function HeroProduct() {
           zentro / today
         </span>
       </div>
-      <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <Tile hero>
           <div
             key={`${round}`}

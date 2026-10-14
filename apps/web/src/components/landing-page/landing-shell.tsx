@@ -13,6 +13,7 @@ import { paths } from "~/src/lib/paths";
 const storageKey = "zentro-landing-theme";
 
 const links = [
+  { label: "Modules", href: "#modules" },
   { label: "Today", href: "#today" },
   { label: "Team", href: "#team" },
   { label: "Thread", href: "#thread" },
@@ -52,7 +53,7 @@ export function LandingShell({ children }: { children: ReactNode }) {
     <div
       className={cn(
         theme === "dark" ? "dark" : "light",
-        "min-h-screen bg-canvas text-ink",
+        "min-h-screen overflow-x-clip bg-canvas text-ink",
       )}
     >
       <header className="sticky top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-xl">

@@ -25,8 +25,9 @@ export function Hero() {
             <span className="font-serif-italic tracking-normal">finished</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-pretty text-ink-2">
-            Zentro picks the one task to do next, lets your team see work move,
-            and keeps every doc and decision linked to it.
+            One connected workspace for projects, docs, files, chat, people and
+            more, with your own work first: Zentro picks the one task to do next
+            and keeps everything around it linked.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="px-7">

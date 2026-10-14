@@ -87,6 +87,9 @@
   --tint-docs: #ffe6d2;
   --tint-teams: #d8f3e6;
   --tint-audit: #ffdde4;
+  --tint-sun: #fff2c9;
+  --tint-lilac: #f0e3ff;
+  --tint-slate: #e6e9ef;
   --tint-line-alpha: 55%;
   --tint-chip: #ffffff;
 
@@ -177,6 +180,9 @@
   --tint-docs: color-mix(in srgb, #ffe6d2 14%, var(--surface));
   --tint-teams: color-mix(in srgb, #d8f3e6 14%, var(--surface));
   --tint-audit: color-mix(in srgb, #ffdde4 14%, var(--surface));
+  --tint-sun: color-mix(in srgb, #fff2c9 14%, var(--surface));
+  --tint-lilac: color-mix(in srgb, #f0e3ff 14%, var(--surface));
+  --tint-slate: color-mix(in srgb, #e6e9ef 14%, var(--surface));
   --tint-line-alpha: 30%;
   --tint-chip: #20202c;
 
@@ -301,6 +307,9 @@
   --color-tint-docs: var(--tint-docs);
   --color-tint-teams: var(--tint-teams);
   --color-tint-audit: var(--tint-audit);
+  --color-tint-sun: var(--tint-sun);
+  --color-tint-lilac: var(--tint-lilac);
+  --color-tint-slate: var(--tint-slate);
   --color-tint-chip: var(--tint-chip);
   --color-selected: var(--selected);
   --color-hairline: var(--hairline);

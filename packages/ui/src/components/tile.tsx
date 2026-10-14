@@ -2,7 +2,15 @@ import type { ComponentProps, ReactElement, ReactNode } from "react";
 
 import { cn } from "@zentro/ui/lib/utils";
 
-export type TileTint = "projects" | "tasks" | "docs" | "teams" | "audit";
+export type TileTint =
+  | "projects"
+  | "tasks"
+  | "docs"
+  | "teams"
+  | "audit"
+  | "sun"
+  | "lilac"
+  | "slate";
 
 const tintBackground: Record<TileTint, string> = {
   projects: "bg-tint-projects",
@@ -10,6 +18,9 @@ const tintBackground: Record<TileTint, string> = {
   docs: "bg-tint-docs",
   teams: "bg-tint-teams",
   audit: "bg-tint-audit",
+  sun: "bg-tint-sun",
+  lilac: "bg-tint-lilac",
+  slate: "bg-tint-slate",
 };
 
 type TileProps = Omit<ComponentProps<"section">, "title"> & {
@@ -64,7 +75,7 @@ export function Tile({
           {icon ? <TintChip>{icon}</TintChip> : null}
           <div className="min-w-0 flex-1">
             {title ? (
-              <h2 className="truncate text-sm font-semibold tracking-tight text-ink">
+              <h2 className="text-sm leading-tight font-semibold tracking-tight text-balance text-ink">
                 {title}
               </h2>
             ) : null}
