@@ -20,22 +20,7 @@ const palette =
   /\b(?:bg|text|border|ring|from|to|via|fill|stroke|divide|outline|shadow|accent|caret|decoration|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white)(?:-\d{2,3})?(?:\/\d+)?\b/g;
 const literal = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\(/g;
 
-const baseline: Record<string, number> = {
-  "apps/web/src/app/(auth)/auth/create-organization/page.tsx": 3,
-  "apps/web/src/app/(auth)/auth/forgot-password/page.tsx": 1,
-  "apps/web/src/app/(auth)/auth/reset-password/page.tsx": 2,
-  "apps/web/src/app/(auth)/auth/sign-in/page.tsx": 2,
-  "apps/web/src/app/(auth)/auth/sign-up/page.tsx": 3,
-  "apps/web/src/components/project-detail/settings/general-section.tsx": 3,
-  "apps/web/src/components/projects/create-project-modal.tsx": 4,
-  "apps/web/src/components/workspace/activity/audit-log.tsx": 1,
-  "apps/web/src/components/workspace/settings/general-section.tsx": 3,
-  "apps/web/src/components/workspace/settings/members-section.tsx": 3,
-  "apps/web/src/components/workspace/settings/teams-section.tsx": 9,
-  "apps/web/src/features/tasks/components/task-detail/avatar-initials.tsx": 2,
-  "apps/web/src/features/tasks/lib/constants.ts": 12,
-  "packages/ui/src/components/rich-text-editor.tsx": 4,
-};
+const baseline: Record<string, number> = {};
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

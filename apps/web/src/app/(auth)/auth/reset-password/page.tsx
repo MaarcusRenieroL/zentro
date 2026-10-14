@@ -114,16 +114,14 @@ function ResetPasswordForm() {
   return (
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Set new password
-        </h1>
+        <h1 className="font-display text-3xl text-ink">Set new password</h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
           Your new password must be different from previously used passwords.
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="tile p-5 sm:p-7">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller
@@ -184,7 +182,7 @@ function ResetPasswordForm() {
                   )}
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}
@@ -229,7 +227,7 @@ function ResetPasswordForm() {
                   </div>
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}

@@ -122,9 +122,7 @@ function VerifyEmailContent() {
           <Mail className="h-7 w-7 text-primary" />
         </div>
 
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Verify your email
-        </h1>
+        <h1 className="font-display text-3xl text-ink">Verify your email</h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
           We sent a verification code to{" "}
@@ -134,7 +132,7 @@ function VerifyEmailContent() {
         </p>
       </div>
 
-      <div className="flex items-center justify-center rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="flex items-center justify-center tile p-5 sm:p-7">
         <div className="space-y-6">
           <InputOTP
             maxLength={6}

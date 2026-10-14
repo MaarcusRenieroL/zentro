@@ -140,7 +140,7 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-3xl py-0">
+      <Card className="rounded-xl py-0">
         <CardContent className="p-4 sm:p-5">
           <form
             onSubmit={handleSubmit(handleSendInvite)}
@@ -218,7 +218,7 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-3xl py-0">
+      <Card className="rounded-xl py-0">
         <CardContent className="p-4 sm:p-5">
           {pendingInvitations.length > 0 ? (
             <div className="space-y-3">

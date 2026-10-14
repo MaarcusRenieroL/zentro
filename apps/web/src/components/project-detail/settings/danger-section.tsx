@@ -121,7 +121,7 @@ export const DangerSection: FC<Props> = ({ project }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-3xl py-0">
+      <Card className="rounded-xl py-0">
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sunken">

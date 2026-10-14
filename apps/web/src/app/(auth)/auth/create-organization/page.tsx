@@ -119,7 +119,7 @@ export default function CreateOrganizationPage() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
           <Building2 className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-display text-3xl text-ink">
           Create your organization
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -127,7 +127,7 @@ export default function CreateOrganizationPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="tile p-5 sm:p-7">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller
@@ -163,7 +163,7 @@ export default function CreateOrganizationPage() {
                   </FieldDescription>
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}
@@ -205,7 +205,7 @@ export default function CreateOrganizationPage() {
                             showLabel={false}
                           />
                         ) : visibleSlugAvailability ? (
-                          <Check className="h-4 w-4 text-green-500" />
+                          <Check className="h-4 w-4 text-success" />
                         ) : visibleSlugAvailability === false ? (
                           <span className="text-xs text-destructive">
                             Taken
@@ -220,7 +220,7 @@ export default function CreateOrganizationPage() {
                   </FieldDescription>
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}

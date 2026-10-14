@@ -16,9 +16,6 @@ import { Input } from "@zentro/ui/shadcn/input";
 import {
   Popover,
   PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
   PopoverTrigger,
 } from "@zentro/ui/shadcn/popover";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -28,11 +25,19 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
-import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import {
+  EditorContent,
+  useEditor,
+  useEditorState,
+  type Editor,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
   ArrowLeftIcon,
+  BoldIcon,
   BracesIcon,
+  ItalicIcon,
+  LinkIcon,
   CalendarClockIcon,
   CheckSquareIcon,
   Code2Icon,
@@ -68,6 +73,8 @@ import {
   getDocTitle,
   getInitials,
 } from "../../../lib/docs";
+import { Tile } from "@zentro/ui/components/tile";
+import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
 import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
@@ -165,81 +172,178 @@ const headingOptions = [
   },
 ] as const;
 
-const insertOptions = [
-  {
-    label: "Bullet list",
-    description: "Simple unordered list",
-    icon: ListIcon,
-    action: "bullet-list",
-  },
-  {
-    label: "Todo",
-    description: "Checkbox task",
-    icon: CheckSquareIcon,
-    action: "task-list",
-  },
-  {
-    label: "Quote",
-    description: "Callout or quoted note",
-    icon: QuoteIcon,
-    action: "quote",
-  },
-  {
-    label: "Code block",
-    description: "Multi-line fenced code",
-    icon: Code2Icon,
-    action: "code-block",
-  },
-  {
-    label: "Inline code",
-    description: "Short code phrase",
-    icon: Code2Icon,
-    action: "inline-code",
-  },
-] as const;
-
-const inlineOptions = [
-  {
-    label: "Inline code",
-    description: "Wrap a phrase in backticks",
-    icon: Code2Icon,
-    action: "inline-code",
-  },
-  {
-    label: "Code block",
-    description: "Add a fenced code block",
-    icon: BracesIcon,
-    action: "code-block",
-  },
-] as const;
-
-type ToolbarMenuButtonProps = {
-  icon: LucideIcon;
-  label: string;
-  children: ReactNode;
+type ToolbarProps = {
+  editor: Editor | null;
+  canEdit: boolean;
+  onAction: (action: SlashAction) => void;
+  onHeading: (level: 1 | 2 | 3 | 4 | 5 | 6) => void;
 };
 
-function ToolbarMenuButton({
-  icon: Icon,
-  label,
-  children,
-}: ToolbarMenuButtonProps) {
+/** Six everyday actions, and everything else behind More. */
+function DocToolbar({ editor, canEdit, onAction, onHeading }: ToolbarProps) {
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: current }) => ({
+      bold: current?.isActive("bold") ?? false,
+      italic: current?.isActive("italic") ?? false,
+      list: current?.isActive("bulletList") ?? false,
+      checklist: current?.isActive("taskList") ?? false,
+      code: current?.isActive("code") ?? false,
+      link: current?.isActive("link") ?? false,
+    }),
+  });
+  const active = state ?? {
+    bold: false,
+    italic: false,
+    list: false,
+    checklist: false,
+    code: false,
+    link: false,
+  };
+  const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
+
+  if (!canEdit || !editor) return null;
+
+  const apply = () => {
+    const href = /^https?:\/\//.test(url.trim())
+      ? url.trim()
+      : `https://${url.trim()}`;
+
+    try {
+      new URL(href);
+    } catch {
+      setUrlError("Enter a web address like https://example.com");
+
+      return;
+    }
+
+    setUrlError(null);
+    editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
+    setUrl("");
+  };
+
+  const button = (
+    label: string,
+    Icon: LucideIcon,
+    pressed: boolean,
+    run: () => void,
+  ) => (
+    <Button
+      key={label}
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={label}
+      aria-pressed={pressed}
+      onClick={run}
+      className={pressed ? "bg-selected text-signal" : "text-ink-2"}
+    >
+      <Icon className="size-4" />
+    </Button>
+  );
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <Icon className="size-3.5" />
-          {label}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        {children}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div
+      role="toolbar"
+      aria-label="Formatting"
+      className="tile mb-5 flex items-center gap-1 p-1.5"
+    >
+      {button("Bold", BoldIcon, active.bold, () =>
+        editor.chain().focus().toggleBold().run(),
+      )}
+      {button("Italic", ItalicIcon, active.italic, () =>
+        editor.chain().focus().toggleItalic().run(),
+      )}
+      {button("Bulleted list", ListIcon, active.list, () =>
+        onAction("bullet-list"),
+      )}
+      {button("Checklist", CheckSquareIcon, active.checklist, () =>
+        onAction("task-list"),
+      )}
+      {button("Code", Code2Icon, active.code, () => onAction("inline-code"))}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Link"
+            aria-pressed={active.link}
+            className={active.link ? "bg-selected text-signal" : "text-ink-2"}
+          >
+            <LinkIcon className="size-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 space-y-3 p-3">
+          <Input
+            aria-label="Web address"
+            placeholder="https://example.com"
+            value={url}
+            aria-invalid={Boolean(urlError)}
+            onChange={(event) => setUrl(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && apply()}
+          />
+          {urlError ? (
+            <p role="alert" className="text-xs text-danger-text">
+              {urlError}
+            </p>
+          ) : null}
+          <div className="flex gap-2">
+            <Button size="sm" onClick={apply}>
+              Add link
+            </Button>
+            {active.link ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => editor.chain().focus().unsetLink().run()}
+              >
+                Remove
+              </Button>
+            ) : null}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="ml-auto text-ink-2">
+            <MoreHorizontalIcon className="size-4" />
+            More
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuLabel>Headings</DropdownMenuLabel>
+          {headingOptions.slice(0, 3).map((option) => (
+            <DropdownMenuItem
+              key={option.label}
+              className="gap-2"
+              onClick={() => onHeading(option.level)}
+            >
+              <option.icon className="size-4" />
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="gap-2" onClick={() => onAction("quote")}>
+            <QuoteIcon className="size-4" />
+            Quote
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="gap-2"
+            onClick={() => onAction("code-block")}
+          >
+            <Code2Icon className="size-4" />
+            Code block
+          </DropdownMenuItem>
+          <DropdownMenuItem className="gap-2" onClick={() => onAction("table")}>
+            <TableIcon className="size-4" />
+            Table
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -250,7 +354,7 @@ type MetaPillProps = {
 
 function MetaPill({ icon: Icon, children }: MetaPillProps) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-xl border border-hairline/60 bg-surface px-2.5 text-xs text-muted-foreground">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-sm bg-sunken px-2.5 text-xs text-ink-2">
       {Icon ? <Icon className="size-3.5" /> : null}
       {children}
     </span>
@@ -269,7 +373,21 @@ function escapeHtml(value: string) {
 }
 
 function renderInlineMarkdown(value: string) {
-  return escapeHtml(value).replace(/`([^`]+)`/g, "<code>$1</code>");
+  // Code spans are kept verbatim; bold, italic and links work in the rest.
+  return escapeHtml(value)
+    .split(/(`[^`]+`)/)
+    .map((part) =>
+      part.length > 2 && part.startsWith("`") && part.endsWith("`")
+        ? `<code>${part.slice(1, -1)}</code>`
+        : part
+            .replace(
+              /\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
+              '<a href="$2">$1</a>',
+            )
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*([^*]+)\*/g, "<em>$1</em>"),
+    )
+    .join("");
 }
 
 function parseMarkdownTableRow(line: string) {
@@ -432,6 +550,22 @@ function inlineMarkdown(node: Node): string {
     return `\`${children}\``;
   }
 
+  if (tag === "strong" || tag === "b") {
+    return `**${children}**`;
+  }
+
+  if (tag === "em" || tag === "i") {
+    return `*${children}*`;
+  }
+
+  if (tag === "a") {
+    const href = node.getAttribute("href") ?? "";
+
+    return /^(https?:\/\/|mailto:)/.test(href)
+      ? `[${children}](${href})`
+      : children;
+  }
+
   return children;
 }
 
@@ -534,8 +668,8 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(true);
-  const [tableRows, setTableRows] = useState(3);
-  const [tableColumns, setTableColumns] = useState(3);
+  const [tableRows] = useState(3);
+  const [tableColumns] = useState(3);
   const loadedEditorDocIdRef = useRef<string | null>(null);
   const editorExtensions = useMemo(
     () => [
@@ -811,8 +945,8 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const owner = getDocOwner(doc);
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] border-t bg-muted/20">
-      <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+    <div className="min-h-[calc(100vh-3.5rem)] border-t border-hairline bg-canvas">
+      <div className="sticky top-0 z-20 border-b border-hairline bg-canvas/90 backdrop-blur">
         <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <Button
@@ -889,12 +1023,14 @@ export function NotionEditorPage({ slug }: { slug: string }) {
 
       <div
         className={`grid min-h-[calc(100vh-7rem)] ${
-          commentsOpen ? "xl:grid-cols-[minmax(0,1fr)_22rem]" : ""
+          commentsOpen
+            ? "xl:grid-cols-[minmax(0,1fr)_20rem_22rem]"
+            : "xl:grid-cols-[minmax(0,1fr)_20rem]"
         }`}
       >
-        <main className="min-w-0 bg-background">
-          <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 lg:px-14 lg:py-12">
-            <div className="max-w-4xl">
+        <main className="min-w-0 bg-canvas">
+          <div className="mx-auto w-full max-w-[720px] px-5 py-8 sm:px-8 lg:py-12">
+            <div>
               <div className="mb-6 flex flex-wrap items-center gap-2">
                 <MetaPill>
                   <FileTextIcon className="size-3.5" />
@@ -903,7 +1039,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 <MetaPill icon={CalendarClockIcon}>
                   Edited {formatDocDate(doc.updatedAt)}
                 </MetaPill>
-                <span className="inline-flex h-7 items-center gap-2 rounded-xl border border-hairline/60 bg-surface px-2.5 text-xs text-muted-foreground">
+                <span className="inline-flex h-7 items-center gap-2 rounded-sm bg-sunken px-2.5 text-xs text-ink-2">
                   <Avatar className="size-4">
                     <AvatarFallback className="text-[9px]">
                       {getInitials(owner)}
@@ -919,120 +1055,17 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 onBlur={saveTitle}
                 readOnly={!canEdit}
                 placeholder="Untitled"
-                className="!h-auto border-none bg-transparent px-0 py-0 !text-5xl !leading-tight font-semibold tracking-tight shadow-none outline-none focus-visible:ring-0 sm:!text-6xl md:!text-6xl"
+                className="!h-auto border-none bg-transparent px-0 py-0 font-display !text-5xl !leading-[1.08] shadow-none outline-none focus-visible:ring-0"
               />
             </div>
 
-            <div className="mt-9 max-w-4xl">
-              <div
-                className={`mb-5 flex-wrap items-center gap-1 rounded-2xl border border-hairline/60 bg-surface p-2 shadow-sm ${canEdit ? "flex" : "hidden"}`}
-              >
-                <div className="flex flex-wrap items-center gap-1">
-                  <ToolbarMenuButton icon={Heading1Icon} label="H1">
-                    <DropdownMenuLabel>Headings</DropdownMenuLabel>
-                    {headingOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.label}
-                        className="gap-2"
-                        onClick={() => setHeading(option.level)}
-                      >
-                        <option.icon className="size-4" />
-                        {option.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </ToolbarMenuButton>
-
-                  <ToolbarMenuButton icon={PlusIcon} label="Blocks">
-                    <DropdownMenuLabel>Insert block</DropdownMenuLabel>
-                    {insertOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.label}
-                        className="gap-2"
-                        onClick={() => runEditorAction(option.action)}
-                      >
-                        <option.icon className="size-4" />
-                        <span>{option.label}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </ToolbarMenuButton>
-
-                  <ToolbarMenuButton icon={Code2Icon} label="Code">
-                    <DropdownMenuLabel>Code</DropdownMenuLabel>
-                    {inlineOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.label}
-                        className="gap-2"
-                        onClick={() => runEditorAction(option.action)}
-                      >
-                        <option.icon className="size-4" />
-                        <div>
-                          <p>{option.label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {option.description}
-                          </p>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </ToolbarMenuButton>
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        <TableIcon className="size-3.5" />
-                        Table
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start" className="w-72 p-0">
-                      <PopoverHeader className="border-b p-4">
-                        <PopoverTitle>Insert table</PopoverTitle>
-                        <PopoverDescription>
-                          Choose the shape and drop a markdown table into the
-                          doc.
-                        </PopoverDescription>
-                      </PopoverHeader>
-                      <div className="space-y-4 p-4">
-                        <div className="grid grid-cols-2 gap-3">
-                          <label className="space-y-1.5 text-sm font-medium">
-                            Rows
-                            <Input
-                              type="number"
-                              min={1}
-                              max={12}
-                              value={tableRows}
-                              onChange={(event) =>
-                                setTableRows(Number(event.target.value))
-                              }
-                            />
-                          </label>
-                          <label className="space-y-1.5 text-sm font-medium">
-                            Columns
-                            <Input
-                              type="number"
-                              min={1}
-                              max={8}
-                              value={tableColumns}
-                              onChange={(event) =>
-                                setTableColumns(Number(event.target.value))
-                              }
-                            />
-                          </label>
-                        </div>
-                        <Button
-                          className="w-full"
-                          onClick={() => runEditorAction("table")}
-                        >
-                          <TableIcon className="size-4" />
-                          Insert table
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
+            <div className="mt-9">
+              <DocToolbar
+                editor={editor}
+                canEdit={canEdit}
+                onAction={(action) => runEditorAction(action)}
+                onHeading={setHeading}
+              />
 
               <div className="relative group">
                 <Button
@@ -1091,6 +1124,21 @@ export function NotionEditorPage({ slug }: { slug: string }) {
             <ActivityFeed selector={{ targetType: "doc", targetId: doc.id }} />
           </section>
         </main>
+
+        <aside className="hidden p-6 pl-0 xl:block">
+          <Tile
+            title="Thread"
+            description="Linked to this doc"
+            className="sticky top-20"
+          >
+            <LinkedThread
+              current={{ kind: "doc", label: getDocTitle(title), meta: "Doc" }}
+              currentId={doc.id}
+              projectId={doc.projectId}
+              projectName={doc.projectName}
+            />
+          </Tile>
+        </aside>
 
         <CommentsPanel
           docId={doc.id}

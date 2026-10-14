@@ -2,16 +2,19 @@ import { paths } from "~/src/lib/paths";
 import { useState } from "react";
 
 import Link from "next/link";
-import { ArrowLeftIcon, CheckSquareIcon, LinkIcon } from "lucide-react";
+import { ArrowLeftIcon, LinkIcon } from "lucide-react";
 
 import { toastError, toastSuccess } from "@zentro/ui/index";
-import { Badge } from "@zentro/ui/shadcn/badge";
+import { StatusGlyph } from "@zentro/ui/components/status-glyph";
+import { TaskKey } from "@zentro/ui/components/task-key";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   RichTextEditor,
   RichTextPreview,
 } from "@zentro/ui/components/rich-text-editor";
 
+import { Tile } from "@zentro/ui/components/tile";
+import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 
 import { InlineTitleEditor } from "./inline-title-editor";
@@ -70,7 +73,7 @@ export function TaskDetailView({
     <section className="flex w-full flex-col gap-6">
       <TaskDetailHeader task={task} />
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <main className="min-w-0 space-y-7">
           <div className="space-y-3">
             <InlineTitleEditor
@@ -125,17 +128,43 @@ export function TaskDetailView({
           />
         </main>
 
-        <TaskDetailSidebar
-          task={task}
-          members={members}
-          selectedAssignee={selectedAssignee}
-          savingField={savingField}
-          onSave={onSave}
-          onDelete={onDelete}
-          canEdit={canEdit}
-          canAssign={canAssign}
-          canDelete={canDelete}
-        />
+        <div className="flex min-w-0 flex-col gap-4">
+          <Tile title="Thread" description="Everything linked to this task">
+            <LinkedThread
+              current={{
+                kind: "task",
+                label: task.name,
+                meta: task.key,
+                status: task.status,
+              }}
+              currentId={task.id}
+              projectId={task.projectId}
+              projectName={task.projectName}
+              projectSlug={task.projectSlug}
+              extra={
+                comments.length
+                  ? [
+                      {
+                        id: "comments",
+                        label: `${comments.length} ${comments.length === 1 ? "comment" : "comments"}`,
+                      },
+                    ]
+                  : []
+              }
+            />
+          </Tile>
+          <TaskDetailSidebar
+            task={task}
+            members={members}
+            selectedAssignee={selectedAssignee}
+            savingField={savingField}
+            onSave={onSave}
+            onDelete={onDelete}
+            canEdit={canEdit}
+            canAssign={canAssign}
+            canDelete={canDelete}
+          />
+        </div>
       </div>
     </section>
   );
@@ -143,7 +172,7 @@ export function TaskDetailView({
 
 function TaskDetailHeader({ task }: { task: TaskDetail }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b pb-3">
+    <div className="flex items-center justify-between gap-3 border-b border-hairline pb-3">
       <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
         <Button asChild variant="ghost" size="icon-sm">
           <Link href={paths.tasks()} aria-label="Back to tasks">
@@ -156,10 +185,8 @@ function TaskDetailHeader({ task }: { task: TaskDetail }) {
         <span>/</span>
         <span className="truncate">{task.projectName}</span>
         <span>/</span>
-        <Badge variant="outline" className="rounded-md">
-          <CheckSquareIcon className="size-3" />
-          {task.key}
-        </Badge>
+        <StatusGlyph status={task.status} size={14} />
+        <TaskKey>{task.key}</TaskKey>
       </div>
 
       <div className="flex items-center gap-2">

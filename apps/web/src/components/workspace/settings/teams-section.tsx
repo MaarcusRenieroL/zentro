@@ -115,14 +115,14 @@ const teamColors: Array<{
   label: string;
   className: string;
 }> = [
-  { value: "slate", label: "Slate", className: "bg-slate-500" },
-  { value: "red", label: "Red", className: "bg-red-500" },
-  { value: "orange", label: "Orange", className: "bg-orange-500" },
-  { value: "amber", label: "Amber", className: "bg-amber-500" },
-  { value: "green", label: "Green", className: "bg-green-500" },
-  { value: "blue", label: "Blue", className: "bg-blue-500" },
-  { value: "purple", label: "Purple", className: "bg-purple-500" },
-  { value: "pink", label: "Pink", className: "bg-pink-500" },
+  { value: "slate", label: "Slate", className: "bg-ink-3" },
+  { value: "red", label: "Red", className: "cat-1 bg-(--cat)" },
+  { value: "orange", label: "Orange", className: "cat-2 bg-(--cat)" },
+  { value: "amber", label: "Amber", className: "cat-3 bg-(--cat)" },
+  { value: "green", label: "Green", className: "cat-4 bg-(--cat)" },
+  { value: "blue", label: "Blue", className: "cat-6 bg-(--cat)" },
+  { value: "purple", label: "Purple", className: "cat-7 bg-(--cat)" },
+  { value: "pink", label: "Pink", className: "cat-8 bg-(--cat)" },
 ];
 
 const emptyForm: TeamFormState = {
@@ -144,7 +144,7 @@ function getInitials(name: string) {
 function getColorClass(color: string) {
   return (
     teamColors.find((teamColor) => teamColor.value === color)?.className ??
-    "bg-slate-500"
+    "bg-ink-3"
   );
 }
 

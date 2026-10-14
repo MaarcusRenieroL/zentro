@@ -135,7 +135,7 @@ export default function InviteAcceptPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
             <AlertCircleIcon className="h-7 w-7 text-destructive" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="font-display text-3xl text-ink">
             {error === "expired"
               ? "Invite expired"
               : "Invitation not available"}
@@ -183,7 +183,7 @@ export default function InviteAcceptPage() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
           <Building2Icon className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-display text-3xl text-ink">
           Join {data.organizationName}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -191,7 +191,7 @@ export default function InviteAcceptPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="tile p-5 sm:p-7">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3 sm:gap-4 sm:p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-linear-to-br from-primary to-primary/60">

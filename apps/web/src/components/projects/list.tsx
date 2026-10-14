@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@zentro/ui/shadcn/badge";
+import { Progress } from "@zentro/ui/shadcn/progress";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   DropdownMenu,
@@ -40,6 +41,9 @@ export type ProjectListItem = {
   teamName: string | null;
   teamColor: string | null;
   status: string;
+  taskKeyPrefix?: string | null;
+  totalTasks?: number | null;
+  doneTasks?: number | null;
   updatedAt: Date;
 };
 
@@ -162,10 +166,7 @@ export const ProjectList = ({
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              className="flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-hairline/60"
-            >
+            <div key={index} className="tile flex flex-col gap-4 p-5">
               <div className="flex items-center gap-3">
                 <Skeleton className="size-10 shrink-0 rounded-xl" />
                 <div className="min-w-0 flex-1 space-y-2">
@@ -189,10 +190,10 @@ export const ProjectList = ({
           {filteredProjects.map((project) => (
             <div
               key={project.id}
-              className="group relative flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-hairline/60 transition-[box-shadow,transform] duration-150 hover:-translate-y-px hover:shadow-md"
+              className="tile group relative flex flex-col gap-4 p-(--pad-tile) transition-colors duration-(--duration-fast) hover:border-line-strong"
             >
               <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-signal-subtle text-signal">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-tint-projects text-ink">
                   <FolderKanbanIcon className="size-5" />
                 </span>
 
@@ -200,13 +201,15 @@ export const ProjectList = ({
                   <h3 className="truncate font-semibold text-ink">
                     <Link
                       href={paths.project(project.slug)}
-                      className="outline-none after:absolute after:inset-0 after:rounded-3xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                      className="outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
                     >
                       {project.name}
                     </Link>
                   </h3>
                   <p className="truncate font-mono text-xs text-ink-3">
-                    {project.slug}
+                    {project.taskKeyPrefix
+                      ? `${project.taskKeyPrefix}-`
+                      : project.slug}
                   </p>
                 </div>
 
@@ -262,6 +265,25 @@ export const ProjectList = ({
               <p className="line-clamp-2 min-h-10 text-sm text-ink-2">
                 {project.description || "No description provided."}
               </p>
+
+              {project.totalTasks != null ? (
+                <div className="flex flex-col gap-1.5">
+                  <Progress
+                    value={
+                      project.totalTasks
+                        ? Math.round(
+                            ((project.doneTasks ?? 0) / project.totalTasks) *
+                              100,
+                          )
+                        : 0
+                    }
+                    aria-label={`${project.doneTasks ?? 0} of ${project.totalTasks} tasks done`}
+                  />
+                  <p className="font-mono text-[11px] text-ink-3">
+                    {project.doneTasks ?? 0} / {project.totalTasks} done
+                  </p>
+                </div>
+              ) : null}
 
               <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
                 <Badge

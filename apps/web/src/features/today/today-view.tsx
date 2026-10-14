@@ -25,7 +25,7 @@ import { TeamPulse, type PulseItem } from "@zentro/ui/components/team-pulse";
 import { Tile, type TileTint } from "@zentro/ui/components/tile";
 import { Button } from "@zentro/ui/shadcn/button";
 import { cn } from "@zentro/ui/lib/utils";
-import { describeFocusReason, pickFocus, rankTasks } from "@zentro/utils";
+import { describeFocusReason, rankTasks } from "@zentro/utils";
 
 import { useReachable } from "~/src/components/permissions/permission-provider";
 import type { DashboardWorkItem } from "~/src/lib/dashboard-data";
@@ -433,14 +433,14 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
                     >
                       <CheckCircle2Icon />
                       Mark done
-                      <Kbd className="ml-1 border-transparent bg-white/20 text-on-signal">
+                      <Kbd className="ml-1 border-transparent bg-on-signal/20 text-on-signal">
                         D
                       </Kbd>
                     </Button>
                   ) : (
                     <Button size="start" onClick={start} disabled={busy}>
                       Start
-                      <Kbd className="ml-1 border-transparent bg-white/20 text-on-signal">
+                      <Kbd className="ml-1 border-transparent bg-on-signal/20 text-on-signal">
                         S
                       </Kbd>
                     </Button>

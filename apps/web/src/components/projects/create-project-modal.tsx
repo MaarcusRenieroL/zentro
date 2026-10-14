@@ -232,7 +232,7 @@ const CreateProjectModalInner = ({
                       </FieldDescription>
 
                       {fieldState.error && (
-                        <p className="mt-2 text-xs text-red-400">
+                        <p className="mt-2 text-xs text-danger-text">
                           {fieldState.error.message}
                         </p>
                       )}
@@ -269,7 +269,7 @@ const CreateProjectModalInner = ({
                                 showLabel={false}
                               />
                             ) : visibleAvailability ? (
-                              <Check className="h-4 w-4 text-green-500" />
+                              <Check className="h-4 w-4 text-success" />
                             ) : visibleAvailability === false ? (
                               <span className="text-xs text-destructive">
                                 Taken
@@ -284,7 +284,7 @@ const CreateProjectModalInner = ({
                       </FieldDescription>
 
                       {fieldState.error && (
-                        <p className="mt-2 text-xs text-red-400">
+                        <p className="mt-2 text-xs text-danger-text">
                           {fieldState.error.message}
                         </p>
                       )}
@@ -310,7 +310,7 @@ const CreateProjectModalInner = ({
                     />
 
                     {fieldState.error && (
-                      <p className="mt-2 text-xs text-red-400">
+                      <p className="mt-2 text-xs text-danger-text">
                         {fieldState.error.message}
                       </p>
                     )}

@@ -49,7 +49,7 @@ export const TaskBoard: FC<Props> = ({
               aria-label={statusLabels[status]}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => handleDrop(event, status)}
-              className="flex min-h-[520px] flex-col rounded-3xl bg-sunken p-2.5"
+              className="flex min-h-[520px] flex-col rounded-xl bg-sunken p-2.5"
             >
               <div className="mb-2.5 flex items-center gap-2 px-2 pt-1">
                 <StatusGlyph status={status} size={16} decorative />

@@ -65,7 +65,7 @@ export const InvitedOrgsList: FC = () => {
 
   if (invitedOrgsList === null) {
     return (
-      <div className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="mb-6 tile p-5 sm:p-7">
         <div className="h-24 animate-pulse rounded-lg bg-secondary/60" />
       </div>
     );
@@ -73,7 +73,7 @@ export const InvitedOrgsList: FC = () => {
 
   return (
     <div>
-      <div className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="mb-6 tile p-5 sm:p-7">
         <h2 className="mb-4 text-sm font-medium text-foreground">
           Pending invitations
         </h2>

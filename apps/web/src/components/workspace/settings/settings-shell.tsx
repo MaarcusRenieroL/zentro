@@ -21,13 +21,22 @@ import { paths } from "~/src/lib/paths";
 type Item = {
   href: string;
   label: string;
-  permission: string;
+  /** Leave out for pages everyone can open (your own account). */
+  permission?: string;
   matchPrefix?: boolean;
 };
 
 // Settings are grouped by what they are for. The permission of each page is
 // the same as it has always been.
 const groups: Array<{ label: string; items: Item[] }> = [
+  {
+    label: "Account",
+    items: [
+      { href: "/settings/account/profile", label: "Profile" },
+      { href: "/settings/account/appearance", label: "Appearance" },
+      { href: "/settings/account/security", label: "Security" },
+    ],
+  },
   {
     label: "Organization",
     items: [
@@ -105,7 +114,9 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
   const visible = groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => permissions[item.permission]),
+      items: group.items.filter(
+        (item) => !item.permission || permissions[item.permission],
+      ),
     }))
     .filter((group) => group.items.length);
   const all = visible.flatMap((group) => group.items);
@@ -150,7 +161,7 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
         </div>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-20 space-y-5 rounded-3xl bg-sunken p-3">
+          <div className="tile sticky top-20 space-y-5 p-3">
             {visible.map((group) => (
               <div key={group.label} className="space-y-1">
                 {group.items.length > 1 ||

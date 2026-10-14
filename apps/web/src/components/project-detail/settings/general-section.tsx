@@ -177,8 +177,8 @@ export const GeneralSection: FC<Props> = ({ project }) => {
   return (
     <form className="space-y-6 pb-24" onSubmit={handleSubmit(handleSave)}>
       {saveState === "saved" ? (
-        <div className="flex items-center gap-3 rounded-md border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-foreground">
-          <CheckCircle2Icon className="size-4 text-green-500" />
+        <div className="flex items-center gap-3 rounded-md border border-success/30 bg-success-subtle px-4 py-3 text-sm text-foreground">
+          <CheckCircle2Icon className="size-4 text-success" />
           Project settings saved.
         </div>
       ) : null}
@@ -316,7 +316,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
         </div>
 
         <aside className="space-y-6">
-          <Card className="rounded-3xl py-0">
+          <Card className="rounded-xl py-0">
             <CardContent className="p-4 sm:p-5">
               <div className="mb-4 flex items-center gap-2">
                 <EyeIcon className="size-4 text-muted-foreground" />
@@ -354,7 +354,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl py-0">
+          <Card className="rounded-xl py-0">
             <CardContent className="space-y-4 p-4 sm:p-5">
               <h2 className="text-base font-semibold text-foreground">
                 Metadata

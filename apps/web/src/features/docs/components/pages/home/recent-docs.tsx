@@ -78,7 +78,7 @@ export const RecentDocs: FC = () => {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, index) => (
-              <Card key={index} className="min-h-44 rounded-3xl" size="sm">
+              <Card key={index} className="min-h-44 rounded-xl" size="sm">
                 <CardHeader>
                   <div className="h-20 animate-pulse rounded-md bg-muted" />
                 </CardHeader>
@@ -92,7 +92,7 @@ export const RecentDocs: FC = () => {
         {docs.map((doc) => (
           <Card
             key={doc.id}
-            className="min-h-44 rounded-3xl transition-shadow hover:shadow-md"
+            className="min-h-44 rounded-xl transition-shadow hover:shadow-md"
             size="sm"
           >
             <CardHeader className="gap-3">
@@ -134,7 +134,7 @@ export const RecentDocs: FC = () => {
         ))}
 
         {!isLoading && !docs.length ? (
-          <div className="rounded-3xl bg-sunken px-4 py-10 text-center md:col-span-2 xl:col-span-4">
+          <div className="rounded-xl bg-sunken px-4 py-10 text-center md:col-span-2 xl:col-span-4">
             <FileTextIcon className="mx-auto mb-3 size-9 text-muted-foreground" />
             <p className="text-sm font-medium">No recent docs</p>
             <p className="mt-1 text-sm text-muted-foreground">

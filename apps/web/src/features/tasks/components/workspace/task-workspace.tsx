@@ -156,16 +156,16 @@ export const TaskWorkspace: FC<Props> = ({
         }}
       />
 
-      <Tabs defaultValue="board" className="flex flex-col gap-4">
+      <Tabs defaultValue="list" className="flex flex-col gap-4">
         <TabsList className="w-full justify-start overflow-x-auto sm:w-fit">
-          <TabsTrigger value="board">
-            <Columns3Icon className="size-4" />
-            Board
-          </TabsTrigger>
-
           <TabsTrigger value="list">
             <ListIcon className="size-4" />
             List
+          </TabsTrigger>
+
+          <TabsTrigger value="board">
+            <Columns3Icon className="size-4" />
+            Board
           </TabsTrigger>
 
           <TabsTrigger value="calendar">

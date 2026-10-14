@@ -6,7 +6,7 @@ type Props = {
 
 export function AvatarInitials({ value }: Props) {
   return (
-    <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-semibold text-white">
+    <span className="inline-flex size-6 items-center justify-center rounded-full bg-signal-subtle text-[10px] font-semibold text-signal">
       {getInitials(value)}
     </span>
   );

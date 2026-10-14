@@ -335,8 +335,8 @@ export const MembersSection: FC<Props> = ({
       </div>
 
       {ownerCount === 1 && currentUser?.role === "owner" ? (
-        <div className="flex items-start gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
-          <AlertCircleIcon className="mt-0.5 size-5 shrink-0 text-yellow-500" />
+        <div className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning-subtle p-4">
+          <AlertCircleIcon className="mt-0.5 size-5 shrink-0 text-warning-text" />
 
           <div>
             <p className="text-sm font-medium text-foreground">

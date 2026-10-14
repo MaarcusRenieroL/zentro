@@ -35,7 +35,7 @@ export const SearchToolbar: FC = () => {
   }
 
   return (
-    <div className="rounded-3xl bg-sunken p-2">
+    <div className="rounded-xl bg-sunken p-2">
       <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <form
           onSubmit={handleSearch}

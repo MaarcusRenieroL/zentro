@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckIcon } from "lucide-react";
 
 import { Logo } from "@zentro/ui/components/logo";
 
+import { AuthShowcase } from "~/src/features/auth/components/layout/auth-showcase";
 import { AuthFooter } from "~/src/features/auth/components/layout/auth-footer";
 import { paths } from "~/src/lib/paths";
 
@@ -12,45 +12,28 @@ export const metadata: Metadata = {
   description: "Sign in or create your Zentro account.",
 };
 
-const points = [
-  "Projects, tasks and docs in one workspace",
-  "Roles you can build, down to a single project",
-  "An audit log of every change",
-];
-
 export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <div className="grid min-h-screen bg-canvas lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="relative isolate hidden overflow-hidden bg-ink p-12 text-ink-inverse lg:flex lg:flex-col">
+    <div className="grid min-h-screen bg-canvas lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
+      <aside className="relative isolate hidden overflow-hidden border-r border-hairline bg-surface p-12 lg:flex lg:flex-col">
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-radial-[ellipse_80%_60%_at_20%_100%] from-signal/60 to-transparent"
+          className="halo absolute top-1/2 left-1/2 -z-10 h-[40rem] w-[40rem] -translate-x-1/2 -translate-y-1/2"
         />
         <Link href={paths.home()} aria-label="Zentro home" className="w-fit">
-          <Logo className="text-ink-inverse" markClassName="text-ink-inverse" />
+          <Logo />
         </Link>
 
-        <div className="my-auto max-w-md">
-          <h2 className="font-display text-5xl leading-[1.02] text-balance">
-            The work, the people and the rules, together
+        <div className="my-auto flex flex-col gap-10">
+          <h2 className="max-w-md font-display text-5xl leading-[1.05] text-balance text-ink">
+            Know what to do{" "}
+            <span className="font-serif-italic text-[1.12em]">next</span>
           </h2>
-          <ul className="mt-10 space-y-4">
-            {points.map((point) => (
-              <li
-                key={point}
-                className="flex items-start gap-3 text-ink-inverse/80"
-              >
-                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-ink-inverse/15">
-                  <CheckIcon className="size-3.5" />
-                </span>
-                {point}
-              </li>
-            ))}
-          </ul>
+          <AuthShowcase />
         </div>
       </aside>
 

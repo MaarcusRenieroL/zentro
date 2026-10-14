@@ -216,7 +216,47 @@ export const projectRouter = router({
         )
         .orderBy(asc(projects.name));
 
-      return projectList;
+      // Task progress per project, only for projects whose tasks the caller can see.
+      const taskProjectIds = new Set(
+        await ctx.permissions.viewableProjectIds("tasks.view"),
+      );
+      const countable = projectList
+        .map((project) => project.id)
+        .filter((id) => taskProjectIds.has(id));
+      const progress = countable.length
+        ? await db
+            .select({
+              projectId: tasks.projectId,
+              total: count(),
+              done: sql<number>`count(*) filter (where ${tasks.status} = 'done')`.mapWith(
+                Number,
+              ),
+            })
+            .from(tasks)
+            .where(
+              and(
+                eq(tasks.organizationId, activeOrganization.id),
+                inArray(tasks.projectId, countable),
+                isNull(tasks.deletedAt),
+                isNull(tasks.archivedAt),
+              ),
+            )
+            .groupBy(tasks.projectId)
+        : [];
+      const byProject = new Map(
+        progress.map((row) => [row.projectId, row] as const),
+      );
+
+      return projectList.map((project) => ({
+        ...project,
+        // Null when the caller cannot see this project's tasks.
+        totalTasks: taskProjectIds.has(project.id)
+          ? (byProject.get(project.id)?.total ?? 0)
+          : null,
+        doneTasks: taskProjectIds.has(project.id)
+          ? (byProject.get(project.id)?.done ?? 0)
+          : null,
+      }));
     },
   ),
   getProjectBySlug: permissionProcedure(

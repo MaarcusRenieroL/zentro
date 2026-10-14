@@ -26,6 +26,10 @@ const labels: Record<string, string> = {
   "audit-log": "Audit log",
   access: "Members & access",
   "module-disabled": "Module off",
+  account: "Account",
+  profile: "Profile",
+  appearance: "Appearance",
+  security: "Security",
 };
 
 // Segments that are part of a route rather than a name.

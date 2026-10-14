@@ -10,9 +10,7 @@ export default function JoinOrganizationPage() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
           <Users className="h-7 w-7 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Join an organization
-        </h1>
+        <h1 className="font-display text-3xl text-ink">Join an organization</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Accept a pending invite or enter an invite code to join.
         </p>

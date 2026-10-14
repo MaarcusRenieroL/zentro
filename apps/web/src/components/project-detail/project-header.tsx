@@ -24,7 +24,7 @@ export const ProjectHeader: FC<Props> = ({
   const isArchived = status === "archived";
 
   return (
-    <div className="flex w-full flex-col gap-5 rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-hairline/60 sm:flex-row sm:items-start sm:justify-between">
+    <div className="flex w-full flex-col gap-5 tile p-5 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex min-w-0 items-start gap-4">
         <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-sunken">
           <RocketIcon className="size-5 text-primary" />

@@ -79,7 +79,7 @@ function Diff({ metadata }: { metadata: Record<string, unknown> }) {
                 <td className="pr-2 text-destructive break-all">
                   {change.from ?? "none"}
                 </td>
-                <td className="break-all text-emerald-600">
+                <td className="break-all text-success-text">
                   {change.to ?? "none"}
                 </td>
               </tr>

@@ -101,7 +101,7 @@ export const AllDocs: FC = () => {
         </div>
 
         <TabsContent value="table" className="mt-0">
-          <div className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-hairline/60">
+          <div className="tile overflow-hidden">
             {isLoading ? (
               <div className="space-y-3 p-4">
                 {Array.from({ length: 4 }).map((_, index) => (

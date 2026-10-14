@@ -16,24 +16,25 @@ export const statusOrder: TaskStatus[] = [
   "done",
 ];
 
+// Priority is shown in ink, never in a state color: color means state.
 export const priorityStyles: Record<TaskPriority, string> = {
-  low: "text-muted-foreground",
-  medium: "text-amber-600 dark:text-amber-400",
-  high: "text-red-600 dark:text-red-400",
+  low: "text-ink-3",
+  medium: "text-ink-2",
+  high: "text-ink",
 };
 
 export const statusColors: Record<TaskStatus, { bar: string; css: string }> = {
-  backlog: { bar: "bg-slate-300", css: "var(--color-slate-300)" },
-  todo: { bar: "bg-slate-400", css: "var(--color-slate-400)" },
-  "in-progress": { bar: "bg-blue-500", css: "var(--color-blue-500)" },
-  review: { bar: "bg-amber-500", css: "var(--color-amber-500)" },
-  done: { bar: "bg-emerald-500", css: "var(--color-emerald-500)" },
+  backlog: { bar: "bg-status-backlog", css: "var(--status-backlog)" },
+  todo: { bar: "bg-status-todo", css: "var(--status-todo)" },
+  "in-progress": { bar: "bg-status-progress", css: "var(--status-progress)" },
+  review: { bar: "bg-status-review", css: "var(--status-review)" },
+  done: { bar: "bg-status-done", css: "var(--status-done)" },
 };
 
 export const priorityBars: Record<TaskPriority, string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
-  low: "bg-slate-400",
+  high: "bg-ink",
+  medium: "bg-ink-2",
+  low: "bg-ink-3",
 };
 
 export const priorityLabels: Record<TaskPriority, string> = {

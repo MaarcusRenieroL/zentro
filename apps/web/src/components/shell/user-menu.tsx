@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { LogOutIcon, SettingsIcon, UsersIcon } from "lucide-react";
+import { LogOutIcon, SettingsIcon, UserIcon, UsersIcon } from "lucide-react";
 
 import { authClient } from "@zentro/auth/client";
 import {
@@ -64,6 +64,12 @@ export function UserMenu({ user, links }: Props) {
           <p className="truncate text-xs text-ink-3">{user.email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings/account/profile">
+            <UserIcon className="size-4" aria-hidden="true" />
+            Account settings
+          </Link>
+        </DropdownMenuItem>
         {links.settingsHref ? (
           <DropdownMenuItem asChild>
             <Link href={links.settingsHref}>

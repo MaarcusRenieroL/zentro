@@ -97,16 +97,14 @@ export default function SignupPage() {
   return (
     <div className="mx-auto w-full max-w-md">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Create your account
-        </h1>
+        <h1 className="font-display text-3xl text-ink">Create your account</h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
           Start building with Zentro.
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="tile p-5 sm:p-7">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller
@@ -119,7 +117,7 @@ export default function SignupPage() {
                   <Input id="name" type="text" autoComplete="name" {...field} />
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}
@@ -142,7 +140,7 @@ export default function SignupPage() {
                   />
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}
@@ -206,7 +204,7 @@ export default function SignupPage() {
                   )}
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}

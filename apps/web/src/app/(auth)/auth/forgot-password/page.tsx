@@ -92,9 +92,7 @@ export default function ForgotPasswordPage(): JSX.Element {
             <Mail className="h-7 w-7 text-primary" />
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Check your email
-          </h1>
+          <h1 className="font-display text-3xl text-ink">Check your email</h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
             We sent reset instructions to{" "}
@@ -102,7 +100,7 @@ export default function ForgotPasswordPage(): JSX.Element {
           </p>
         </div>
 
-        <div className="flex flex-col gap-5 rounded-xl border border-border bg-card p-4 sm:p-6">
+        <div className="flex flex-col gap-5 tile p-5 sm:p-7">
           <p className="text-center text-sm text-muted-foreground">
             Didn&apos;t receive the email?
           </p>
@@ -135,7 +133,7 @@ export default function ForgotPasswordPage(): JSX.Element {
   return (
     <div className="w-full max-w-sm">
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-display text-3xl text-ink">
           Forgot your password?
         </h1>
 
@@ -144,7 +142,7 @@ export default function ForgotPasswordPage(): JSX.Element {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="tile p-5 sm:p-7">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller
@@ -164,7 +162,7 @@ export default function ForgotPasswordPage(): JSX.Element {
                   />
 
                   {fieldState.error && (
-                    <p className="mt-2 text-xs text-red-400">
+                    <p className="mt-2 text-xs text-danger-text">
                       {fieldState.error.message}
                     </p>
                   )}
