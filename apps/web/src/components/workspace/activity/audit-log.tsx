@@ -57,7 +57,9 @@ function Diff({ metadata }: { metadata: Record<string, unknown> }) {
     from: string | null;
     to: string | null;
   }>;
-  const { changes: _changes, ...rest } = metadata;
+  const rest = Object.fromEntries(
+    Object.entries(metadata).filter(([key]) => key !== "changes"),
+  );
 
   return (
     <div className="space-y-3 text-sm">

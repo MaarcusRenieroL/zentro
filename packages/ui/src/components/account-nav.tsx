@@ -11,6 +11,8 @@ import {
 import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Users, Building2, Settings, LogOut } from "lucide-react";
 
+import { DensityMenuItems, ThemeMenuItems } from "./appearance";
+
 type Props = {
   user: {
     name: string;
@@ -77,6 +79,10 @@ export const AccountNav: FC<Props> = ({
             Account settings
           </a>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <ThemeMenuItems />
+        <DropdownMenuSeparator />
+        <DensityMenuItems />
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="flex items-center gap-2 text-destructive focus:text-destructive"
