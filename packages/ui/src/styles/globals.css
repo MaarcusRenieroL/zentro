@@ -172,7 +172,7 @@
 
 /* Density: Compact is the default; Comfortable is an option. */
 :root,
-html[data-density="compact"] {
+[data-density="compact"] {
   --control-h: 1.75rem;
   --row-table: 2rem;
   --row-list: 2.25rem;
@@ -185,7 +185,7 @@ html[data-density="compact"] {
   --title-size: 1.75rem;
 }
 
-html[data-density="comfortable"] {
+[data-density="comfortable"] {
   --control-h: 2rem;
   --row-table: 2.5rem;
   --row-list: 2.75rem;
@@ -201,7 +201,7 @@ html[data-density="comfortable"] {
 /* Touch devices: controls stay comfortable to hit, whatever the setting. */
 @media (pointer: coarse) {
   :root,
-  html[data-density] {
+  [data-density] {
     --control-h: 2.5rem;
     --nav-item: 2.5rem;
     --row-table: 2.75rem;

@@ -39,8 +39,6 @@ const baseline: Record<string, number> = {
   "apps/web/src/features/tasks/components/task-detail/avatar-initials.tsx": 2,
   "apps/web/src/features/tasks/lib/constants.ts": 12,
   "packages/ui/src/components/rich-text-editor.tsx": 4,
-  "packages/ui/src/components/shadcn/dialog.tsx": 1,
-  "packages/ui/src/components/shadcn/sheet.tsx": 1,
 };
 
 function files(dir: string): string[] {

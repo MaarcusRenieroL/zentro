@@ -24,19 +24,31 @@ const Toaster = ({ ...props }: ToasterProps) => {
         error: <OctagonXIcon className="size-4" />,
         loading: <Loader2Icon className="size-4 animate-spin" />,
       }}
+      closeButton
+      visibleToasts={4}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--normal-bg": "var(--overlay)",
+          "--normal-text": "var(--ink)",
+          "--normal-border": "var(--border-default)",
+          "--success-bg": "var(--overlay)",
+          "--success-text": "var(--ink)",
+          "--success-border": "var(--border-default)",
+          "--error-bg": "var(--overlay)",
+          "--error-text": "var(--ink)",
+          "--error-border": "var(--border-default)",
+          "--border-radius": "var(--radius-lg)",
+          zIndex: "var(--z-toast)",
         } as ToasterProps["style"]
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: "cn-toast shadow-lg",
+          icon: "data-[type=success]:text-success data-[type=error]:text-danger data-[type=warning]:text-warning data-[type=info]:text-info",
+          actionButton: "!bg-primary !text-primary-foreground",
         },
       }}
+      containerAriaLabel="Notifications"
       {...props}
     />
   );
