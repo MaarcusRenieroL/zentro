@@ -63,7 +63,7 @@ export function AppShell({
               user={user}
               links={links}
             />
-            <SidebarInset className="bg-canvas">
+            <SidebarInset className="bg-surface">
               <TopBar enabledModules={enabledModules} />
               <main
                 id="main"

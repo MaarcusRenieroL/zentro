@@ -50,7 +50,7 @@ export function TopBar({ enabledModules }: Props) {
   return (
     <header
       data-slot="top-bar"
-      className="sticky top-0 z-(--z-sticky) flex h-[calc(var(--control-h)+1.25rem)] items-center gap-3 border-b border-hairline bg-canvas/90 px-(--gutter) backdrop-blur-none"
+      className="sticky top-0 z-(--z-sticky) flex h-[calc(var(--control-h)+1.25rem)] items-center gap-3 rounded-t-2xl bg-surface/85 px-(--gutter) backdrop-blur-md"
     >
       <SidebarTrigger />
       <div className="hidden min-w-0 flex-1 sm:block">

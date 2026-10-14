@@ -1,5 +1,4 @@
-import { cn } from "@zentro/ui/index";
-import { CheckSquareIcon, FileIcon, FolderIcon, PinIcon } from "lucide-react";
+import { CheckSquareIcon, FileIcon, FolderIcon } from "lucide-react";
 import Link from "next/link";
 import { FC } from "react";
 
@@ -17,13 +16,13 @@ const iconByKind = {
 
 export const PinnedSection: FC<Props> = ({ items }) => {
   return (
-    <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-medium text-foreground">Recent work</h2>
-      </div>
+    <section className="rounded-3xl bg-surface p-3 shadow-sm ring-1 ring-hairline/60">
+      <h2 className="px-3 pt-2 pb-2 font-display text-xl text-ink">
+        Recent work
+      </h2>
 
       {items.length ? (
-        <div className="space-y-2">
+        <div className="flex flex-col">
           {items.map((item) => {
             const Icon = iconByKind[item.kind];
 
@@ -31,37 +30,27 @@ export const PinnedSection: FC<Props> = ({ items }) => {
               <Link
                 key={item.id}
                 href={item.href}
-                className="group flex min-w-0 items-center justify-between gap-3 rounded-md border bg-background/60 p-3 transition-colors hover:border-primary/50 hover:bg-secondary/60"
+                className="flex min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-sunken"
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary/70">
-                  <Icon
-                    className={cn(
-                      "size-4",
-                      item.kind === "doc" && "text-blue-500",
-                      item.kind === "project" && "text-pink-500",
-                      item.kind === "task" && "text-purple-500",
-                    )}
-                  />
-                </div>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-sunken text-ink-2">
+                  <Icon className="size-4" />
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
+                  <p className="truncate text-sm font-medium text-ink">
                     {item.title}
                   </p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                  <p className="truncate text-xs text-ink-3">
                     {item.label} · {item.updatedAt}
                   </p>
                 </div>
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground">
-                  <PinIcon className="size-3.5" />
-                </span>
               </Link>
             );
           })}
         </div>
       ) : (
-        <div className="rounded-md border border-dashed bg-background/50 px-4 py-8 text-center">
-          <p className="text-sm font-medium">No recent work yet</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <div className="m-1 rounded-2xl bg-sunken px-4 py-8 text-center">
+          <p className="text-sm font-medium text-ink">No recent work yet</p>
+          <p className="mt-1 text-xs text-ink-2">
             Projects, docs, and tasks will appear here once they are created.
           </p>
         </div>

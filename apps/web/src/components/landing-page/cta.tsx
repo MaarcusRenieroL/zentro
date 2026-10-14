@@ -1,44 +1,40 @@
+import Link from "next/link";
+import { ArrowRightIcon } from "lucide-react";
+
 import { Button } from "@zentro/ui/shadcn/button";
-import { ArrowRight } from "lucide-react";
-import { FC } from "react";
 
-export const CTA: FC = () => {
+import { paths } from "~/src/lib/paths";
+
+import { Reveal } from "./reveal";
+
+export function FinalCta() {
   return (
-    <section className="border-t border-border/40 py-20 md:py-32">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-linear-to-b from-secondary/80 to-card p-6 sm:p-8 md:p-16">
-          <div className="relative mx-auto max-w-2xl text-center">
-            <h2 className="text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              Ready to simplify how your team works?
-            </h2>
-            <p className="mt-4 text-pretty text-lg text-muted-foreground">
-              Join thousands of teams who&apos;ve replaced their cluttered
-              toolstack with Zentro. Start free today.
-            </p>
-
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button
-                size="lg"
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto"
-              >
-                Start for free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full border-border/60 text-foreground hover:bg-secondary sm:w-auto"
-              >
-                Schedule a demo
-              </Button>
-            </div>
-
-            <p className="mt-6 text-sm text-muted-foreground">
-              Free for teams up to 10 • No credit card required • Cancel anytime
-            </p>
-          </div>
+    <section className="px-4 pb-20">
+      <Reveal className="mx-auto max-w-6xl">
+        <div className="relative isolate overflow-hidden rounded-[2rem] bg-ink px-6 py-16 text-center sm:py-24">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 bg-radial-[ellipse_60%_80%_at_50%_120%] from-signal/70 to-transparent"
+          />
+          <h2 className="mx-auto max-w-3xl font-display text-4xl leading-[1.02] text-balance text-ink-inverse sm:text-6xl">
+            Bring the work, the people and the rules together
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-lg text-ink-inverse/70">
+            Create an organization in a minute. Invite your team when you are
+            ready.
+          </p>
+          <Button
+            asChild
+            size="lg"
+            className="mt-9 h-11 rounded-full bg-surface px-6 text-base text-ink shadow-none hover:bg-sunken"
+          >
+            <Link href={paths.auth.signUp()}>
+              Start for free
+              <ArrowRightIcon />
+            </Link>
+          </Button>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
-};
+}

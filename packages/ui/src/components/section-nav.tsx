@@ -60,7 +60,7 @@ export function SectionNav({
         "relative flex",
         vertical
           ? "flex-col gap-0.5"
-          : "gap-1 overflow-x-auto border-b border-hairline [scrollbar-width:none]",
+          : "w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-sunken p-1 [scrollbar-width:none]",
         className,
       )}
     >
@@ -70,15 +70,13 @@ export function SectionNav({
           className={cn(
             "pointer-events-none absolute top-0 left-0 transition-[transform,width,height] duration-[var(--duration-base)] ease-[var(--ease-out)]",
             vertical
-              ? "rounded-md bg-selected"
-              : "h-0.5 rounded-full bg-primary",
+              ? "rounded-lg bg-surface shadow-sm"
+              : "rounded-full bg-surface shadow-sm ring-1 ring-hairline/70",
           )}
           style={{
             width: box.width,
-            height: vertical ? box.height : 2,
-            transform: `translate(${box.left}px, ${
-              vertical ? box.top : box.top + box.height - 2
-            }px)`,
+            height: box.height,
+            transform: `translate(${box.left}px, ${box.top}px)`,
           }}
         />
       ) : null}
@@ -93,8 +91,8 @@ export function SectionNav({
             className={cn(
               "relative z-[1] flex shrink-0 items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors duration-[var(--duration-fast)] hover:text-ink focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-4",
               vertical
-                ? "h-(--nav-item) rounded-md px-2.5"
-                : "h-[calc(var(--control-h)+6px)] px-2.5",
+                ? "h-(--nav-item) rounded-lg px-2.5"
+                : "h-(--control-h) rounded-full px-3.5",
               active ? "text-ink" : "text-ink-2",
             )}
           >

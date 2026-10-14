@@ -32,7 +32,7 @@ export function PageHeader({
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="font-display text-(length:--title-size) leading-[1.1] font-normal tracking-tight text-balance text-ink">
+            <h1 className="font-display text-(length:--title-size) leading-[1.1] tracking-tight text-balance text-ink">
               {title}
             </h1>
             {meta}

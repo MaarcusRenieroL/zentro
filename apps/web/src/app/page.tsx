@@ -5,15 +5,15 @@ import { redirect } from "next/navigation";
 import { auth } from "@zentro/auth";
 
 import { paths } from "~/src/lib/paths";
-import { Footer } from "../components/layout/footer";
-import { Benefits } from "../components/landing-page/benefits";
-import { CTA } from "../components/landing-page/cta";
-import { DashboardPreview } from "../components/landing-page/dashboard-preview";
-import { Features } from "../components/landing-page/features";
+import { AuditVisual } from "../components/landing-page/audit-visual";
+import { Bento } from "../components/landing-page/bento";
+import { FinalCta } from "../components/landing-page/cta";
+import { LandingFooter } from "../components/landing-page/footer";
 import { Hero } from "../components/landing-page/hero";
-import { Problem } from "../components/landing-page/problem";
-import { Solution } from "../components/landing-page/solutions";
-import { Navbar } from "../components/layout/navbar";
+import { ModulesDemo } from "../components/landing-page/modules-demo";
+import { LandingNav } from "../components/landing-page/nav";
+import { PermissionsDemo } from "../components/landing-page/permissions-demo";
+import { Roadmap } from "../components/landing-page/roadmap";
 
 export default async function Home(): Promise<JSX.Element> {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -23,18 +23,18 @@ export default async function Home(): Promise<JSX.Element> {
   }
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
+      <LandingNav />
+      <main>
         <Hero />
-        <Problem />
-        <Solution />
-        <Features />
-        <DashboardPreview />
-        <Benefits />
-        <CTA />
+        <Bento />
+        <PermissionsDemo />
+        <ModulesDemo />
+        <AuditVisual />
+        <Roadmap />
+        <FinalCta />
       </main>
-      <Footer />
-    </>
+      <LandingFooter />
+    </div>
   );
 }

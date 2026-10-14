@@ -6,15 +6,16 @@ import { cn } from "@zentro/ui/lib/utils";
 import { Spinner } from "../spinner";
 
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-transparent text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-[var(--duration-fast)] outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-canvas active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-danger [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-transparent text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-[var(--duration-fast)] outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-canvas active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-danger [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-signal-hover",
+        default:
+          "bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_1px_2px_hsl(var(--shadow-color)/25%)] hover:bg-signal-hover",
         secondary:
-          "border-border-default bg-sunken text-ink hover:bg-hover aria-expanded:bg-hover",
+          "border-transparent bg-sunken text-ink hover:bg-hover aria-expanded:bg-hover",
         outline:
-          "border-input bg-surface text-ink hover:bg-hover aria-expanded:bg-hover",
+          "border-hairline bg-surface text-ink shadow-xs hover:bg-hover aria-expanded:bg-hover",
         ghost:
           "text-ink-2 hover:bg-hover hover:text-ink aria-expanded:bg-hover",
         destructive:
@@ -24,11 +25,11 @@ const buttonVariants = cva(
       size: {
         default: "h-(--control-h) px-3",
         xs: "h-6 px-2 text-xs [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-[calc(var(--control-h)-4px)] px-2.5 text-xs [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "h-[calc(var(--control-h)-6px)] px-2.5 text-xs [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-[calc(var(--control-h)+8px)] px-4",
         icon: "size-(--control-h)",
         "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3.5",
-        "icon-sm": "size-[calc(var(--control-h)-4px)]",
+        "icon-sm": "size-[calc(var(--control-h)-6px)]",
         "icon-lg": "size-[calc(var(--control-h)+8px)]",
       },
     },

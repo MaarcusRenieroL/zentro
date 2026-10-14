@@ -40,7 +40,7 @@ export function ModuleSectionNav({
   return (
     <SectionNav
       label={label}
-      items={items}
+      items={items.map(({ label, href }) => ({ label, href }))}
       activeHref={activeHref}
       LinkComponent={Link}
       className="mb-5"

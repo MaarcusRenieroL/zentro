@@ -110,8 +110,8 @@ export function AppSidebar({
   };
 
   return (
-    <Sidebar collapsible="icon" aria-label="Main">
-      <SidebarHeader className="gap-2 border-b border-sidebar-border px-2.5 py-2.5">
+    <Sidebar collapsible="icon" variant="inset" aria-label="Main">
+      <SidebarHeader className="gap-3 px-2.5 py-2.5">
         <Link
           href={paths.dashboard()}
           aria-label="Zentro home"
@@ -141,7 +141,7 @@ export function AppSidebar({
               {box ? (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-0 left-0 rounded-md bg-selected transition-[transform,width,height] duration-[var(--duration-base)] ease-[var(--ease-out)]"
+                  className="pointer-events-none absolute top-0 left-0 rounded-lg bg-surface shadow-sm ring-1 ring-hairline/60 transition-[transform,width,height] duration-[var(--duration-base)] ease-[var(--ease-out)]"
                   style={{
                     width: box.width,
                     height: box.height,
@@ -179,7 +179,7 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-2">
+      <SidebarFooter className="p-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button

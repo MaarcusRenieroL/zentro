@@ -12,25 +12,17 @@ type Props = {
 
 export const OverviewSection: FC<Props> = ({ data }) => {
   return (
-    <div className="grid w-full gap-5 lg:grid-cols-2 xl:grid-cols-7">
-      <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
+    <div className="grid w-full gap-4 lg:grid-cols-5">
+      <div className="flex min-w-0 flex-col gap-4 lg:col-span-3">
+        {data.modules.tasks ? (
+          <TasksSection tasks={data.tasks} tasksHref={data.links.tasks ?? ""} />
+        ) : null}
+        <RecentActivitySection items={data.recentActivity} />
+      </div>
+      <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
         <QuickActions links={data.links} />
         <PinnedSection items={data.recentWork} />
       </div>
-      <div
-        className={
-          data.modules.tasks
-            ? "min-w-0 lg:col-span-2 xl:col-span-3"
-            : "min-w-0 lg:col-span-1 xl:col-span-5"
-        }
-      >
-        <RecentActivitySection items={data.recentActivity} />
-      </div>
-      {data.modules.tasks ? (
-        <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
-          <TasksSection tasks={data.tasks} tasksHref={data.links.tasks ?? ""} />
-        </div>
-      ) : null}
     </div>
   );
 };

@@ -1,48 +1,72 @@
+import Link from "next/link";
+import { ArrowRightIcon } from "lucide-react";
+
 import { Button } from "@zentro/ui/shadcn/button";
-import { ArrowRight } from "lucide-react";
-import { FC } from "react";
 
-export const Hero: FC = () => {
+import { paths } from "~/src/lib/paths";
+
+import { ProductMock } from "./product-mock";
+import { Reveal } from "./reveal";
+
+export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-border/40 bg-secondary/20 pt-28 pb-16 sm:pt-32 md:pt-40 md:pb-28">
-      <div className="relative mx-auto max-w-4xl px-6 text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-secondary/50 px-4 py-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-          <span className="text-xs font-medium text-muted-foreground">
-            Now in public beta
-          </span>
-        </div>
+    <section className="relative isolate overflow-hidden px-4 pt-16 pb-12 sm:pt-24">
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 -z-10 h-[46rem] bg-radial-[ellipse_70%_60%_at_50%_0%] from-signal/20 via-info/8 to-transparent"
+      />
 
-        <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-          The operating system for your company
-        </h1>
+      <div className="mx-auto max-w-4xl text-center">
+        <Reveal>
+          <p className="mx-auto inline-flex items-center gap-2 rounded-full bg-surface py-1 pr-3 pl-1 text-xs font-medium text-ink-2 shadow-sm ring-1 ring-hairline/60">
+            <span className="rounded-full bg-signal px-2 py-0.5 text-on-signal">
+              New
+            </span>
+            Roles and an audit log that go all the way down
+          </p>
+        </Reveal>
 
-        <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground md:text-xl">
-          Stop juggling between Jira, Notion, Slack, and a dozen other tools.
-          Zentro brings everything your team needs into one unified platform.
-        </p>
+        <Reveal delay={0.05}>
+          <h1 className="mt-7 font-display text-[2.75rem] leading-[0.98] text-balance text-ink sm:text-7xl">
+            One workspace for the work, and who can touch it
+          </h1>
+        </Reveal>
 
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button
-            size="lg"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto"
-          >
-            Get started
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full border-border/60 text-foreground hover:bg-secondary sm:w-auto"
-          >
-            Learn more
-          </Button>
-        </div>
+        <Reveal delay={0.1}>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-pretty text-ink-2 sm:text-xl">
+            Projects, tasks and docs in one place. Give people exactly the
+            access they need, turn on only the modules you use, and see every
+            change in the audit log.
+          </p>
+        </Reveal>
 
-        <p className="mt-6 text-sm text-muted-foreground">
-          Free for teams up to 10 members • No credit card required
-        </p>
+        <Reveal delay={0.15}>
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              asChild
+              size="lg"
+              className="h-11 rounded-full px-6 text-base"
+            >
+              <Link href={paths.auth.signUp()}>
+                Start for free
+                <ArrowRightIcon />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="h-11 rounded-full px-6 text-base"
+            >
+              <Link href={paths.auth.signIn()}>Sign in</Link>
+            </Button>
+          </div>
+        </Reveal>
       </div>
+
+      <Reveal delay={0.25} className="mx-auto mt-14 max-w-5xl">
+        <ProductMock />
+      </Reveal>
     </section>
   );
-};
+}

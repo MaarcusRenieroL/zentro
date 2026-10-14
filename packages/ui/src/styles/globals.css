@@ -4,27 +4,27 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Zentro design tokens: "Editorial workspace".
+ * Zentro design tokens: "Soft layers".
  *
- * Warm paper neutrals (hue about 70 to 85), one violet signal color that only
- * marks what is actionable or active, hairlines instead of shadows. Every
+ * Cool slate neutrals, one blue signal color that marks what is actionable or
+ * active, rounded surfaces that sit on a tinted frame with soft shadows. Every
  * value below is checked by packages/ui/test/tokens.test.ts in both themes.
  */
 :root {
   color-scheme: light;
 
   /* Surfaces */
-  --canvas: oklch(0.975 0.006 255);
-  --surface: oklch(0.992 0.004 255);
+  --canvas: oklch(0.945 0.014 255);
+  --surface: oklch(0.998 0.002 255);
   --raised: oklch(0.999 0.002 255);
-  --sunken: oklch(0.948 0.009 255);
-  --sidebar: oklch(0.958 0.008 255);
+  --sunken: oklch(0.972 0.008 255);
+  --sidebar: oklch(0.945 0.014 255);
   --overlay: oklch(0.999 0.002 255);
   --hover: oklch(0.955 0.009 255);
   --selected: oklch(0.935 0.02 258);
 
   /* Borders */
-  --hairline: oklch(0.84 0.012 255);
+  --hairline: oklch(0.8 0.014 255);
   --border-default: oklch(0.8 0.013 255);
   --border-strong: oklch(0.62 0.014 255);
 
@@ -94,11 +94,11 @@
 .dark {
   color-scheme: dark;
 
-  --canvas: oklch(0.17 0.006 255);
-  --surface: oklch(0.205 0.007 255);
+  --canvas: oklch(0.14 0.008 255);
+  --surface: oklch(0.2 0.009 255);
   --raised: oklch(0.245 0.008 255);
-  --sunken: oklch(0.145 0.006 255);
-  --sidebar: oklch(0.15 0.006 255);
+  --sunken: oklch(0.17 0.008 255);
+  --sidebar: oklch(0.14 0.008 255);
   --overlay: oklch(0.265 0.009 255);
   --hover: oklch(0.245 0.008 255);
   --selected: oklch(0.29 0.04 258);
@@ -173,20 +173,20 @@
 /* Density: Compact is the default; Comfortable is an option. */
 :root,
 [data-density="compact"] {
-  --control-h: 1.75rem;
+  --control-h: 2rem;
   --row-table: 2rem;
   --row-list: 2.25rem;
   --nav-item: 1.75rem;
   --density-body: 0.8125rem;
   --density-label: 0.75rem;
-  --gutter: 1.5rem;
-  --card-pad: 0.875rem;
-  --gap: 0.75rem;
-  --title-size: 1.75rem;
+  --gutter: 1.75rem;
+  --card-pad: 1rem;
+  --gap: 0.875rem;
+  --title-size: 2rem;
 }
 
 [data-density="comfortable"] {
-  --control-h: 2rem;
+  --control-h: 2.25rem;
   --row-table: 2.5rem;
   --row-list: 2.75rem;
   --nav-item: 2rem;
@@ -195,7 +195,7 @@
   --gutter: 2rem;
   --card-pad: 1.25rem;
   --gap: 1rem;
-  --title-size: 2rem;
+  --title-size: 2.25rem;
 }
 
 /* Touch devices: controls stay comfortable to hit, whatever the setting. */
@@ -313,17 +313,21 @@
   --color-sidebar-ring: var(--focus-ring);
 
   /* Radii: controls 6px, cards 10px, dialogs 14px */
-  --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
-  --radius-2xl: 18px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 26px;
 
   /* Shadows are for floating layers only */
-  --shadow-xs: none;
-  --shadow-sm: none;
-  --shadow-md: 0 1px 2px hsl(var(--shadow-color) / 8%);
+  --shadow-xs: 0 1px 1px hsl(var(--shadow-color) / 5%);
+  --shadow-sm:
+    0 1px 2px hsl(var(--shadow-color) / 7%),
+    0 2px 6px -2px hsl(var(--shadow-color) / 8%);
+  --shadow-md:
+    0 2px 4px hsl(var(--shadow-color) / 6%),
+    0 8px 20px -6px hsl(var(--shadow-color) / 12%);
   --shadow-lg:
     0 8px 24px -6px hsl(var(--shadow-color) / 16%),
     0 2px 6px hsl(var(--shadow-color) / 8%);
