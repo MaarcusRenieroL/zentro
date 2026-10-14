@@ -82,6 +82,15 @@ export default async function RootLayout({
       data-density={density}
       className={`h-full antialiased ${sans.variable} ${mono.variable} ${display.variable} ${serif.variable}`}
     >
+      <head>
+        {/* Marks the page as scripted before first paint, so reveal effects
+            only hide content when they are guaranteed to show it again. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('js')",
+          }}
+        />
+      </head>
       <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"

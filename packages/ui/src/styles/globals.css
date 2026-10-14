@@ -589,6 +589,19 @@
   }
 }
 
+/* Scroll reveal: hidden only when JS is on and motion is allowed. */
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  [data-reveal] {
+    transition:
+      opacity 400ms var(--ease-out),
+      transform 400ms var(--ease-out);
+  }
+}
+
 @keyframes pulse-in {
   from {
     opacity: 0;
