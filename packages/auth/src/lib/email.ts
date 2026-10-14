@@ -18,7 +18,7 @@ export async function sendVerificationEmail(email: string, otp: string) {
     to: email,
     subject: "Verify your email",
     html: `
-      <div style="background:#0a0a0a;padding:40px 20px;color:#e5e7eb;font-family: Geist, Inter, Arial, Sans-serif">
+      <div style="background:#0a0a0a;padding:40px 20px;color:#e5e7eb;font-family: Inter, Arial, Sans-serif">
         <table style="
           max-width:560px;
           margin:auto;
@@ -58,7 +58,7 @@ export async function sendForgotPasswordEmail(email: string, resetUrl: string) {
     to: email,
     subject: "Reset your password",
     html: `
-      <div style="background:#0a0a0a;padding:40px 20px;color:#e5e7eb;font-family: Geist, Inter, Arial, Sans-serif">
+      <div style="background:#0a0a0a;padding:40px 20px;color:#e5e7eb;font-family: Inter, Arial, Sans-serif">
         <table style="
           max-width:560px;
           margin:auto;
@@ -144,7 +144,7 @@ export async function sendOrgInviteEmail(
     to: invitation.email,
     subject: `You're invited to join ${organizationName} on Zentro`,
     html: `
-      <div style="background:#0a0a0a;padding:40px 20px;color:#e5e7eb;font-family: Geist, Inter, Arial, Sans-serif">
+      <div style="background:#0a0a0a;padding:40px 20px;color:#e5e7eb;font-family: Inter, Arial, Sans-serif">
         <table style="
           max-width:560px;
           margin:auto;

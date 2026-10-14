@@ -11,10 +11,7 @@ export const contentType = "image/png";
 
 export default async function OpengraphImage() {
   const serif = await readFile(
-    path.join(
-      process.cwd(),
-      "src/app/fonts/instrument-serif-latin-400-normal.woff",
-    ),
+    path.join(process.cwd(), "src/app/fonts/inter-latin-700-normal.woff"),
   );
 
   return new ImageResponse(
@@ -48,7 +45,7 @@ export default async function OpengraphImage() {
       </div>
       <div
         style={{
-          fontFamily: "Instrument Serif",
+          fontFamily: "Inter",
           fontSize: 112,
           lineHeight: 1.02,
           maxWidth: 940,
@@ -59,7 +56,7 @@ export default async function OpengraphImage() {
     </div>,
     {
       ...size,
-      fonts: [{ name: "Instrument Serif", data: serif, style: "normal" }],
+      fonts: [{ name: "Inter", data: serif, style: "normal" }],
     },
   );
 }

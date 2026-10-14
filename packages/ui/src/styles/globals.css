@@ -14,51 +14,51 @@
   color-scheme: light;
 
   /* Surfaces */
-  --canvas: oklch(0.975 0.006 85);
-  --surface: oklch(0.992 0.004 85);
-  --raised: oklch(0.999 0.002 85);
-  --sunken: oklch(0.948 0.009 85);
-  --sidebar: oklch(0.958 0.008 85);
-  --overlay: oklch(0.999 0.002 85);
-  --hover: oklch(0.955 0.009 85);
-  --selected: oklch(0.935 0.02 285);
+  --canvas: oklch(0.975 0.006 255);
+  --surface: oklch(0.992 0.004 255);
+  --raised: oklch(0.999 0.002 255);
+  --sunken: oklch(0.948 0.009 255);
+  --sidebar: oklch(0.958 0.008 255);
+  --overlay: oklch(0.999 0.002 255);
+  --hover: oklch(0.955 0.009 255);
+  --selected: oklch(0.935 0.02 258);
 
   /* Borders */
-  --hairline: oklch(0.84 0.012 85);
-  --border-default: oklch(0.8 0.013 85);
-  --border-strong: oklch(0.62 0.014 80);
+  --hairline: oklch(0.84 0.012 255);
+  --border-default: oklch(0.8 0.013 255);
+  --border-strong: oklch(0.62 0.014 255);
 
   /* Text */
-  --ink: oklch(0.22 0.012 70);
-  --ink-2: oklch(0.4 0.014 70);
-  --ink-3: oklch(0.48 0.014 70);
-  --ink-disabled: oklch(0.64 0.01 75);
-  --ink-inverse: oklch(0.975 0.006 85);
+  --ink: oklch(0.22 0.012 255);
+  --ink-2: oklch(0.4 0.014 255);
+  --ink-3: oklch(0.48 0.014 255);
+  --ink-disabled: oklch(0.64 0.01 255);
+  --ink-inverse: oklch(0.975 0.006 255);
 
   /* Signal (accent) */
-  --signal: oklch(0.48 0.19 285);
-  --signal-hover: oklch(0.43 0.2 285);
-  --signal-strong: oklch(0.38 0.18 285);
-  --signal-subtle: oklch(0.94 0.03 285);
-  --on-signal: oklch(0.99 0.004 85);
+  --signal: oklch(0.48 0.19 258);
+  --signal-hover: oklch(0.43 0.2 258);
+  --signal-strong: oklch(0.38 0.18 258);
+  --signal-subtle: oklch(0.94 0.03 258);
+  --on-signal: oklch(0.99 0.004 255);
 
   /* Semantic scales: subtle background, solid, text, text on solid */
   --success-subtle: oklch(0.95 0.045 150);
   --success: oklch(0.52 0.13 150);
   --success-text: oklch(0.38 0.1 150);
-  --on-success: oklch(0.99 0.004 85);
+  --on-success: oklch(0.99 0.004 255);
   --warning-subtle: oklch(0.955 0.055 80);
   --warning: oklch(0.7 0.14 75);
   --warning-text: oklch(0.42 0.09 65);
-  --on-warning: oklch(0.2 0.03 70);
+  --on-warning: oklch(0.2 0.03 255);
   --danger-subtle: oklch(0.95 0.035 25);
   --danger: oklch(0.52 0.19 28);
   --danger-text: oklch(0.46 0.17 28);
-  --on-danger: oklch(0.99 0.004 85);
-  --info-subtle: oklch(0.95 0.03 245);
-  --info: oklch(0.52 0.14 245);
-  --info-text: oklch(0.4 0.12 245);
-  --on-info: oklch(0.99 0.004 85);
+  --on-danger: oklch(0.99 0.004 255);
+  --info-subtle: oklch(0.95 0.03 212);
+  --info: oklch(0.52 0.14 212);
+  --info-text: oklch(0.4 0.12 212);
+  --on-info: oklch(0.99 0.004 255);
 
   /* Status and priority glyphs */
   --status-backlog: var(--ink-3);
@@ -79,45 +79,45 @@
   --cat-text-c: 0.09;
 
   /* Charts: muted, derived from the same system */
-  --chart-1: oklch(0.56 0.1 285);
-  --chart-2: oklch(0.6 0.08 245);
+  --chart-1: oklch(0.56 0.1 258);
+  --chart-2: oklch(0.6 0.08 212);
   --chart-3: oklch(0.6 0.09 150);
   --chart-4: oklch(0.7 0.1 75);
   --chart-5: oklch(0.58 0.1 28);
 
-  --focus-ring: oklch(0.48 0.19 285);
-  --selection: oklch(0.88 0.06 285);
-  --scrim: oklch(0.2 0.01 70 / 40%);
-  --shadow-color: 70 20% 12%;
+  --focus-ring: oklch(0.48 0.19 258);
+  --selection: oklch(0.88 0.06 258);
+  --scrim: oklch(0.2 0.01 255 / 40%);
+  --shadow-color: 255 30% 12%;
 }
 
 .dark {
   color-scheme: dark;
 
-  --canvas: oklch(0.17 0.006 70);
-  --surface: oklch(0.205 0.007 70);
-  --raised: oklch(0.245 0.008 70);
-  --sunken: oklch(0.145 0.006 70);
-  --sidebar: oklch(0.15 0.006 70);
-  --overlay: oklch(0.265 0.009 70);
-  --hover: oklch(0.245 0.008 70);
-  --selected: oklch(0.29 0.04 285);
+  --canvas: oklch(0.17 0.006 255);
+  --surface: oklch(0.205 0.007 255);
+  --raised: oklch(0.245 0.008 255);
+  --sunken: oklch(0.145 0.006 255);
+  --sidebar: oklch(0.15 0.006 255);
+  --overlay: oklch(0.265 0.009 255);
+  --hover: oklch(0.245 0.008 255);
+  --selected: oklch(0.29 0.04 258);
 
-  --hairline: oklch(0.5 0.009 70);
-  --border-default: oklch(0.52 0.01 70);
-  --border-strong: oklch(0.58 0.01 70);
+  --hairline: oklch(0.5 0.009 255);
+  --border-default: oklch(0.52 0.01 255);
+  --border-strong: oklch(0.58 0.01 255);
 
-  --ink: oklch(0.95 0.006 80);
-  --ink-2: oklch(0.78 0.008 80);
-  --ink-3: oklch(0.68 0.008 80);
-  --ink-disabled: oklch(0.5 0.008 75);
-  --ink-inverse: oklch(0.17 0.006 70);
+  --ink: oklch(0.95 0.006 255);
+  --ink-2: oklch(0.78 0.008 255);
+  --ink-3: oklch(0.68 0.008 255);
+  --ink-disabled: oklch(0.5 0.008 255);
+  --ink-inverse: oklch(0.17 0.006 255);
 
-  --signal: oklch(0.7 0.17 285);
-  --signal-hover: oklch(0.75 0.16 285);
-  --signal-strong: oklch(0.82 0.12 285);
-  --signal-subtle: oklch(0.3 0.06 285);
-  --on-signal: oklch(0.15 0.02 285);
+  --signal: oklch(0.7 0.17 258);
+  --signal-hover: oklch(0.75 0.16 258);
+  --signal-strong: oklch(0.82 0.12 258);
+  --signal-subtle: oklch(0.3 0.06 258);
+  --on-signal: oklch(0.15 0.02 258);
 
   --success-subtle: oklch(0.29 0.05 150);
   --success: oklch(0.7 0.15 150);
@@ -126,15 +126,15 @@
   --warning-subtle: oklch(0.3 0.055 75);
   --warning: oklch(0.78 0.14 78);
   --warning-text: oklch(0.86 0.12 80);
-  --on-warning: oklch(0.18 0.03 70);
+  --on-warning: oklch(0.18 0.03 255);
   --danger-subtle: oklch(0.29 0.06 25);
   --danger: oklch(0.68 0.19 28);
   --danger-text: oklch(0.78 0.15 28);
   --on-danger: oklch(0.15 0.02 28);
-  --info-subtle: oklch(0.29 0.05 245);
-  --info: oklch(0.72 0.13 245);
-  --info-text: oklch(0.82 0.1 245);
-  --on-info: oklch(0.15 0.02 245);
+  --info-subtle: oklch(0.29 0.05 212);
+  --info: oklch(0.72 0.13 212);
+  --info-text: oklch(0.82 0.1 212);
+  --on-info: oklch(0.15 0.02 212);
 
   --status-progress: oklch(0.78 0.14 78);
   --priority-high: oklch(0.72 0.15 40);
@@ -146,15 +146,15 @@
   --cat-text-l: 0.84;
   --cat-text-c: 0.1;
 
-  --chart-1: oklch(0.7 0.11 285);
-  --chart-2: oklch(0.72 0.09 245);
+  --chart-1: oklch(0.7 0.11 258);
+  --chart-2: oklch(0.72 0.09 212);
   --chart-3: oklch(0.72 0.1 150);
   --chart-4: oklch(0.8 0.1 78);
   --chart-5: oklch(0.7 0.11 28);
 
-  --focus-ring: oklch(0.75 0.15 285);
-  --selection: oklch(0.4 0.09 285);
-  --scrim: oklch(0.05 0.005 70 / 60%);
+  --focus-ring: oklch(0.75 0.15 258);
+  --selection: oklch(0.4 0.09 258);
+  --scrim: oklch(0.05 0.005 255 / 60%);
   --shadow-color: 0 0% 0%;
 }
 
@@ -212,13 +212,14 @@
 @theme inline {
   /* Type */
   --font-sans:
-    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono:
-    var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas,
+    var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas,
     monospace;
   --font-display:
-    var(--font-instrument-serif), "Iowan Old Style", "Times New Roman", serif;
+    var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui,
+    sans-serif;
 
   /* The two text sizes the UI uses follow the density setting. */
   --text-sm: var(--density-body);
@@ -424,6 +425,11 @@
 }
 
 @layer utilities {
+  .font-display {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
   .font-figure {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;

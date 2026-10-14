@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import localFont from "next/font/local";
-import { GeistMono } from "geist/font/mono";
-import { GeistSans } from "geist/font/sans";
 import { JSX } from "react";
 
 import { Toaster } from "@zentro/ui/shadcn/sonner";
@@ -16,23 +14,25 @@ import "./globals.css";
 import { ThemeProvider } from "../components/providers/theme-provider";
 import { AppTRPCProvider } from "../components/providers/trpc-provider";
 
-// Display serif: page titles, the dashboard briefing, empty states, docs and
-// the landing page, at 24px and above. Self-hosted, so builds never need the
+// Inter for the interface, Bricolage Grotesque for headlines, JetBrains Mono
+// for keys and figures. Variable fonts, self-hosted so builds never need the
 // network.
+const sans = localFont({
+  src: "./fonts/inter-latin-wght-normal.woff2",
+  variable: "--font-inter",
+  weight: "100 900",
+  display: "swap",
+});
 const display = localFont({
-  src: [
-    {
-      path: "./fonts/instrument-serif-latin-400-normal.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "./fonts/instrument-serif-latin-400-italic.woff2",
-      weight: "400",
-      style: "italic",
-    },
-  ],
-  variable: "--font-instrument-serif",
+  src: "./fonts/bricolage-grotesque-latin-wght-normal.woff2",
+  variable: "--font-bricolage",
+  weight: "200 800",
+  display: "swap",
+});
+const mono = localFont({
+  src: "./fonts/jetbrains-mono-latin-wght-normal.woff2",
+  variable: "--font-jetbrains-mono",
+  weight: "100 800",
   display: "swap",
 });
 
@@ -64,7 +64,7 @@ export default async function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-density={density}
-      className={`h-full antialiased ${GeistSans.variable} ${GeistMono.variable} ${display.variable}`}
+      className={`h-full antialiased ${sans.variable} ${mono.variable} ${display.variable}`}
     >
       <body className="font-sans antialiased">
         <ThemeProvider

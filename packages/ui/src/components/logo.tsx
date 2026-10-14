@@ -35,7 +35,7 @@ export function LogoMark({
   );
 }
 
-/** The name, set in Geist 600 with slightly tight tracking. */
+/** The name, set in Inter 600 with slightly tight tracking. */
 export function Wordmark({
   className,
   ...props
