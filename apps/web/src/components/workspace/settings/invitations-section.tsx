@@ -143,6 +143,7 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
       <Card className="rounded-xl py-0">
         <CardContent className="p-4 sm:p-5">
           <form
+            noValidate
             onSubmit={handleSubmit(handleSendInvite)}
             className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px] xl:grid-cols-[minmax(0,1fr)_180px_auto] xl:items-start"
           >

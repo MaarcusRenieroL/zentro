@@ -128,7 +128,7 @@ export function StaticDocListPage({
               Create a doc and it will appear here.
             </p>
             <div className="mt-4">
-              <CreateDocModal />
+              <CreateDocModal triggerVariant="outline" />
             </div>
           </div>
         ) : null}

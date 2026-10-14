@@ -180,7 +180,7 @@ export const AllDocs: FC = () => {
                   knowledge base.
                 </p>
                 <div className="mt-4">
-                  <CreateDocModal />
+                  <CreateDocModal triggerVariant="outline" />
                 </div>
               </div>
             )}

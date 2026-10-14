@@ -68,6 +68,7 @@ export function PickSection() {
                       }
                     />
                   }
+                  data-dim={on[row.id] ? undefined : ""}
                   className={on[row.id] ? "" : "opacity-60"}
                 >
                   <p className="min-h-10 text-sm text-ink-2">

@@ -175,7 +175,11 @@ export const GeneralSection: FC<Props> = ({ project }) => {
   };
 
   return (
-    <form className="space-y-6 pb-24" onSubmit={handleSubmit(handleSave)}>
+    <form
+      noValidate
+      className="space-y-6 pb-24"
+      onSubmit={handleSubmit(handleSave)}
+    >
       {saveState === "saved" ? (
         <div className="flex items-center gap-3 rounded-md border border-success/30 bg-success-subtle px-4 py-3 text-sm text-foreground">
           <CheckCircle2Icon className="size-4 text-success" />

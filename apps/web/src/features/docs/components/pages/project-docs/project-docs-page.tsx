@@ -127,7 +127,10 @@ export function ProjectDocsPage() {
               Attach docs to projects and they will be grouped here.
             </p>
             <div className="mt-4">
-              <CreateDocModal triggerLabel="Create project doc" />
+              <CreateDocModal
+                triggerLabel="Create project doc"
+                triggerVariant="outline"
+              />
             </div>
           </div>
         ) : null}

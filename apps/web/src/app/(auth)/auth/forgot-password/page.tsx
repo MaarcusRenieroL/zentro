@@ -143,7 +143,7 @@ export default function ForgotPasswordPage(): JSX.Element {
       </div>
 
       <div className="tile p-5 sm:p-7">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form noValidate onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <Controller
               name="email"

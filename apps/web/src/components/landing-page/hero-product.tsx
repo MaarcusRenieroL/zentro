@@ -22,12 +22,9 @@ const steps = [1600, 2600, 2400, 1800];
 export function HeroProduct() {
   const [step, setStep] = useState(0);
   const [round, setRound] = useState(0);
-  const [reduced, setReduced] = useState(false);
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    setReduced(query.matches);
 
     if (query.matches) {
       setStep(1);
@@ -137,13 +134,7 @@ export function HeroProduct() {
               <p className="text-sm text-ink-2">Due today.</p>
             </div>
             <div className="flex items-center gap-4">
-              <Button
-                size="start"
-                tabIndex={-1}
-                className={cn(
-                  step === 0 && !reduced && "motion-safe:animate-pulse",
-                )}
-              >
+              <Button size="start" tabIndex={-1}>
                 {running ? "Mark done" : finishing ? "Done" : "Start"}
               </Button>
               {running ? (

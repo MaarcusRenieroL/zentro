@@ -58,6 +58,7 @@ export function ModulesSection() {
                               {item.live ? "Live" : "Coming"}
                             </span>
                           }
+                          data-dim={item.live ? undefined : ""}
                           className={cn(
                             "h-full transition-colors duration-(--duration-fast)",
                             item.live

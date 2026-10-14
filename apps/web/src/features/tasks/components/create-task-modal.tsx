@@ -226,7 +226,7 @@ const CreateTaskModalInner: FC<Props> = ({
       )}
 
       <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form noValidate onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <DialogHeader>
               <DialogTitle>Create task</DialogTitle>

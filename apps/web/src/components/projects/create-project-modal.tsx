@@ -188,7 +188,7 @@ const CreateProjectModalInner = ({
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-2xl">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form noValidate onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <DialogHeader>
               <DialogTitle>Create project</DialogTitle>

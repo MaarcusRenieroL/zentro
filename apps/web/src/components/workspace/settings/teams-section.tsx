@@ -753,6 +753,7 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
           </p>
           {!searchQuery.trim() ? (
             <Button
+              variant="outline"
               className="mt-4"
               disabled={!permissions.canCreateTeams}
               onClick={openCreateDialog}

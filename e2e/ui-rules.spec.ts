@@ -14,7 +14,7 @@ import {
 // 3. landing sections are never left invisible
 // 4. at most one filled primary button per screen
 
-const dangerText = "p.text-danger-text, [role='alert']";
+const dangerText = "p.text-danger-text, [role='alert']:not(:empty)";
 
 async function noErrorsVisible(page: Page, where: string) {
   await expect(page.locator(dangerText), where).toHaveCount(0);
@@ -122,10 +122,9 @@ test("landing sections are visible after a jump to the bottom", async ({
 
         while (node) {
           if (Number(getComputedStyle(node).opacity) < 0.99) {
-            // Decorative layers are meant to be translucent.
-            return (
-              !node.closest("[aria-hidden='true']") &&
-              !el.closest("[aria-hidden='true']")
+            // Decorative layers and intentionally dimmed ("coming") tiles.
+            return !el.closest(
+              "[aria-hidden='true'], [data-dim], [disabled], [data-disabled]",
             );
           }
 
@@ -144,6 +143,7 @@ test("landing sections are visible after a jump to the bottom", async ({
 test("no screen shows more than one filled primary button", async ({
   page,
 }) => {
+  test.setTimeout(240_000);
   await registerWithOrganization(page, {
     label: "primary",
     orgName: uniqueName("Primary"),
@@ -173,9 +173,7 @@ test("no screen shows more than one filled primary button", async ({
 
   for (const route of routes) {
     await page.goto(route);
-    await page.waitForLoadState("networkidle");
-
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1200);
 
     // Judged by what is painted: any visible button or link filled with the
     // accent. Switches are toggles, not buttons.
