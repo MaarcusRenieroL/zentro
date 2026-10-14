@@ -36,6 +36,8 @@ type StatusGlyphProps = {
   className?: string;
   /** Hide from assistive tech when the label sits next to it. */
   decorative?: boolean;
+  /** Plays the one expressive moment: fill, glow and a single ring pulse. */
+  celebrate?: boolean;
 };
 
 /**
@@ -48,11 +50,12 @@ export function StatusGlyph({
   size = 16,
   className,
   decorative = false,
+  celebrate = false,
 }: StatusGlyphProps): ReactElement {
   const fraction = fractions[status];
   const circumference = 2 * Math.PI * 3;
 
-  return (
+  const glyph = (
     <svg
       viewBox="0 0 16 16"
       width={size}
@@ -63,8 +66,9 @@ export function StatusGlyph({
       aria-hidden={decorative || undefined}
       data-status={status}
       className={cn(
-        "shrink-0",
+        "shrink-0 transition-[color,filter] duration-200",
         colors[status] ?? "text-status-todo",
+        status === "done" && "drop-shadow-[0_0_5px_var(--done-glow)]",
         className,
       )}
     >
@@ -73,7 +77,7 @@ export function StatusGlyph({
           <circle cx="8" cy="8" r="7" fill="currentColor" />
           <path
             d="M5 8.3 7.1 10.4 11 6"
-            stroke="var(--surface)"
+            stroke="var(--on-success)"
             strokeWidth="1.6"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -103,6 +107,18 @@ export function StatusGlyph({
         </>
       )}
     </svg>
+  );
+
+  if (!celebrate || status !== "done") return glyph;
+
+  return (
+    <span className="relative inline-flex shrink-0">
+      {glyph}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-full border-2 border-status-done motion-safe:animate-ring-pulse motion-reduce:hidden"
+      />
+    </span>
   );
 }
 
@@ -161,3 +177,7 @@ export function PriorityGlyph({
     </svg>
   );
 }
+
+/** Spec name for the state dot: the same glyph, the task's one color. */
+export const TaskStateDot = StatusGlyph;
+export const PriorityBars = PriorityGlyph;

@@ -18,6 +18,15 @@ import { SectionNav } from "@zentro/ui/components/section-nav";
 import { Spinner } from "@zentro/ui/components/spinner";
 import { PriorityGlyph, StatusGlyph } from "@zentro/ui/components/status-glyph";
 import { Thread, ThreadItem } from "@zentro/ui/components/thread";
+import { Chip } from "@zentro/ui/components/chip";
+import { Combobox } from "@zentro/ui/components/combobox";
+import { DayRing } from "@zentro/ui/components/day-ring";
+import { DotMatrix } from "@zentro/ui/components/dot-matrix";
+import { SegmentedControl } from "@zentro/ui/components/segmented-control";
+import { Stat } from "@zentro/ui/components/stat";
+import { TaskKey } from "@zentro/ui/components/task-key";
+import { TeamPulse } from "@zentro/ui/components/team-pulse";
+import { Tile } from "@zentro/ui/components/tile";
 import { Toolbar } from "@zentro/ui/components/toolbar";
 import {
   Avatar,
@@ -140,6 +149,116 @@ function Specimens() {
           }
         />
 
+        <Block title="Start button (the only 52px control)">
+          <Button size="start">Start</Button>
+          <Button size="start" variant="secondary">
+            Mark done
+          </Button>
+        </Block>
+
+        <Block title="Momentum: state, keys, rings">
+          {statuses.map((status) => (
+            <span key={status} className="inline-flex items-center gap-2">
+              <StatusGlyph status={status} />
+              <TaskKey>ZEN-9</TaskKey>
+            </span>
+          ))}
+          <StatusGlyph status="done" celebrate />
+          <DayRing done={3} planned={5} size={96} />
+          <DayRing done={5} planned={5} size={96} />
+          <DotMatrix
+            label="Team activity this week"
+            values={[2, 5, 8, 4, 9, 1, 0]}
+            labels={["M", "T", "W", "T", "F", "S", "S"]}
+          />
+          <Stat label="Open tasks" value="24" trend="+3 this week" />
+        </Block>
+
+        <section className="grid gap-4 sm:grid-cols-2">
+          <Tile
+            tint="projects"
+            icon={<PlusIcon />}
+            title="Projects"
+            description="Sky tint"
+          >
+            <Progress value={62} />
+          </Tile>
+          <Tile
+            tint="tasks"
+            icon={<PlusIcon />}
+            title="Tasks"
+            description="Lavender tint"
+          >
+            <TeamPulse
+              items={[
+                {
+                  id: "1",
+                  actor: "Mei Lin",
+                  verb: "started",
+                  taskKey: "ZEN-9",
+                  title: "Dark mode",
+                  when: "2m",
+                },
+                {
+                  id: "2",
+                  actor: "Tomás",
+                  verb: "finished",
+                  taskKey: "ZEN-4",
+                  title: "Import CSV",
+                  when: "9m",
+                },
+              ]}
+            />
+          </Tile>
+          <Tile
+            tint="docs"
+            icon={<PlusIcon />}
+            title="Docs"
+            description="Peach tint"
+          />
+          <Tile
+            tint="teams"
+            icon={<PlusIcon />}
+            title="Teams"
+            description="Mint tint"
+          />
+          <Tile
+            tint="audit"
+            icon={<PlusIcon />}
+            title="Audit"
+            description="Rose tint"
+          />
+        </section>
+
+        <Block title="Segmented control, chips, combobox">
+          <SegmentedControl
+            label="Density"
+            value={tab === "one" ? "comfortable" : "compact"}
+            onValueChange={(value) =>
+              setTab(value === "comfortable" ? "one" : "two")
+            }
+            options={[
+              { value: "comfortable", label: "Comfortable" },
+              { value: "compact", label: "Compact" },
+            ]}
+          />
+          <Chip>design</Chip>
+          <Chip tone="accent" onRemove={() => {}}>
+            ZEN-9
+          </Chip>
+          <div className="w-56">
+            <Combobox
+              value={tab}
+              onValueChange={setTab}
+              placeholder="Project"
+              options={[
+                { value: "one", label: "Website Redesign", hint: "WR" },
+                { value: "two", label: "Mobile App", hint: "MA" },
+              ]}
+            />
+          </div>
+        </Block>
+
         <Block title="Buttons">
           {variants.map((variant) => (
             <Button key={variant} variant={variant}>
@@ -200,9 +319,9 @@ function Specimens() {
           </Tabs>
           <SectionNav
             LinkComponent={Link}
-            activeHref="/dev/components"
+            activeHref="/dev/ui"
             items={[
-              { href: "/dev/components", label: "All" },
+              { href: "/dev/ui", label: "All" },
               { href: "/dev/x", label: "Overview" },
               { href: "/dev/y", label: "Completed" },
             ]}
@@ -478,7 +597,9 @@ const panels = [
 export function Gallery() {
   return (
     <main className="min-h-screen bg-canvas p-6 text-ink">
-      <h1 className="mb-6 font-display text-3xl">Components</h1>
+      <h1 className="mb-6 font-display text-3xl">
+        Primitives <span className="font-serif-italic">gallery</span>
+      </h1>
       <div className="grid gap-6 xl:grid-cols-2">
         {panels.map((panel) => (
           <div

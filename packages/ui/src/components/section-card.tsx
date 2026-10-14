@@ -24,13 +24,13 @@ export function SectionCard({
     <section
       data-slot="section-card"
       className={cn(
-        "overflow-hidden rounded-xl border border-hairline/60 bg-card shadow-sm",
+        "overflow-hidden rounded-xl border border-hairline bg-card shadow-(--edge-highlight)",
         className,
       )}
       {...props}
     >
       {title || actions ? (
-        <header className="flex items-start justify-between gap-4 border-b border-hairline/60 px-(--card-pad) py-3.5">
+        <header className="flex items-start justify-between gap-4 border-b border-hairline px-(--card-pad) py-4">
           <div className="min-w-0">
             {title ? (
               <h2 className="text-sm font-semibold tracking-tight text-ink">

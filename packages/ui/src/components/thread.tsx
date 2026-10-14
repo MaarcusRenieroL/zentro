@@ -23,11 +23,14 @@ export function Thread({
 type ThreadItemProps = Omit<ComponentProps<"li">, "children"> & {
   /** An avatar, icon or leave empty for a plain dot. */
   node?: ReactNode;
+  /** The item in view: an accent node with a soft glow. */
+  active?: boolean;
   children: ReactNode;
 };
 
 export function ThreadItem({
   node,
+  active = false,
   className,
   children,
   ...props
@@ -38,20 +41,38 @@ export function ThreadItem({
       className={cn(
         "relative grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-3 pb-(--gap) last:pb-0",
         // The line runs from under this node to the next one.
-        "before:absolute before:top-6 before:bottom-0 before:left-3 before:w-px before:-translate-x-1/2 before:bg-hairline last:before:hidden",
+        "before:absolute before:top-6 before:bottom-0 before:left-3 before:w-px before:-translate-x-1/2 before:bg-line-strong last:before:hidden",
         className,
       )}
       {...props}
     >
       <span className="relative z-[1] flex size-6 items-start justify-center pt-1.5">
-        {node ?? (
-          <span
-            aria-hidden="true"
-            className="size-2 rounded-full border border-border-strong bg-surface"
-          />
-        )}
+        {node ?? <ThreadNode active={active} />}
       </span>
       <div className="min-w-0 pt-0.5">{children}</div>
     </li>
+  );
+}
+
+/** The dot on the line. Only the live one glows. */
+export function ThreadNode({
+  active = false,
+  className,
+}: {
+  active?: boolean;
+  className?: string;
+}): ReactElement {
+  return (
+    <span
+      aria-hidden="true"
+      data-active={active || undefined}
+      className={cn(
+        "size-2.5 rounded-full border bg-surface",
+        active
+          ? "border-signal bg-signal shadow-[0_0_0_4px_var(--signal-subtle),0_0_14px_var(--focus-ring)]"
+          : "border-line-strong",
+        className,
+      )}
+    />
   );
 }

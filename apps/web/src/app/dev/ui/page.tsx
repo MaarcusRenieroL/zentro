@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { Gallery } from "./gallery";
 
-export const metadata = { title: "Components" };
+export const metadata = { title: "Primitives" };
 
 // A development-only catalogue of every primitive in every state. It does not
 // exist in production builds.

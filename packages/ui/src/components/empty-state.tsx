@@ -23,14 +23,14 @@ export function EmptyState({
     <div
       data-slot="empty-state"
       className={cn(
-        "flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-border-default px-6 py-10 text-center",
+        "flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-line-strong px-6 py-12 text-center",
         className,
       )}
     >
       <div className="mb-3 flex size-9 items-center justify-center rounded-full bg-sunken text-ink-2">
         {icon ?? <Inbox className="size-4" aria-hidden="true" />}
       </div>
-      <h2 className="font-display text-2xl leading-tight text-balance text-ink">
+      <h2 className="font-serif-italic text-3xl leading-tight text-balance text-ink">
         {title}
       </h2>
       {description ? (
