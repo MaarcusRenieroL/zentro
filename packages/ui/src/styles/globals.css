@@ -17,7 +17,8 @@
  *   signal = accent, hairline = line, border-strong = control border.
  * Theme is the `.dark` class (next-themes), density is `data-density`.
  */
-:root {
+:root,
+.light {
   color-scheme: light;
 
   /* Surfaces */

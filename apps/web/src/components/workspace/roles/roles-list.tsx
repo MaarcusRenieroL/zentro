@@ -41,6 +41,7 @@ import { usePermission } from "~/src/components/permissions/permission-provider"
 import { paths } from "~/src/lib/paths";
 import { trpcResult } from "~/src/lib/trpc-result";
 
+import { PermissionMatrix } from "./permission-matrix";
 import { scopeLabels } from "./use-catalog";
 
 type RoleRow = {
@@ -158,8 +159,8 @@ export const RolesList: FC = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Roles</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="font-display text-2xl text-ink">Roles</h2>
+          <p className="mt-1 text-sm text-ink-2">
             Roles group permissions. Owner is always everything; Admin and
             Member can be adjusted; team and project roles apply where they are
             assigned.
@@ -173,7 +174,7 @@ export const RolesList: FC = () => {
         ) : null}
       </div>
 
-      <Card>
+      <Card className="py-0">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -253,6 +254,8 @@ export const RolesList: FC = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <PermissionMatrix roles={roles} />
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent>

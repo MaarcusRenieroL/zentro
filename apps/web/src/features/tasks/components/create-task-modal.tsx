@@ -109,7 +109,7 @@ const CreateTaskModalInner: FC<Props> = ({
       assignedToMemberId: null,
       dueAt: null,
     },
-    mode: "onChange",
+    mode: "onTouched",
   });
 
   useEffect(() => {

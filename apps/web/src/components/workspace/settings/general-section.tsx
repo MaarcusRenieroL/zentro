@@ -85,7 +85,7 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
         <CardContent className="p-4 sm:p-6">
           <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">
+              <h2 className="font-display text-2xl text-ink">
                 Organization name
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -133,9 +133,7 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
         <CardContent className="p-4 sm:p-6">
           <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
             <div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Workspace slug
-              </h2>
+              <h2 className="font-display text-2xl text-ink">Workspace slug</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Your workspace identifier.
               </p>

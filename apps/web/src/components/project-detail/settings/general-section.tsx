@@ -330,7 +330,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                   <RocketIcon className="size-5 text-primary" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <h3 className="truncate text-lg font-semibold text-foreground">
+                  <h3 className="truncate font-display text-2xl text-ink">
                     {preview.name || "Untitled project"}
                   </h3>
                   <Badge

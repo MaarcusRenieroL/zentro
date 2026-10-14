@@ -6,7 +6,8 @@ import { auditCatalog, getAuditEvent } from "@zentro/audit";
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError } from "@zentro/ui/index";
 import { Button } from "@zentro/ui/shadcn/button";
-import { Card, CardContent } from "@zentro/ui/shadcn/card";
+import { ThreadNode } from "@zentro/ui/components/thread";
+import { Tile } from "@zentro/ui/components/tile";
 import { Input } from "@zentro/ui/shadcn/input";
 import { Label } from "@zentro/ui/shadcn/label";
 import {
@@ -24,14 +25,6 @@ import {
   SheetTitle,
 } from "@zentro/ui/shadcn/sheet";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@zentro/ui/shadcn/table";
 
 import { usePermission } from "~/src/components/permissions/permission-provider";
 import { sentenceFor } from "~/src/components/workspace/activity/activity-feed";
@@ -189,8 +182,8 @@ export const AuditLog: FC = () => {
     <div className="space-y-4" data-testid="audit-log">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Audit log</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="font-display text-2xl text-ink">Audit log</h2>
+          <p className="mt-1 text-sm text-ink-2">
             Every recorded event in the organization, including sign-ins and
             permission changes.
           </p>
@@ -273,48 +266,45 @@ export const AuditLog: FC = () => {
       {!rows ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>When</TableHead>
-                  <TableHead>Event</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length ? (
-                  rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className="cursor-pointer"
-                      onClick={() => setSelected(row)}
+        <Tile flush>
+          {rows.length ? (
+            <ol aria-label="Events, newest first">
+              {rows.map((row) => (
+                <li
+                  key={row.id}
+                  className="border-b border-hairline last:border-b-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelected(row)}
+                    className="grid w-full grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-3 px-(--pad-tile) py-3 text-left outline-none transition-colors duration-(--duration-fast) hover:bg-hover focus-visible:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  >
+                    <span className="mt-1.5 flex justify-center">
+                      <ThreadNode />
+                    </span>
+                    <span className="min-w-0 text-sm break-words text-ink">
+                      {sentenceFor(row)}
+                      <span className="mt-0.5 block font-mono text-[11px] text-ink-3">
+                        {row.action}
+                      </span>
+                    </span>
+                    <time
+                      dateTime={new Date(row.createdAt).toISOString()}
+                      className="font-mono text-xs whitespace-nowrap text-ink-3"
                     >
-                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        {new Date(row.createdAt).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="whitespace-normal break-words">
-                        {sentenceFor(row)}{" "}
-                        <span className="text-xs text-muted-foreground">
-                          ({row.action})
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={2}
-                      className="py-8 text-center text-sm text-muted-foreground"
-                    >
-                      No events match.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                      {new Date(row.createdAt).toLocaleString()}
+                    </time>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="px-(--pad-tile) py-8 text-center text-sm text-ink-2">
+              No events match those filters. Widen the dates or clear the
+              search.
+            </p>
+          )}
+        </Tile>
       )}
 
       {cursor ? (

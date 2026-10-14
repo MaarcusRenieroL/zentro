@@ -148,12 +148,18 @@ export const taskStatusSchema = z.enum([
 export const taskPrioritySchema = z.enum(["low", "medium", "high"]);
 
 export const createTaskSchema = z.object({
-  projectId: z.string().uuid(),
+  projectId: z
+    .string({ error: "Pick a project so this task gets a key like ZEN-18." })
+    .uuid("Pick a project so this task gets a key like ZEN-18."),
   name: z.string().trim().min(1, "Task name is required.").max(120),
   description: z.string().trim().max(10000).optional().or(z.literal("")),
   status: taskStatusSchema.default("todo"),
   priority: taskPrioritySchema.default("medium"),
-  assignedToMemberId: z.string().uuid().optional().nullable(),
+  assignedToMemberId: z
+    .string()
+    .uuid("Choose someone from the list, or leave this empty.")
+    .optional()
+    .nullable(),
   dueAt: z.preprocess(
     (value) => (value === "" ? null : value),
     z.coerce.date().optional().nullable(),

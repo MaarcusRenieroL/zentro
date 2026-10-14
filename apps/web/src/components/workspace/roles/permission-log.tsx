@@ -97,9 +97,7 @@ export const PermissionLog: FC = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">
-          Permission log
-        </h2>
+        <h2 className="font-display text-2xl text-ink">Permission log</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Every change to roles, assignments, overrides and base roles.
         </p>
@@ -122,7 +120,7 @@ export const PermissionLog: FC = () => {
         </Select>
       </div>
 
-      <Card>
+      <Card className="py-0">
         <CardContent className="p-0">
           <Table>
             <TableHeader>

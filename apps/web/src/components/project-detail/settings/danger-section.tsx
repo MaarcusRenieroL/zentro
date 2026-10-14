@@ -133,7 +133,7 @@ export const DangerSection: FC<Props> = ({ project }) => {
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold text-foreground">
+              <h2 className="font-display text-2xl text-ink">
                 {isArchived ? "Restore project" : "Archive project"}
               </h2>
 
@@ -177,9 +177,7 @@ export const DangerSection: FC<Props> = ({ project }) => {
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-semibold text-foreground">
-                Delete project
-              </h2>
+              <h2 className="font-display text-2xl text-ink">Delete project</h2>
 
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                 Delete this project when it is no longer needed. This action

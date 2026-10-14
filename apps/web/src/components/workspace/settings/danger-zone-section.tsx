@@ -82,7 +82,7 @@ export const DangerZoneSection: FC<Props> = ({
                 <LogOutIcon className="size-5 text-destructive" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="font-display text-2xl text-ink">
                   Leave organization
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
@@ -111,7 +111,7 @@ export const DangerZoneSection: FC<Props> = ({
                 <Building2Icon className="size-5 text-destructive" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="font-display text-2xl text-ink">
                   Delete organization
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm text-muted-foreground">

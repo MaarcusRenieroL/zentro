@@ -2,7 +2,7 @@
 
 import { useTrpcClient } from "@zentro/api/react";
 import { Badge } from "@zentro/ui/components/shadcn/badge";
-import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
+import { Tile, type TileTint } from "@zentro/ui/components/tile";
 import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
 import { Switch } from "@zentro/ui/components/shadcn/switch";
 import { toastError, toastSuccess } from "@zentro/ui/index";
@@ -10,6 +10,14 @@ import { useRouter } from "next/navigation";
 import { FC, useCallback, useEffect, useState } from "react";
 
 import { getModuleIcon } from "~/src/lib/module-icons";
+
+const tints: Record<string, TileTint> = {
+  dashboard: "tasks",
+  settings: "audit",
+  projects: "projects",
+  tasks: "tasks",
+  docs: "docs",
+};
 
 type ModuleRow = {
   id: string;
@@ -75,44 +83,28 @@ export const ModulesSection: FC = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Modules</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h2 className="font-display text-2xl text-ink">Modules</h2>
+        <p className="mt-1 text-sm text-ink-2">
           Choose which parts of Zentro your organization uses. Turning a module
           off hides it but keeps all of its data.
           {data.canManage ? "" : " Only owners and admins can change modules."}
         </p>
       </div>
 
-      <Card>
-        <CardContent className="divide-y p-0">
-          {data.modules.map((module) => {
-            const Icon = getModuleIcon(module.icon);
-            const isSaving = savingId === module.id;
+      <div className="grid gap-4 sm:grid-cols-2">
+        {data.modules.map((module) => {
+          const Icon = getModuleIcon(module.icon);
+          const isSaving = savingId === module.id;
+          const tint = tints[module.id] ?? "tasks";
 
-            return (
-              <div
-                key={module.id}
-                className="flex items-center gap-4 px-4 py-4 sm:px-6"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-card shadow-sm text-muted-foreground">
-                  <Icon className="size-4" />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {module.name}
-                  </p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    {module.description}
-                  </p>
-                  {!module.core && module.reason ? (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {module.reason}
-                    </p>
-                  ) : null}
-                </div>
-
-                {module.core ? (
+          return (
+            <Tile
+              key={module.id}
+              tint={tint}
+              icon={<Icon />}
+              title={module.name}
+              actions={
+                module.core ? (
                   <Badge variant="secondary">Always on</Badge>
                 ) : (
                   <Switch
@@ -123,12 +115,19 @@ export const ModulesSection: FC = () => {
                       void handleToggle(module, checked)
                     }
                   />
-                )}
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+                )
+              }
+            >
+              <p className="text-sm text-ink-2">{module.description}</p>
+              {!module.core && module.reason ? (
+                <p className="mt-3 rounded-sm bg-sunken px-2.5 py-1.5 text-xs text-ink-2">
+                  {module.reason}
+                </p>
+              ) : null}
+            </Tile>
+          );
+        })}
+      </div>
     </div>
   );
 };

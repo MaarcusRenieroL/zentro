@@ -184,7 +184,7 @@ export const RoleEditor: FC<{ roleId: string }> = ({ roleId }) => {
       </Button>
 
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-lg font-semibold text-foreground">{role.name}</h2>
+        <h2 className="font-display text-2xl text-ink">{role.name}</h2>
         {role.kind === "system" ? (
           <Badge variant="secondary">System</Badge>
         ) : null}

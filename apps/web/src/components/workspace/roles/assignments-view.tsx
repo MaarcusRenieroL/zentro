@@ -170,7 +170,7 @@ export const AssignmentsView: FC = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Assignments</h2>
+        <h2 className="font-display text-2xl text-ink">Assignments</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Who has which role, and where. Base roles (Owner, Admin, Member) are
           set on the members page.
@@ -263,7 +263,7 @@ export const AssignmentsView: FC = () => {
         </Card>
       ) : null}
 
-      <Card>
+      <Card className="py-0">
         <CardContent className="p-0">
           <Table>
             <TableHeader>

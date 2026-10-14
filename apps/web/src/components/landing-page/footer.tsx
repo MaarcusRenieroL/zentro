@@ -8,10 +8,10 @@ const columns = [
   {
     title: "Product",
     links: [
-      { label: "Overview", href: "#product" },
-      { label: "Permissions", href: "#permissions" },
-      { label: "Modules", href: "#modules" },
-      { label: "Audit log", href: "#audit" },
+      { label: "Today", href: "#today" },
+      { label: "Team", href: "#team" },
+      { label: "Thread", href: "#thread" },
+      { label: "Roles and audit", href: "#control" },
     ],
   },
   {
@@ -26,8 +26,8 @@ const columns = [
 
 export function LandingFooter() {
   return (
-    <footer className="px-4 pb-10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-10 border-t border-hairline pt-10 sm:flex-row sm:justify-between">
+    <footer className="bg-surface px-5 pb-10">
+      <div className="mx-auto flex max-w-6xl flex-col gap-10 border-t border-hairline pt-12 sm:flex-row sm:justify-between">
         <div className="max-w-xs">
           <Logo />
           <p className="mt-3 text-sm text-ink-2">
