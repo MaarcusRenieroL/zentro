@@ -8,7 +8,7 @@ import {
 import { ProjectToolbar } from "~/src/components/projects/toolbar";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { toastError } from "@zentro/ui/index";
+import { ErrorState } from "@zentro/ui/components/error-state";
 
 type ProjectSort = "updated" | "name" | "status";
 
@@ -21,6 +21,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<ProjectSort>("updated");
   const [isLoading, setIsLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const trpc = useTrpcClient();
   const searchParams = useSearchParams();
   const initialStatus = getInitialStatus(searchParams.get("status"));
@@ -32,8 +33,9 @@ export default function ProjectsPage() {
       const data = await trpc.project.getProjectsByOrgId.query();
 
       setProjects(data);
+      setFailed(false);
     } catch {
-      toastError("Error", "Could not load existing projects");
+      setFailed(true);
     } finally {
       setIsLoading(false);
     }
@@ -52,13 +54,21 @@ export default function ProjectsPage() {
         onSortByChange={setSortBy}
         onProjectCreated={loadProjects}
       />
-      <ProjectList
-        isLoading={isLoading}
-        projects={projects}
-        searchQuery={searchQuery}
-        sortBy={sortBy}
-        initialStatus={initialStatus}
-      />
+      {failed && !isLoading ? (
+        <ErrorState
+          title="Projects could not be loaded"
+          message="We could not read your projects. They are safe; try again."
+          onRetry={loadProjects}
+        />
+      ) : (
+        <ProjectList
+          isLoading={isLoading}
+          projects={projects}
+          searchQuery={searchQuery}
+          sortBy={sortBy}
+          initialStatus={initialStatus}
+        />
+      )}
     </section>
   );
 }

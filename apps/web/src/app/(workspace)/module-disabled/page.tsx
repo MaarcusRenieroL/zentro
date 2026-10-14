@@ -1,9 +1,9 @@
 import { JSX } from "react";
-import { EmptyState } from "@zentro/ui";
 import { BlocksIcon } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@zentro/ui/components/shadcn/button";
+import { EmptyState } from "@zentro/ui/components/empty-state";
+import { Button } from "@zentro/ui/shadcn/button";
 import { getModule } from "@zentro/modules";
 
 import { paths } from "~/src/lib/paths";
@@ -22,9 +22,10 @@ export default async function ModuleDisabledPage({
   const manifest = moduleId ? getModule(moduleId) : undefined;
 
   return (
-    <section className="mx-auto flex w-full max-w-xl flex-col items-center gap-4 px-4 py-16 text-center">
+    <div className="mx-auto mt-10 flex w-full max-w-xl flex-col items-center gap-4 text-center">
       <EmptyState
-        icon={<BlocksIcon className="size-5" aria-hidden="true" />}
+        className="w-full"
+        icon={<BlocksIcon className="size-4" aria-hidden="true" />}
         title={
           manifest ? `${manifest.name} is turned off` : "Module turned off"
         }
@@ -33,6 +34,6 @@ export default async function ModuleDisabledPage({
       <Button asChild variant="outline">
         <Link href={paths.dashboard()}>Back to dashboard</Link>
       </Button>
-    </section>
+    </div>
   );
 }

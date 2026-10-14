@@ -1,6 +1,8 @@
 "use client";
 
 import { useTrpcClient } from "@zentro/api/react";
+import { ErrorState } from "@zentro/ui/components/error-state";
+import { BoardSkeleton, PageSkeleton } from "@zentro/ui/components/skeletons";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -45,6 +47,7 @@ export default function TasksPage() {
   const initialStatus = toInitialStatus(searchParams.get("status"));
   const [tasks, setTasks] = useState<WorkspaceTask[] | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [failed, setFailed] = useState(false);
   const trpc = useTrpcClient();
 
   async function updateTaskStatus(task: WorkspaceTask, status: TaskStatus) {
@@ -119,13 +122,12 @@ export default function TasksPage() {
       try {
         const updatedTasks = await fetchTasks();
         if (isMounted) {
+          setFailed(false);
           setTasks(updatedTasks);
         }
       } catch {
-        toastError("Error", "Failed to fetch tasks");
-
         if (isMounted) {
-          setTasks([]);
+          setFailed(true);
         }
       }
     }
@@ -137,8 +139,26 @@ export default function TasksPage() {
     };
   }, [fetchTasks, refreshToken]);
 
+  if (failed && !tasks) {
+    return (
+      <ErrorState
+        className="mt-10"
+        title="Tasks could not be loaded"
+        message="We could not read your tasks. They are safe; try again."
+        onRetry={() => {
+          setFailed(false);
+          setRefreshToken((token) => token + 1);
+        }}
+      />
+    );
+  }
+
   if (!tasks) {
-    return null;
+    return (
+      <PageSkeleton toolbar>
+        <BoardSkeleton />
+      </PageSkeleton>
+    );
   }
 
   const projectName = projectSlug

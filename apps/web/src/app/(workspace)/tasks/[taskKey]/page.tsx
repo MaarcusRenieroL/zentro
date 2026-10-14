@@ -9,6 +9,9 @@ import { ArrowLeftIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
+import { ErrorState } from "@zentro/ui/components/error-state";
+import { EmptyState } from "@zentro/ui/components/empty-state";
+import { DetailSkeleton } from "@zentro/ui/components/skeletons";
 import { Button } from "@zentro/ui/shadcn/button";
 
 import { TaskDetailView } from "~/src/features/tasks/components/task-detail/task-detail-view";
@@ -26,6 +29,8 @@ export default function TaskDetailPage() {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [activityEvents, setActivityEvents] = useState<TaskActivityEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [savingField, setSavingField] = useState<string | null>(null);
   const { taskKey } = useParams<{ taskKey: string }>();
   const router = useRouter();
@@ -55,8 +60,9 @@ export default function TaskDetailPage() {
           return;
         }
 
+        setFailed(false);
+
         if (!taskData) {
-          toastError("Error", "Task was not found");
           setTask(null);
           setMembers(memberData);
           setComments([]);
@@ -78,7 +84,9 @@ export default function TaskDetailPage() {
         setComments(commentData);
         setActivityEvents(activityData);
       } catch {
-        toastError("Error", "Failed to fetch task details");
+        if (isMounted) {
+          setFailed(true);
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -91,7 +99,7 @@ export default function TaskDetailPage() {
     return () => {
       isMounted = false;
     };
-  }, [taskKey, trpc]);
+  }, [taskKey, trpc, attempt]);
 
   async function saveTask(field: string, values: TaskUpdate) {
     if (!task || savingField) {
@@ -175,7 +183,21 @@ export default function TaskDetailPage() {
   }
 
   if (isLoading) {
-    return <TaskDetailLoading />;
+    return <DetailSkeleton />;
+  }
+
+  if (failed) {
+    return (
+      <ErrorState
+        className="mt-10"
+        title="This task could not be loaded"
+        message="We could not read it right now. Try again."
+        onRetry={() => {
+          setIsLoading(true);
+          setAttempt((value) => value + 1);
+        }}
+      />
+    );
   }
 
   if (!task) {
@@ -197,34 +219,19 @@ export default function TaskDetailPage() {
   );
 }
 
-function TaskDetailLoading() {
-  return (
-    <section className="flex w-full flex-col gap-6">
-      <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="h-[520px] animate-pulse rounded-md bg-muted" />
-        <div className="h-[620px] animate-pulse rounded-md bg-muted" />
-      </div>
-    </section>
-  );
-}
-
 function TaskDetailNotFound() {
   return (
-    <section className="mx-auto flex w-full max-w-[900px] flex-col gap-4 px-4 py-10 sm:px-6">
+    <section className="mx-auto flex w-full max-w-xl flex-col gap-4 py-10">
       <Button asChild variant="ghost" className="w-fit">
         <Link href={paths.tasks()}>
           <ArrowLeftIcon className="size-4" />
           Back to tasks
         </Link>
       </Button>
-      <div className="rounded-md border bg-card p-8">
-        <h1 className="text-xl font-semibold">Task not found</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This task may have been moved, deleted, or created in another
-          organization.
-        </p>
-      </div>
+      <EmptyState
+        title="Task not found"
+        description="This task may have been moved, deleted, or created in another organization."
+      />
     </section>
   );
 }

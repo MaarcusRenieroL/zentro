@@ -1,44 +1,31 @@
-import { paths } from "~/src/lib/paths";
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { ArrowLeftIcon, HomeIcon, LayoutDashboardIcon } from "lucide-react";
 import Link from "next/link";
+
+import { Logo } from "@zentro/ui/components/logo";
+import { Button } from "@zentro/ui/shadcn/button";
+
+import { paths } from "~/src/lib/paths";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
-      <section className="flex w-full max-w-md flex-col items-center text-center">
-        <div className="flex size-14 items-center justify-center rounded-md border bg-card text-lg font-semibold shadow-sm">
-          404
-        </div>
+    <main className="flex min-h-screen flex-col bg-canvas px-6 py-6 text-ink">
+      <Link href="/" aria-label="Zentro home" className="w-fit">
+        <Logo />
+      </Link>
 
-        <h1 className="mt-6 text-3xl font-semibold tracking-tight">
-          Page not found
+      <section className="mx-auto my-auto flex w-full max-w-md flex-col items-center text-center">
+        <p className="font-mono text-xs text-ink-3">404</p>
+        <h1 className="mt-3 font-display text-5xl leading-[1.05] text-balance">
+          This page does not exist
         </h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you&apos;re looking for doesn&apos;t exist or may have moved.
+        <p className="mt-3 text-sm text-ink-2">
+          The link may be wrong, or the page may have moved.
         </p>
-
-        <div className="mt-6 grid w-full gap-2 sm:flex sm:justify-center">
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Button asChild>
-            <Link href={paths.dashboard()}>
-              <LayoutDashboardIcon className="size-4" />
-              Dashboard
-            </Link>
+            <Link href={paths.dashboard()}>Go to the dashboard</Link>
           </Button>
-
-          <Button variant="outline" asChild>
-            <Link href="/">
-              <HomeIcon className="size-4" />
-              Home
-            </Link>
-          </Button>
-
           <Button variant="ghost" asChild>
-            <Link href="..">
-              <ArrowLeftIcon className="size-4" />
-              Go back
-            </Link>
+            <Link href="/">Home</Link>
           </Button>
         </div>
       </section>
