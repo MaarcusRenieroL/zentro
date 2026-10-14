@@ -113,7 +113,7 @@ export function LinkedThread({
           >
             <FolderIcon className="size-4 text-ink-3" aria-hidden="true" />
             <span className="truncate">{projectName}</span>
-            <span className="ml-auto font-mono text-[11px] text-ink-3">
+            <span className="ml-auto shrink-0 font-mono text-[11px] whitespace-nowrap text-ink-3">
               Project
             </span>
           </Link>
@@ -154,7 +154,7 @@ export function LinkedThread({
                 />
               )}
               <span className="truncate">{item.label}</span>
-              <span className="ml-auto font-mono text-[11px] text-ink-3">
+              <span className="ml-auto shrink-0 font-mono text-[11px] whitespace-nowrap text-ink-3">
                 {item.meta}
               </span>
             </Link>

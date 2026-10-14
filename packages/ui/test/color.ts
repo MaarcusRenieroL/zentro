@@ -33,18 +33,20 @@ function declarations(source: string) {
 }
 
 // The first :root block holds the light values, `.dark` overrides them.
-const rootBlocks = [...css.matchAll(/(^|\n):root\s*\{/g)].map((match) => {
-  const start = match.index! + match[0].length - 1;
-  let depth = 0;
+const rootBlocks = [...css.matchAll(/(^|\n):root(?:,\s*\.light)?\s*\{/g)].map(
+  (match) => {
+    const start = match.index! + match[0].length - 1;
+    let depth = 0;
 
-  for (let index = start; index < css.length; index += 1) {
-    if (css[index] === "{") depth += 1;
-    if (css[index] === "}") depth -= 1;
-    if (depth === 0) return css.slice(start + 1, index);
-  }
+    for (let index = start; index < css.length; index += 1) {
+      if (css[index] === "{") depth += 1;
+      if (css[index] === "}") depth -= 1;
+      if (depth === 0) return css.slice(start + 1, index);
+    }
 
-  return "";
-});
+    return "";
+  },
+);
 
 export const tokens: Record<Theme, Map<string, string>> = {
   light: new Map(rootBlocks.flatMap((source) => [...declarations(source)])),

@@ -71,7 +71,7 @@ export function TopBar({ enabledModules, modules, user, links }: Props) {
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          aria-label="Search or jump to"
+          aria-label="Open command palette"
           className="hidden h-8 w-56 items-center gap-2 rounded-full border border-border-strong bg-surface px-3 text-left text-sm text-ink-3 outline-none transition-colors hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring md:flex"
         >
           <SearchIcon className="size-3.5" aria-hidden="true" />
