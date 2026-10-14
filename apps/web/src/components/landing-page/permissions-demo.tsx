@@ -57,7 +57,7 @@ export function PermissionsDemo() {
       lead="Start from the built-in roles, or build your own. Give someone a role on a single project without opening up the rest."
       className="bg-sunken/60"
     >
-      <div className="mx-auto grid max-w-4xl gap-4 rounded-3xl bg-surface p-3 shadow-md ring-1 ring-hairline/60 sm:p-4 md:grid-cols-[14rem_1fr]">
+      <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 rounded-3xl bg-surface p-3 shadow-md ring-1 ring-hairline/60 sm:p-4 md:grid-cols-[14rem_1fr]">
         <div
           role="tablist"
           aria-label="Role"

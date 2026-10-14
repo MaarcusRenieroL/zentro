@@ -121,10 +121,10 @@ export const DangerSection: FC<Props> = ({ project }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-md bg-card/50 py-0 shadow-sm">
+      <Card className="rounded-3xl py-0">
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sunken">
               {isArchived ? (
                 <RotateCcwIcon className="size-5 text-primary" />
               ) : (
@@ -211,7 +211,7 @@ export const DangerSection: FC<Props> = ({ project }) => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3 text-left">
-              <div className="flex size-9 items-center justify-center rounded-md bg-secondary">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-sunken">
                 {isArchived ? (
                   <RotateCcwIcon className="size-5 text-primary" />
                 ) : (

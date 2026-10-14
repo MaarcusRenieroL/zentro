@@ -593,7 +593,7 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
             <ShieldCheckIcon className="size-5" />
           </div>
           <div>
@@ -687,7 +687,7 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
                     .map((member) => (
                       <span
                         key={member.id}
-                        className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs"
+                        className="inline-flex items-center gap-2 rounded-xl border border-hairline/60 bg-surface px-2 py-1 text-xs"
                       >
                         <Avatar className="size-5">
                           <AvatarFallback className="text-[10px]">

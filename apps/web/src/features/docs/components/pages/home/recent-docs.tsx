@@ -60,13 +60,17 @@ export const RecentDocs: FC = () => {
     <div className="w-full space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Recent docs</h2>
+          <h2 className="font-display text-2xl text-ink">Recent docs</h2>
           <p className="text-sm text-muted-foreground">
             Pages your team touched most recently
           </p>
         </div>
         <Link href={paths.recentDocs()}>
-          <Button variant="link" size="sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-signal"
+          >
             View all
           </Button>
         </Link>
@@ -74,7 +78,7 @@ export const RecentDocs: FC = () => {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, index) => (
-              <Card key={index} className="min-h-44 rounded-lg" size="sm">
+              <Card key={index} className="min-h-44 rounded-3xl" size="sm">
                 <CardHeader>
                   <div className="h-20 animate-pulse rounded-md bg-muted" />
                 </CardHeader>
@@ -88,14 +92,14 @@ export const RecentDocs: FC = () => {
         {docs.map((doc) => (
           <Card
             key={doc.id}
-            className="min-h-44 rounded-lg transition-colors hover:bg-muted/20"
+            className="min-h-44 rounded-3xl transition-shadow hover:shadow-md"
             size="sm"
           >
             <CardHeader className="gap-3">
               <div className="flex items-start gap-3">
                 <Link
                   href={paths.doc(doc.slug)}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-signal-subtle text-signal"
                 >
                   <FileTextIcon className="size-4" />
                 </Link>
@@ -130,7 +134,7 @@ export const RecentDocs: FC = () => {
         ))}
 
         {!isLoading && !docs.length ? (
-          <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-10 text-center md:col-span-2 xl:col-span-4">
+          <div className="rounded-3xl bg-sunken px-4 py-10 text-center md:col-span-2 xl:col-span-4">
             <FileTextIcon className="mx-auto mb-3 size-9 text-muted-foreground" />
             <p className="text-sm font-medium">No recent docs</p>
             <p className="mt-1 text-sm text-muted-foreground">

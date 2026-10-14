@@ -81,7 +81,7 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
         </div>
       ) : null}
 
-      <Card className="rounded-md bg-card/50 py-0 shadow-sm">
+      <Card className="rounded-3xl py-0">
         <CardContent className="p-4 sm:p-6">
           <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
             <div>
@@ -129,7 +129,7 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-md bg-card/50 py-0 shadow-sm">
+      <Card className="rounded-3xl py-0">
         <CardContent className="p-4 sm:p-6">
           <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
             <div>

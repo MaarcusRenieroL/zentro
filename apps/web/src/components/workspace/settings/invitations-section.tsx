@@ -140,7 +140,7 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-md bg-card/50 py-0 shadow-sm">
+      <Card className="rounded-3xl py-0">
         <CardContent className="p-4 sm:p-5">
           <form
             onSubmit={handleSubmit(handleSendInvite)}
@@ -218,7 +218,7 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
         </CardContent>
       </Card>
 
-      <Card className="rounded-md bg-card/50 py-0 shadow-sm">
+      <Card className="rounded-3xl py-0">
         <CardContent className="p-4 sm:p-5">
           {pendingInvitations.length > 0 ? (
             <div className="space-y-3">
@@ -232,10 +232,10 @@ export const InvitationsSection: FC<Props> = ({ invitations }) => {
                 return (
                   <div
                     key={invitationId}
-                    className="flex flex-col gap-4 rounded-md border bg-background/60 p-4 lg:flex-row lg:items-center lg:justify-between"
+                    className="flex flex-col gap-4 rounded-xl border border-hairline/60 bg-surface/60 p-4 lg:flex-row lg:items-center lg:justify-between"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sunken">
                         <MailIcon className="size-4 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">

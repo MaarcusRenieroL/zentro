@@ -90,7 +90,7 @@ export function ProjectDocsPage() {
     <section className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
             <FolderIcon className="size-5" />
           </div>
           <div className="flex flex-col gap-1">
@@ -137,7 +137,7 @@ export function ProjectDocsPage() {
             <Card key={group.id} className="rounded-lg shadow-sm">
               <CardHeader className="border-b">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+                  <div className="flex size-9 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
                     <FolderIcon className="size-4" />
                   </div>
                   <div>
@@ -158,7 +158,7 @@ export function ProjectDocsPage() {
                   <Link
                     key={`${group.id}-${doc.id}`}
                     href={paths.doc(doc.slug)}
-                    className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3 transition-colors hover:bg-muted/30"
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-hairline/60 bg-surface p-3 transition-colors hover:bg-muted/30"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

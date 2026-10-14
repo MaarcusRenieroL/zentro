@@ -61,8 +61,8 @@ export function ModulesDemo() {
       title="Turn on only what your team uses"
       lead="Each organization chooses its own modules. Try it: Tasks needs Projects, so Zentro will not let you break that."
     >
-      <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2">
-        <div className="rounded-3xl bg-surface p-3 shadow-sm ring-1 ring-hairline/60">
+      <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="min-w-0 rounded-3xl bg-surface p-3 shadow-sm ring-1 ring-hairline/60">
           {items.map(({ id, icon: Icon }) => {
             const manifest = getModule(id);
             const on = enabled.has(id);
@@ -102,7 +102,7 @@ export function ModulesDemo() {
           </p>
         </div>
 
-        <div className="rounded-3xl bg-canvas p-3 ring-1 ring-hairline/60">
+        <div className="min-w-0 rounded-3xl bg-canvas p-3 ring-1 ring-hairline/60">
           <p className="px-3 pt-2 pb-3 text-xs font-medium text-ink-3">
             What your sidebar looks like
           </p>

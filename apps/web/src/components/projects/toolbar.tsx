@@ -45,9 +45,11 @@ export const ProjectToolbar = ({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="text-md text-muted-foreground">
+        <div className="min-w-0">
+          <h1 className="font-display text-(length:--title-size) leading-[1.05] tracking-tight text-ink">
+            Projects
+          </h1>
+          <p className="mt-1.5 text-sm text-ink-2">
             Track active work across your workspace.
           </p>
         </div>
@@ -69,7 +71,10 @@ export const ProjectToolbar = ({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="justify-start gap-2">
+            <Button
+              variant="secondary"
+              className="justify-start gap-2 rounded-full"
+            >
               Sort: {activeSortLabel}
               <ChevronDownIcon className="h-4 w-4" />
             </Button>

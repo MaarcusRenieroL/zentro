@@ -58,7 +58,7 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
     <section>
       <div className="flex w-full flex-col gap-6">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-md border bg-card text-base font-semibold text-foreground shadow-sm sm:size-14 sm:text-lg">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-card shadow-sm text-base font-semibold text-foreground shadow-sm sm:size-14 sm:text-lg">
             {getInitials(project.name) || <Building2Icon className="size-6" />}
           </div>
           <div className="min-w-0">

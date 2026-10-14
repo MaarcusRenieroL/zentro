@@ -1,9 +1,8 @@
 import type { DragEvent } from "react";
 import { PlusIcon } from "lucide-react";
 
-import { Badge } from "@zentro/ui/shadcn/badge";
+import { StatusGlyph } from "@zentro/ui/components/status-glyph";
 import { Button } from "@zentro/ui/shadcn/button";
-import { Card, CardContent } from "@zentro/ui/shadcn/card";
 
 import { CreateTaskModal } from "../create-task-modal";
 import { TaskCard } from "./task-card";
@@ -39,67 +38,68 @@ export const TaskBoard: FC<Props> = ({
   }
 
   return (
-    <Card className="rounded-lg">
-      <CardContent className="overflow-x-auto p-3">
-        <div className="grid min-w-[1100px] grid-cols-5 gap-3">
-          {statusOrder.map((status) => {
-            const columnTasks = tasks.filter((task) => task.status === status);
+    <div className="overflow-x-auto pb-2">
+      <div className="grid min-w-[1100px] grid-cols-5 gap-3">
+        {statusOrder.map((status) => {
+          const columnTasks = tasks.filter((task) => task.status === status);
 
-            return (
-              <section
-                key={status}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => handleDrop(event, status)}
-                className="flex min-h-[520px] flex-col rounded-lg border bg-muted/30 p-3"
-              >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    {statusLabels[status]}
-                  </h2>
+          return (
+            <section
+              key={status}
+              aria-label={statusLabels[status]}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => handleDrop(event, status)}
+              className="flex min-h-[520px] flex-col rounded-3xl bg-sunken p-2.5"
+            >
+              <div className="mb-2.5 flex items-center gap-2 px-2 pt-1">
+                <StatusGlyph status={status} size={16} decorative />
+                <h2 className="text-sm font-semibold text-ink">
+                  {statusLabels[status]}
+                </h2>
+                <span className="ml-auto rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-ink-2 tabular-nums">
+                  {columnTasks.length}
+                </span>
+              </div>
 
-                  <Badge variant="secondary">{columnTasks.length}</Badge>
-                </div>
-
-                <div className="flex flex-1 flex-col gap-2">
-                  {columnTasks.length ? (
-                    columnTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        draggable={Boolean(onTaskStatusChange)}
-                        onDragStart={(event) => {
-                          event.dataTransfer.effectAllowed = "move";
-                          event.dataTransfer.setData("text/plain", task.id);
-                        }}
-                      >
-                        <TaskCard task={task} />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex min-h-28 items-center justify-center rounded-lg border border-dashed bg-background/60 px-3 text-center text-xs text-muted-foreground">
-                      No tasks in {statusLabels[status].toLowerCase()}.
+              <div className="flex flex-1 flex-col gap-2.5">
+                {columnTasks.length ? (
+                  columnTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      draggable={Boolean(onTaskStatusChange)}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", task.id);
+                      }}
+                    >
+                      <TaskCard task={task} />
                     </div>
-                  )}
+                  ))
+                ) : (
+                  <div className="flex min-h-24 items-center justify-center rounded-2xl border border-dashed border-border-default px-3 text-center text-xs text-ink-3">
+                    No tasks in {statusLabels[status].toLowerCase()}.
+                  </div>
+                )}
 
-                  <CreateTaskModal
-                    defaultStatus={status}
-                    onTaskCreated={onTaskCreated}
-                    trigger={
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-auto w-full justify-start text-muted-foreground"
-                      >
-                        <PlusIcon className="size-4" />
-                        Create task
-                      </Button>
-                    }
-                  />
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+                <CreateTaskModal
+                  defaultStatus={status}
+                  onTaskCreated={onTaskCreated}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-auto w-full justify-start rounded-xl text-ink-2"
+                    >
+                      <PlusIcon className="size-4" />
+                      Create task
+                    </Button>
+                  }
+                />
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </div>
   );
 };

@@ -35,7 +35,7 @@ export const SearchToolbar: FC = () => {
   }
 
   return (
-    <div className="rounded-lg border bg-background p-3 shadow-sm">
+    <div className="rounded-3xl bg-sunken p-2">
       <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <form
           onSubmit={handleSearch}
@@ -44,7 +44,7 @@ export const SearchToolbar: FC = () => {
           <div className="relative flex-1">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pr-9 pl-9"
+              className="rounded-full border-transparent bg-surface pr-9 pl-9"
               placeholder="Search docs..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -60,26 +60,38 @@ export const SearchToolbar: FC = () => {
               </button>
             ) : null}
           </div>
-          <Button type="submit" className="w-full sm:w-auto">
+          <Button type="submit" className="w-full rounded-full sm:w-auto">
             <SearchIcon className="size-4" />
             Search
           </Button>
         </form>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
-          <Button variant="outline" className="justify-start" asChild>
+          <Button
+            variant="ghost"
+            className="justify-start rounded-full"
+            asChild
+          >
             <Link href={paths.recentDocs()}>
               <ClockIcon className="size-4" />
               Recent
             </Link>
           </Button>
-          <Button variant="outline" className="justify-start" asChild>
+          <Button
+            variant="ghost"
+            className="justify-start rounded-full"
+            asChild
+          >
             <Link href={paths.projectDocs()}>
               <FolderIcon className="size-4" />
               Projects
             </Link>
           </Button>
-          <Button variant="outline" className="justify-start" asChild>
+          <Button
+            variant="ghost"
+            className="justify-start rounded-full"
+            asChild
+          >
             <Link href={paths.trashedDocs()}>
               <Trash2Icon className="size-4" />
               Trash

@@ -316,7 +316,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
         </div>
 
         <aside className="space-y-6">
-          <Card className="rounded-md bg-card/50 py-0 shadow-sm">
+          <Card className="rounded-3xl py-0">
             <CardContent className="p-4 sm:p-5">
               <div className="mb-4 flex items-center gap-2">
                 <EyeIcon className="size-4 text-muted-foreground" />
@@ -325,8 +325,8 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                 </h2>
               </div>
 
-              <div className="rounded-md border bg-background/50 p-4">
-                <div className="mb-4 flex size-10 items-center justify-center rounded-md bg-secondary">
+              <div className="rounded-xl border border-hairline/60 bg-surface/50 p-4">
+                <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-sunken">
                   <RocketIcon className="size-5 text-primary" />
                 </div>
                 <div className="flex items-center gap-2">
@@ -354,7 +354,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
             </CardContent>
           </Card>
 
-          <Card className="rounded-md bg-card/50 py-0 shadow-sm">
+          <Card className="rounded-3xl py-0">
             <CardContent className="space-y-4 p-4 sm:p-5">
               <h2 className="text-base font-semibold text-foreground">
                 Metadata

@@ -276,7 +276,7 @@ export function DataTable<TData, TValue>({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="overflow-x-auto rounded-2xl bg-surface shadow-sm ring-1 ring-hairline/60">
         <Table className="min-w-[720px]">
           <TableHeader className="bg-secondary/50">
             {table.getHeaderGroups().map((headerGroup) => (

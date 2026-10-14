@@ -129,12 +129,12 @@ function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
 
   if (!isComposing) {
     return (
-      <div className="flex items-start gap-3 rounded-md border bg-card p-3 shadow-xs">
+      <div className="flex items-start gap-3 rounded-2xl border border-hairline/60 bg-card shadow-sm p-3 shadow-xs">
         <div className="pt-0.5">
           <AvatarInitials value={currentUserName} />
         </div>
         <button
-          className="flex min-h-10 min-w-0 flex-1 items-center rounded-md border bg-background px-3 text-left text-sm text-muted-foreground transition hover:border-primary/30 hover:bg-muted/40 hover:text-foreground"
+          className="flex min-h-10 min-w-0 flex-1 items-center rounded-xl border border-hairline/60 bg-surface px-3 text-left text-sm text-muted-foreground transition hover:border-primary/30 hover:bg-muted/40 hover:text-foreground"
           onClick={() => setIsComposing(true)}
         >
           Add a comment...
@@ -152,7 +152,7 @@ function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
   }
 
   return (
-    <div className="flex items-start gap-3 rounded-md border bg-card p-3 shadow-xs">
+    <div className="flex items-start gap-3 rounded-2xl border border-hairline/60 bg-card shadow-sm p-3 shadow-xs">
       <div className="pt-1">
         <AvatarInitials value={currentUserName} />
       </div>

@@ -3,7 +3,7 @@ import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
 export function ProjectPageLoading() {
   return (
     <section className="flex w-full flex-col gap-6">
-      <div className="rounded-md border bg-card/50 p-5 shadow-sm">
+      <div className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-hairline/60">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 gap-4">
             <Skeleton className="size-12 shrink-0 rounded-md" />
@@ -25,7 +25,10 @@ export function ProjectPageLoading() {
 
       <div className="grid w-full gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="rounded-md border bg-card/50 p-5">
+          <div
+            key={index}
+            className="rounded-3xl bg-surface shadow-sm ring-1 ring-hairline/60 p-5"
+          >
             <div className="mb-4 flex items-center justify-between">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="size-9 rounded-md" />
@@ -42,7 +45,7 @@ export function ProjectPageLoading() {
               <Skeleton key={index} className="h-5 w-20" />
             ))}
           </div>
-          <div className="rounded-md border bg-card/50 p-5">
+          <div className="rounded-3xl bg-surface shadow-sm ring-1 ring-hairline/60 p-5">
             <Skeleton className="mb-5 h-5 w-40" />
             <div className="space-y-3">
               <Skeleton className="h-4 w-full" />
@@ -54,7 +57,10 @@ export function ProjectPageLoading() {
 
         <aside className="flex min-w-0 flex-col gap-5">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="rounded-md border bg-card/50 p-5">
+            <div
+              key={index}
+              className="rounded-3xl bg-surface shadow-sm ring-1 ring-hairline/60 p-5"
+            >
               <Skeleton className="mb-5 h-5 w-36" />
               <div className="space-y-3">
                 <Skeleton className="h-4 w-full" />
@@ -108,14 +114,14 @@ export function ProjectSettingsContentLoading() {
       </div>
 
       <aside className="space-y-6">
-        <div className="rounded-md border bg-card/50 p-5">
+        <div className="rounded-3xl bg-surface shadow-sm ring-1 ring-hairline/60 p-5">
           <Skeleton className="mb-4 h-5 w-24" />
           <Skeleton className="mb-4 size-10 rounded-md" />
           <Skeleton className="h-5 w-44" />
           <Skeleton className="mt-2 h-4 w-28" />
           <Skeleton className="mt-4 h-16 w-full" />
         </div>
-        <div className="rounded-md border bg-card/50 p-5">
+        <div className="rounded-3xl bg-surface shadow-sm ring-1 ring-hairline/60 p-5">
           <Skeleton className="mb-4 h-5 w-28" />
           <div className="space-y-3">
             <Skeleton className="h-4 w-full" />

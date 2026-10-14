@@ -79,7 +79,7 @@ export function TrashRestorePage() {
   return (
     <section className="flex w-full flex-col gap-6">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
           <Trash2Icon className="size-5" />
         </div>
         <div className="flex flex-col gap-1">
@@ -90,7 +90,7 @@ export function TrashRestorePage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-hairline/60 bg-surface shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -137,7 +137,7 @@ export function TrashRestorePage() {
                 <TableRow key={doc.id}>
                   <TableCell>
                     <div className="flex min-w-64 items-center gap-3">
-                      <div className="flex size-8 items-center justify-center rounded-lg border bg-background text-muted-foreground">
+                      <div className="flex size-8 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground">
                         <Trash2Icon className="size-4" />
                       </div>
                       <div>

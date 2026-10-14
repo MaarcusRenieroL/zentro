@@ -58,21 +58,22 @@ export const TaskWorkspaceHeader: FC<Props> = ({
   onClearFilters,
   onTaskCreated,
 }) => {
-  return (
-    <div className="flex flex-col gap-5 border-b pb-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-muted-foreground">
-            {projectScoped ? "Project tasks" : "All tasks"}
-          </p>
+  const trigger =
+    "h-(--control-h) w-full rounded-full border-transparent bg-sunken shadow-none hover:bg-hover sm:w-auto sm:min-w-32";
 
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          {projectScoped ? (
+            <p className="text-sm font-medium text-signal">Project tasks</p>
+          ) : null}
+
+          <h1 className="mt-1 font-display text-(length:--title-size) leading-[1.05] tracking-tight text-ink">
             {title}
           </h1>
 
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            {description}
-          </p>
+          <p className="mt-1.5 max-w-2xl text-sm text-ink-2">{description}</p>
         </div>
 
         <CreateTaskModal onTaskCreated={onTaskCreated} />
@@ -80,13 +81,13 @@ export const TaskWorkspaceHeader: FC<Props> = ({
 
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative w-full sm:max-w-sm">
-            <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative w-full sm:max-w-xs">
+            <SearchIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
             <Input
               value={searchQuery}
               onChange={(event) => onSearchQueryChange(event.target.value)}
               placeholder="Search tasks"
-              className="pl-8"
+              className="rounded-full border-transparent bg-sunken pl-9 shadow-none"
             />
           </div>
 
@@ -96,7 +97,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
               onStatusFilterChange(value as TaskStatus | "all")
             }
           >
-            <SelectTrigger className="w-full sm:w-36">
+            <SelectTrigger className={trigger}>
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -115,7 +116,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
               onPriorityFilterChange(value as TaskPriority | "all")
             }
           >
-            <SelectTrigger className="w-full sm:w-36">
+            <SelectTrigger className={trigger}>
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -132,7 +133,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
               onAssigneeFilterChange(value === allValue ? "all" : value)
             }
           >
-            <SelectTrigger className="w-full sm:w-44">
+            <SelectTrigger className={trigger}>
               <SelectValue placeholder="Assignee" />
             </SelectTrigger>
             <SelectContent>
@@ -146,7 +147,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
           </Select>
 
           <Select value={teamFilter} onValueChange={onTeamFilterChange}>
-            <SelectTrigger className="w-full sm:w-44">
+            <SelectTrigger className={trigger}>
               <SelectValue placeholder="Team" />
             </SelectTrigger>
             <SelectContent>
@@ -161,7 +162,8 @@ export const TaskWorkspaceHeader: FC<Props> = ({
           </Select>
 
           <Button
-            variant="outline"
+            variant="ghost"
+            className="rounded-full"
             disabled={!filtersActive}
             onClick={onClearFilters}
           >
@@ -170,7 +172,7 @@ export const TaskWorkspaceHeader: FC<Props> = ({
           </Button>
         </div>
 
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-2">
           {taskCount} work item{taskCount === 1 ? "" : "s"} visible
         </p>
       </div>

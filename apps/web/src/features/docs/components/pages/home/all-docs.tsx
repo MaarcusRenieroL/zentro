@@ -81,7 +81,7 @@ export const AllDocs: FC = () => {
       <Tabs defaultValue="table" className="flex w-full flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">All docs</h2>
+            <h2 className="font-display text-2xl text-ink">All docs</h2>
             <p className="text-sm text-muted-foreground">
               Browse every page in your workspace
             </p>
@@ -101,7 +101,7 @@ export const AllDocs: FC = () => {
         </div>
 
         <TabsContent value="table" className="mt-0">
-          <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
+          <div className="overflow-hidden rounded-3xl bg-surface shadow-sm ring-1 ring-hairline/60">
             {isLoading ? (
               <div className="space-y-3 p-4">
                 {Array.from({ length: 4 }).map((_, index) => (
@@ -130,7 +130,7 @@ export const AllDocs: FC = () => {
                       <TableRow key={doc.id}>
                         <TableCell>
                           <div className="flex min-w-64 items-center gap-3">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground">
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-signal-subtle text-signal">
                               <FileTextIcon className="size-4" />
                             </div>
                             <div className="min-w-0">
@@ -215,7 +215,7 @@ export const AllDocs: FC = () => {
               >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+                    <div className="flex size-9 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
                       <BookOpenIcon className="size-4" />
                     </div>
                     <Badge variant="secondary">Doc</Badge>

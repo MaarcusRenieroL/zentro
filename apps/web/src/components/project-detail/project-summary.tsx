@@ -43,7 +43,7 @@ export const ProjectSummary: FC<Props> = ({
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Open Tasks
           </CardTitle>
-          <div className="flex size-9 items-center justify-center rounded-md bg-secondary">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-sunken">
             <CheckCircle2Icon className="size-4 text-primary" />
           </div>
         </CardHeader>
@@ -65,7 +65,7 @@ export const ProjectSummary: FC<Props> = ({
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Docs
           </CardTitle>
-          <div className="flex size-9 items-center justify-center rounded-md bg-secondary">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-sunken">
             <FileTextIcon className="size-4 text-primary" />
           </div>
         </CardHeader>
@@ -85,7 +85,7 @@ export const ProjectSummary: FC<Props> = ({
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Members
           </CardTitle>
-          <div className="flex size-9 items-center justify-center rounded-md bg-secondary">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-sunken">
             <UsersIcon className="size-4 text-primary" />
           </div>
         </CardHeader>
@@ -105,7 +105,7 @@ export const ProjectSummary: FC<Props> = ({
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Updated
           </CardTitle>
-          <div className="flex size-9 items-center justify-center rounded-md bg-secondary">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-sunken">
             <CalendarIcon className="size-4 text-primary" />
           </div>
         </CardHeader>

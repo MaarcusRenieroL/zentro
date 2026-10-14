@@ -2,7 +2,7 @@ import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
 
 function StatPillSkeleton() {
   return (
-    <div className="flex h-11 min-w-0 items-center gap-2 rounded-md border bg-card/70 px-3 shadow-sm sm:px-4">
+    <div className="flex h-11 min-w-0 items-center gap-2 rounded-2xl border border-hairline/60 bg-card shadow-sm/70 px-3 shadow-sm sm:px-4">
       <Skeleton className="size-4 shrink-0" />
       <Skeleton className="h-4 w-24" />
     </div>
@@ -59,13 +59,13 @@ export default function Loading() {
           </div>
         </div>
 
-        <div className="w-full rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
+        <div className="w-full rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-hairline/60 sm:p-5">
           <Skeleton className="h-4 w-36" />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={index}
-                className="flex items-center gap-3 rounded-md border bg-background/60 p-3"
+                className="flex items-center gap-3 rounded-xl border border-hairline/60 bg-surface/60 p-3"
               >
                 <Skeleton className="size-5 shrink-0" />
                 <div className="min-w-0 space-y-2">
@@ -80,7 +80,7 @@ export default function Loading() {
 
       <div className="grid w-full gap-5 lg:grid-cols-2 xl:grid-cols-7">
         <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
-          <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
+          <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-hairline/60 sm:p-5">
             <Skeleton className="h-5 w-32" />
             <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
               {Array.from({ length: 3 }).map((_, index) => (
@@ -89,7 +89,7 @@ export default function Loading() {
             </div>
           </section>
 
-          <section className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5">
+          <section className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-hairline/60 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <Skeleton className="h-5 w-20" />
               <Skeleton className="h-4 w-14" />
@@ -104,17 +104,17 @@ export default function Loading() {
 
         <ListCardSkeleton
           rows={6}
-          className="h-full rounded-md border bg-card/50 p-4 shadow-sm sm:p-5 lg:col-span-2 xl:col-span-3"
+          className="h-full rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-hairline/60 sm:p-5 lg:col-span-2 xl:col-span-3"
         />
 
         <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
           <ListCardSkeleton
             rows={4}
-            className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5"
+            className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-hairline/60 sm:p-5"
           />
           <ListCardSkeleton
             rows={4}
-            className="rounded-md border bg-card/50 p-4 shadow-sm sm:p-5"
+            className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-hairline/60 sm:p-5"
           />
         </div>
       </div>

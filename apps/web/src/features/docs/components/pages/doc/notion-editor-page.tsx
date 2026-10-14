@@ -250,7 +250,7 @@ type MetaPillProps = {
 
 function MetaPill({ icon: Icon, children }: MetaPillProps) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs text-muted-foreground">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-xl border border-hairline/60 bg-surface px-2.5 text-xs text-muted-foreground">
       {Icon ? <Icon className="size-3.5" /> : null}
       {children}
     </span>
@@ -903,7 +903,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 <MetaPill icon={CalendarClockIcon}>
                   Edited {formatDocDate(doc.updatedAt)}
                 </MetaPill>
-                <span className="inline-flex h-7 items-center gap-2 rounded-md border bg-background px-2.5 text-xs text-muted-foreground">
+                <span className="inline-flex h-7 items-center gap-2 rounded-xl border border-hairline/60 bg-surface px-2.5 text-xs text-muted-foreground">
                   <Avatar className="size-4">
                     <AvatarFallback className="text-[9px]">
                       {getInitials(owner)}
@@ -925,7 +925,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
 
             <div className="mt-9 max-w-4xl">
               <div
-                className={`mb-5 flex-wrap items-center gap-1 rounded-lg border bg-background p-2 shadow-sm ${canEdit ? "flex" : "hidden"}`}
+                className={`mb-5 flex-wrap items-center gap-1 rounded-2xl border border-hairline/60 bg-surface p-2 shadow-sm ${canEdit ? "flex" : "hidden"}`}
               >
                 <div className="flex flex-wrap items-center gap-1">
                   <ToolbarMenuButton icon={Heading1Icon} label="H1">

@@ -148,7 +148,7 @@ export function CommentsPanel({
           ) : null}
 
           {!isLoading && !comments.length ? (
-            <div className="rounded-lg border bg-background p-5 text-center shadow-sm">
+            <div className="rounded-2xl border border-hairline/60 bg-surface p-5 text-center shadow-sm">
               <MessageSquareIcon className="mx-auto mb-3 size-8 text-muted-foreground" />
               <p className="text-sm font-medium">No open comments</p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -164,7 +164,7 @@ export function CommentsPanel({
             return (
               <div
                 key={comment.id}
-                className="rounded-lg border bg-background p-3 shadow-sm"
+                className="rounded-2xl border border-hairline/60 bg-surface p-3 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">

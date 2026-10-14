@@ -150,12 +150,12 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
         </div>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-20 space-y-5">
+          <div className="sticky top-20 space-y-5 rounded-3xl bg-sunken p-3">
             {visible.map((group) => (
               <div key={group.label} className="space-y-1">
                 {group.items.length > 1 ||
                 group.label !== group.items[0]?.label ? (
-                  <p className="px-2.5 text-xs font-medium tracking-wide text-ink-3 uppercase">
+                  <p className="px-2.5 pt-1 text-xs font-semibold tracking-wide text-ink-3 uppercase">
                     {group.label}
                   </p>
                 ) : null}

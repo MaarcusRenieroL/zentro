@@ -40,7 +40,7 @@ export const ProjectContributors: FC<Props> = ({ totalMembers, owner }) => {
             <p className="text-xs text-muted-foreground">Project owner</p>
           </div>
         </div>
-        <div className="rounded-md bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">
+        <div className="rounded-xl bg-sunken px-2.5 py-1 text-xs font-medium text-secondary-foreground">
           {totalMembers} total
         </div>
       </CardContent>

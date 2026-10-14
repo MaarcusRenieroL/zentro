@@ -67,7 +67,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
   return (
     <section className="flex w-full flex-col gap-6">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
           <SearchIcon className="size-5" />
         </div>
         <div className="flex flex-col gap-1">
@@ -80,7 +80,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
 
       <form
         action={paths.searchDocs()}
-        className="flex flex-col gap-3 rounded-lg border bg-background p-3 shadow-sm sm:flex-row sm:items-center"
+        className="flex flex-col gap-3 rounded-2xl border border-hairline/60 bg-surface p-3 shadow-sm sm:flex-row sm:items-center"
       >
         <div className="relative flex-1">
           <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -97,7 +97,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
         </Button>
       </form>
 
-      <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-hairline/60 bg-surface shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
           <div>
             <p className="text-sm font-medium">
@@ -139,7 +139,7 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
                   className="flex flex-col gap-3 border-b px-4 py-4 last:border-b-0 hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
                       <FileSearchIcon className="size-4" />
                     </div>
                     <div className="min-w-0">

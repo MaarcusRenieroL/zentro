@@ -94,7 +94,7 @@ export const ModulesSection: FC = () => {
                 key={module.id}
                 className="flex items-center gap-4 px-4 py-4 sm:px-6"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border bg-card text-muted-foreground">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-card shadow-sm text-muted-foreground">
                   <Icon className="size-4" />
                 </span>
 

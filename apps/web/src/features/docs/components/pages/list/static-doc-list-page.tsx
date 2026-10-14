@@ -69,7 +69,7 @@ export function StaticDocListPage({
     <section className="flex w-full flex-col gap-6">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <div className="flex size-10 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+          <div className="flex size-10 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
             <Icon className="size-4" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -96,7 +96,7 @@ export function StaticDocListPage({
           >
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
-                <div className="flex size-9 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm">
+                <div className="flex size-9 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
                   <FileTextIcon className="size-4" />
                 </div>
                 <Badge variant="secondary">Doc</Badge>

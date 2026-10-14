@@ -12,7 +12,6 @@ import {
   Trash2Icon,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
@@ -29,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@zentro/ui/shadcn/select";
-import { Tabs, TabsList, TabsTrigger } from "@zentro/ui/shadcn/tabs";
+import { EmptyState } from "@zentro/ui/components/empty-state";
 import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
 
 export type ProjectListItem = {
@@ -142,23 +141,10 @@ export const ProjectList = ({
     : "Create a project to start organizing and tracking work across your team.";
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs
-          value={status}
-          onValueChange={(value) =>
-            setStatus(value as "all" | "active" | "archived")
-          }
-        >
-          <TabsList variant="line">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="archived">Archived</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
         <Select value={teamFilter} onValueChange={setTeamFilter}>
-          <SelectTrigger className="w-full sm:w-56">
+          <SelectTrigger className="h-(--control-h) w-full rounded-full border-transparent bg-sunken shadow-none hover:bg-hover sm:w-56">
             <SelectValue placeholder="Filter by team" />
           </SelectTrigger>
           <SelectContent>
@@ -174,103 +160,54 @@ export const ProjectList = ({
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, index) => (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="flex flex-col gap-4 rounded-md border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-hairline/60"
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="size-8 shrink-0 rounded-md" />
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <Skeleton className="h-5 w-44 max-w-full" />
-                    <Skeleton className="h-3 w-28" />
-                  </div>
-                </div>
-                <Skeleton className="mt-3 h-4 w-full max-w-lg" />
-                <div className="mt-3 flex items-center gap-2">
-                  <Skeleton className="h-5 w-16" />
-                  <Skeleton className="h-4 w-24" />
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-10 shrink-0 rounded-xl" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-36 max-w-full" />
+                  <Skeleton className="h-3 w-24" />
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-3">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="size-8 rounded-md" />
-              </div>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-5 w-20 rounded-full" />
             </div>
           ))}
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="rounded-md border bg-card p-8 text-center sm:p-12">
-          <div className="mb-4 flex justify-center">
-            <div className="rounded-md bg-secondary p-3">
-              <FolderKanbanIcon className="size-8 text-muted-foreground" />
-            </div>
-          </div>
-
-          <h3 className="text-lg font-semibold text-foreground">
-            {emptyTitle}
-          </h3>
-
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {emptyDescription}
-          </p>
-        </div>
+        <EmptyState
+          icon={<FolderKanbanIcon className="size-4" aria-hidden="true" />}
+          title={emptyTitle}
+          description={emptyDescription}
+        />
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filteredProjects.map((project) => (
-            <Link
+            <div
               key={project.id}
-              href={paths.project(project.slug)}
-              className="flex flex-col gap-4 rounded-md border bg-card p-4 transition-colors hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between"
+              className="group relative flex flex-col gap-4 rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-hairline/60 transition-[box-shadow,transform] duration-150 hover:-translate-y-px hover:shadow-md"
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary">
-                    <FolderKanbanIcon className="size-4 text-primary-foreground" />
-                  </div>
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-signal-subtle text-signal">
+                  <FolderKanbanIcon className="size-5" />
+                </span>
 
-                  <div className="min-w-0">
-                    <h3 className="truncate font-semibold text-foreground">
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-semibold text-ink">
+                    <Link
+                      href={paths.project(project.slug)}
+                      className="outline-none after:absolute after:inset-0 after:rounded-3xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                    >
                       {project.name}
-                    </h3>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {project.slug}
-                    </p>
-                  </div>
-                </div>
-
-                <p className="mt-2 line-clamp-1 text-sm text-muted-foreground">
-                  {project.description || "No description provided."}
-                </p>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant={
-                      project.status === "active" ? "default" : "secondary"
-                    }
-                  >
-                    {formatProjectStatus(project.status)}
-                  </Badge>
-
-                  <span className="text-xs text-muted-foreground">
-                    {project.teamName ?? "Workspace level"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
-                <div className="text-left sm:text-right">
-                  <p className="text-xs text-muted-foreground">
-                    {formatUpdatedAt(project.updatedAt)}
+                    </Link>
+                  </h3>
+                  <p className="truncate font-mono text-xs text-ink-3">
+                    {project.slug}
                   </p>
-
-                  <Avatar className="mt-2 size-6 border border-background sm:ml-auto">
-                    <AvatarFallback className="text-xs">
-                      {project.name.slice(0, 1).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
                 </div>
 
                 <DropdownMenu>
@@ -278,8 +215,7 @@ export const ProjectList = ({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      className="text-muted-foreground hover:text-foreground"
-                      onClick={(event) => event.preventDefault()}
+                      className="relative z-[1] -mt-1 -mr-1.5 rounded-full text-ink-2"
                     >
                       <MoreHorizontalIcon className="size-4" />
                       <span className="sr-only">Open project actions</span>
@@ -322,7 +258,25 @@ export const ProjectList = ({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            </Link>
+
+              <p className="line-clamp-2 min-h-10 text-sm text-ink-2">
+                {project.description || "No description provided."}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
+                <Badge
+                  variant={
+                    project.status === "active" ? "success" : "secondary"
+                  }
+                >
+                  {formatProjectStatus(project.status)}
+                </Badge>
+                <span>{project.teamName ?? "Workspace level"}</span>
+                <span className="ml-auto text-ink-3">
+                  {formatUpdatedAt(project.updatedAt)}
+                </span>
+              </div>
+            </div>
           ))}
         </div>
       )}
