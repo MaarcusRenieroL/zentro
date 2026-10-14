@@ -25,7 +25,7 @@ import { TeamPulse, type PulseItem } from "@zentro/ui/components/team-pulse";
 import { Tile, type TileTint } from "@zentro/ui/components/tile";
 import { Button } from "@zentro/ui/shadcn/button";
 import { cn } from "@zentro/ui/lib/utils";
-import { describeFocusReason, rankTasks } from "@zentro/utils";
+import { describeFocusReason, formatDueDate, rankTasks } from "@zentro/utils";
 
 import { useReachable } from "~/src/components/permissions/permission-provider";
 import type { DashboardWorkItem } from "~/src/lib/dashboard-data";
@@ -51,16 +51,9 @@ function startOfToday() {
 function dueLabel(dueAt: string | null) {
   if (!dueAt) return null;
 
-  const due = new Date(dueAt).getTime();
-  const today = startOfToday();
+  const due = formatDueDate(dueAt);
 
-  if (due < today) return { text: "Overdue", late: true };
-  if (due < today + dayMs) return { text: "Due today", late: false };
-
-  return {
-    text: `Due ${new Date(dueAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
-    late: false,
-  };
+  return { text: due.text, full: due.full, late: due.tone === "overdue" };
 }
 
 function shortAgo(iso: string) {

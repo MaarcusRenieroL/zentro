@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEventTime } from "@zentro/utils";
 import { FC, useCallback, useEffect, useState } from "react";
 
 import { actorName, describeEvent } from "@zentro/audit";
@@ -85,7 +86,7 @@ export const ActivityFeed: FC<{
           <li key={event.id} className="px-3 py-2 text-sm">
             <p className="break-words">{sentenceFor(event)}</p>
             <p className="text-xs text-muted-foreground">
-              {new Date(event.createdAt).toLocaleString()}
+              {formatEventTime(event.createdAt)}
             </p>
           </li>
         ))}

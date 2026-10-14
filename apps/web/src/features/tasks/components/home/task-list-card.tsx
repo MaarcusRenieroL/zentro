@@ -15,11 +15,9 @@ import {
   priorityStyles,
   statusLabels,
 } from "~/src/features/tasks/lib/constants";
-import {
-  formatRelativeTime,
-  formatShortDate,
-} from "~/src/features/tasks/lib/format";
+import { formatRelativeTime } from "~/src/features/tasks/lib/format";
 import type { TaskPriority, TaskStatus } from "~/src/features/tasks/lib/types";
+import { DueDate } from "~/src/components/due-date";
 import { paths } from "~/src/lib/paths";
 
 export type OverviewTask = {
@@ -81,11 +79,11 @@ export const TaskListCard: FC<Props> = ({
                       priorityStyles[task.priority as TaskPriority],
                   )}
                 >
-                  {detail === "due"
-                    ? task.dueAt
-                      ? `Due ${formatShortDate(task.dueAt)}`
-                      : "No due date"
-                    : formatRelativeTime(task.updatedAt)}
+                  {detail === "due" ? (
+                    <DueDate value={task.dueAt} />
+                  ) : (
+                    formatRelativeTime(task.updatedAt)
+                  )}
                 </span>
               </div>
             </Link>

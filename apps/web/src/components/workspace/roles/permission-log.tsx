@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEventTime } from "@zentro/utils";
 import { FC, useCallback, useEffect, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
@@ -136,7 +137,7 @@ export const PermissionLog: FC = () => {
                 items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                      {new Date(item.createdAt).toLocaleString()}
+                      {formatEventTime(item.createdAt)}
                     </TableCell>
                     <TableCell>{item.actorName ?? "Someone"}</TableCell>
                     <TableCell>

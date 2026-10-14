@@ -13,6 +13,7 @@ import { cn } from "@zentro/ui/lib/utils";
 
 import { statusLabels } from "~/src/features/tasks/lib/constants";
 import type { TaskStatus, WorkspaceTask } from "~/src/features/tasks/lib/types";
+import { DueDate } from "~/src/components/due-date";
 import { paths } from "~/src/lib/paths";
 
 import { EmptyTasks } from "./empty-tasks";
@@ -103,8 +104,11 @@ export const ListView: FC<Props> = ({ tasks }) => {
                           {task.projectName}
                         </span>
                         <PriorityGlyph priority={task.priority} size={16} />
-                        <span className="hidden w-28 text-right font-mono text-xs text-ink-3 sm:block">
-                          {task.dueDate || "No date"}
+                        <span className="hidden w-24 text-right sm:block">
+                          <DueDate
+                            value={task.dueAt}
+                            done={task.status === "done"}
+                          />
                         </span>
                         <span className="flex w-6 justify-end">
                           {assigned ? (

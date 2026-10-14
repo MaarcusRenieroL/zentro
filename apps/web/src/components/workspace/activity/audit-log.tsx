@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEventTime } from "@zentro/utils";
 import { FC, useCallback, useEffect, useState } from "react";
 
 import { auditCatalog, getAuditEvent } from "@zentro/audit";
@@ -292,7 +293,7 @@ export const AuditLog: FC = () => {
                       dateTime={new Date(row.createdAt).toISOString()}
                       className="font-mono text-xs whitespace-nowrap text-ink-3"
                     >
-                      {new Date(row.createdAt).toLocaleString()}
+                      {formatEventTime(row.createdAt)}
                     </time>
                   </button>
                 </li>
@@ -329,7 +330,7 @@ export const AuditLog: FC = () => {
               <div className="space-y-4 px-4 pb-6 text-sm">
                 <dl className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-1 text-xs">
                   <dt className="text-muted-foreground">Time</dt>
-                  <dd>{new Date(selected.createdAt).toLocaleString()}</dd>
+                  <dd>{formatEventTime(selected.createdAt)}</dd>
                   <dt className="text-muted-foreground">Action</dt>
                   <dd className="break-all">{selected.action}</dd>
                   <dt className="text-muted-foreground">Target</dt>
