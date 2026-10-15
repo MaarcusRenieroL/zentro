@@ -67,6 +67,12 @@ describe("tasks and docs link to each other", () => {
     );
     expect(fromB).toMatchObject([{ relation: "blocked_by", key: a.key }]);
     expect(fromDoc).toMatchObject([{ relation: "relates", key: a.key }]);
+
+    // The task list says what blocks each task.
+    const list = await owner.task.getTasksByOrgId({});
+
+    expect(list.find((task) => task.key === b.key)?.blockedBy).toEqual([a.key]);
+    expect(list.find((task) => task.key === a.key)?.blockedBy).toEqual([]);
   });
 
   it("does not duplicate a link, in either direction for related", async () => {

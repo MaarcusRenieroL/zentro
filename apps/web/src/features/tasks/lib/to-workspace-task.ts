@@ -18,6 +18,7 @@ type ApiTask = {
   assignee?: string | null;
   assigneeUserId?: string | null;
   due?: Date | null;
+  blockedBy?: string[];
 };
 
 /** One API task as the task list renders it. */
@@ -42,5 +43,6 @@ export function toWorkspaceTask(task: ApiTask): WorkspaceTask {
     assigneeUserId: task.assigneeUserId ?? null,
     dueDate: task.due ? task.due.toDateString() : "",
     dueAt: task.due ? task.due.toISOString() : null,
+    blockedBy: task.blockedBy ?? [],
   };
 }

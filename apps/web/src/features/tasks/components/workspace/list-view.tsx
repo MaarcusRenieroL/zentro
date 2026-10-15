@@ -1,5 +1,6 @@
 "use client";
 
+import { BlockedChip } from "./blocked-chip";
 import Link from "next/link";
 import { useMemo, useState, type FC, type ReactNode } from "react";
 import {
@@ -291,6 +292,9 @@ export const ListView: FC<Props> = ({
                         >
                           {task.title}
                         </Link>
+                        {done ? null : (
+                          <BlockedChip blockedBy={task.blockedBy} />
+                        )}
                         <span
                           title={task.projectName}
                           className="hidden shrink-0 rounded-sm border border-hairline px-1.5 py-px font-mono text-[11px] text-ink-3 md:block [[data-density=compact]_&]:hidden"

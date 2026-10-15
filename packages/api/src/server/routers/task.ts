@@ -21,6 +21,7 @@ import {
   tasks,
   teams,
   users,
+  workLinks,
 } from "@zentro/db/schema";
 
 import {
@@ -259,7 +260,34 @@ export const taskRouter = router({
         .where(and(...conditions))
         .orderBy(desc(tasks.createdAt));
 
-      return allTasks;
+      // Open tasks that block each listed task, by key. Blockers the caller
+      // cannot see are left out, like everything else here.
+      const ids = allTasks.map((task) => task.id);
+      const blockers = ids.length
+        ? await db
+            .select({ targetId: workLinks.targetId, key: tasks.key })
+            .from(workLinks)
+            .innerJoin(tasks, eq(tasks.id, workLinks.sourceId))
+            .where(
+              and(
+                eq(workLinks.organizationId, activeOrganization.id),
+                eq(workLinks.kind, "blocks"),
+                eq(workLinks.sourceType, "task"),
+                eq(workLinks.targetType, "task"),
+                inArray(workLinks.targetId, ids),
+                ne(tasks.status, "done"),
+                isNull(tasks.deletedAt),
+                inArray(tasks.projectId, viewableProjectIds),
+              ),
+            )
+        : [];
+
+      return allTasks.map((task) => ({
+        ...task,
+        blockedBy: blockers
+          .filter((row) => row.targetId === task.id)
+          .map((row) => row.key),
+      }));
     }),
   // An unknown key resolves to nothing. A task the caller may not see answers
   // the same way, so keys cannot be probed to learn what exists.

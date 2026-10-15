@@ -19,6 +19,8 @@ export type WorkspaceTask = {
   dueDate: string;
   // ISO timestamp of the due date; null when the task has none.
   dueAt: string | null;
+  /** Keys of open tasks that block this one. */
+  blockedBy: string[];
 };
 
 /** A change made to several tasks at once from the selection bar. */

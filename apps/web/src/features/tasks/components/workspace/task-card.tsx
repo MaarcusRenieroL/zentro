@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BlockedChip } from "./blocked-chip";
 import { FC } from "react";
 
 import { PriorityMeter } from "@zentro/ui/components/status-glyph";
@@ -27,6 +28,7 @@ export const TaskCard: FC<Props> = ({ task }) => {
     >
       <div className="flex items-center gap-2">
         <span className="font-mono text-xs text-ink-3">{task.key}</span>
+        {done ? null : <BlockedChip blockedBy={task.blockedBy} />}
         <span className="flex-1" />
         {assigned ? (
           <span title={task.assignee}>
