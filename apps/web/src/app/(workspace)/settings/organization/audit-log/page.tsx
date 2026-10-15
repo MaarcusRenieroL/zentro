@@ -9,7 +9,10 @@ export default async function AuditLogSettingsPage(): Promise<JSX.Element> {
     await getAuthorizedDashboardContext("audit_logs.view");
 
   return (
-    <AuthorizationBoundary isAllowed={authorization.isAllowed}>
+    <AuthorizationBoundary
+      isAllowed={authorization.isAllowed}
+      permission={authorization.permission}
+    >
       <AuditLog />
     </AuthorizationBoundary>
   );

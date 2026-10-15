@@ -1,21 +1,26 @@
 "use client";
 
-import { Button } from "@zentro/ui/components/shadcn/button";
-import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
-import { Input } from "@zentro/ui/components/shadcn/input";
-import { Label } from "@zentro/ui/components/shadcn/label";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2Icon, RotateCcwIcon } from "lucide-react";
-import { FC, useState } from "react";
+import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { useTrpcClient } from "@zentro/api/react";
+import { toastError, toastSuccess } from "@zentro/ui/index";
+import { Input } from "@zentro/ui/shadcn/input";
+
+import { trpcResult } from "~/src/lib/trpc-result";
 import {
   GeneralSectionFormValues,
   generalSectionSchema,
 } from "~/src/lib/zod-schema";
-import { useTrpcClient } from "@zentro/api/react";
-import { trpcResult } from "~/src/lib/trpc-result";
-import { toastError, toastSuccess } from "@zentro/ui/index";
+
+import {
+  SettingsError,
+  SettingsFooter,
+  SettingsHeader,
+  SettingsRow,
+  SettingsTile,
+} from "./settings-kit";
 
 type Props = {
   organization: {
@@ -26,7 +31,6 @@ type Props = {
 };
 
 export const GeneralSection: FC<Props> = ({ organization }) => {
-  const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
   const trpc = useTrpcClient();
 
   const {
@@ -36,159 +40,89 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
     formState: { errors, isDirty, isSubmitting },
   } = useForm<GeneralSectionFormValues>({
     resolver: zodResolver(generalSectionSchema),
-    defaultValues: {
-      name: organization.name,
-    },
+    defaultValues: { name: organization.name },
     mode: "onTouched",
   });
 
-  const handleCancel = () => {
-    reset({
-      name: organization.name,
-    });
-
-    setSaveState("idle");
-  };
-
-  const handleSave = async (values: GeneralSectionFormValues) => {
+  const save = async (values: GeneralSectionFormValues) => {
     const { error } = await trpcResult(
       trpc.organization.update.mutate({ name: values.name }),
     );
 
     if (error) {
       toastError(error.statusText, error.message);
-      setSaveState("idle");
 
       return;
     }
 
-    toastSuccess("Success", "Organization Name updated successfully");
+    toastSuccess("Saved", "Organization name updated.");
     reset(values);
-
-    setSaveState("saved");
-
-    window.setTimeout(() => {
-      setSaveState("idle");
-    }, 2500);
   };
 
   return (
     <form
       noValidate
-      className="space-y-6 pb-24"
-      onSubmit={handleSubmit(handleSave)}
+      onSubmit={handleSubmit(save)}
+      className="flex flex-col gap-6"
     >
-      {saveState === "saved" ? (
-        <div className="flex items-center gap-3 rounded-md border border-success/30 bg-success-subtle px-4 py-3 text-sm text-foreground">
-          <CheckCircle2Icon className="size-4 text-success" />
-          Organization settings saved.
-        </div>
-      ) : null}
-
-      <Card className="rounded-xl py-0">
-        <CardContent className="p-4 sm:p-6">
-          <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
-            <div>
-              <h2 className="font-display text-2xl text-ink">
-                Organization name
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                This name appears across Zentro.
-              </p>
-            </div>
-            <div className="max-w-xl space-y-2">
-              <Controller
-                name="name"
-                control={control}
-                render={({ field }) => (
-                  <>
-                    <Label htmlFor="organization-name">Name</Label>
-                    <Input
-                      id="organization-name"
-                      autoComplete="organization"
-                      aria-invalid={Boolean(errors.name)}
-                      name={field.name}
-                      ref={field.ref}
-                      value={field.value}
-                      onBlur={field.onBlur}
-                      onChange={(event) => {
-                        field.onChange(event);
-                        setSaveState("idle");
-                      }}
-                    />
-                  </>
-                )}
+      <SettingsHeader
+        eyebrow="ORGANIZATION"
+        title="General"
+        description="How your organization appears across Zentro."
+      />
+      <SettingsTile>
+        <SettingsRow label="Name" htmlFor="organization-name">
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <Input
+                id="organization-name"
+                autoComplete="organization"
+                aria-invalid={Boolean(errors.name) || undefined}
+                aria-describedby={
+                  errors.name ? "organization-name-error" : undefined
+                }
+                {...field}
               />
-              {errors.name ? (
-                <p className="text-sm text-destructive">
-                  {errors.name.message}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  This is your organization&apos;s public name.
-                </p>
-              )}
-            </div>
+            )}
+          />
+          <SettingsError id="organization-name-error">
+            {errors.name?.message}
+          </SettingsError>
+        </SettingsRow>
+        <SettingsRow
+          label="URL"
+          htmlFor="organization-slug"
+          description="Your workspace identifier."
+        >
+          <div className="flex h-(--control-h) items-center overflow-hidden rounded-md border border-hairline bg-hover font-mono text-sm">
+            <span className="flex h-full items-center border-r border-hairline px-3 text-ink-3">
+              zentro.app/
+            </span>
+            <input
+              id="organization-slug"
+              value={organization.slug}
+              readOnly
+              aria-describedby="organization-slug-hint"
+              className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-ink-2 outline-none"
+            />
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-xl py-0">
-        <CardContent className="p-4 sm:p-6">
-          <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
-            <div>
-              <h2 className="font-display text-2xl text-ink">Workspace slug</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your workspace identifier.
-              </p>
-            </div>
-            <div className="max-w-xl space-y-2">
-              <Label htmlFor="organization-slug">Slug</Label>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Input
-                  id="organization-slug"
-                  value={organization.slug}
-                  disabled
-                  className="sm:max-w-sm"
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Read-only for now. Contact support to change your workspace
-                slug.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {isDirty ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              You have unsaved changes.
-            </p>
-            <div className="grid gap-2 sm:flex">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={handleCancel}
-              >
-                <RotateCcwIcon className="size-4" />
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting}
-              >
-                <CheckCircle2Icon className="size-4" />
-                Save changes
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+          <p
+            id="organization-slug-hint"
+            className="text-[13px] leading-5 text-ink-3"
+          >
+            Read-only for now. Contact support to change your workspace URL.
+          </p>
+        </SettingsRow>
+        <SettingsFooter
+          dirty={isDirty}
+          changes={isDirty ? 1 : 0}
+          errors={errors.name ? 1 : 0}
+          saving={isSubmitting}
+          onDiscard={() => reset({ name: organization.name })}
+        />
+      </SettingsTile>
     </form>
   );
 };

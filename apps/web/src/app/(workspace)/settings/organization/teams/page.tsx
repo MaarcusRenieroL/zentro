@@ -9,7 +9,10 @@ export default async function TeamsSettingsPage(): Promise<JSX.Element> {
     await getAuthorizedDashboardContext("teams.view");
 
   return (
-    <AuthorizationBoundary isAllowed={authorization.isAllowed}>
+    <AuthorizationBoundary
+      isAllowed={authorization.isAllowed}
+      permission={authorization.permission}
+    >
       <TeamsSection permissions={permissions} />
     </AuthorizationBoundary>
   );

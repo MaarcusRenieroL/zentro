@@ -36,10 +36,17 @@ import {
   ShieldIcon,
   Trash2Icon,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { MemberAccessDialog } from "~/src/components/workspace/roles/member-access-dialog";
-import { useAnyPermission } from "~/src/components/permissions/permission-provider";
+import {
+  useAnyPermission,
+  usePermission,
+} from "~/src/components/permissions/permission-provider";
+import { paths } from "~/src/lib/paths";
+
+import { SettingsHeader } from "./settings-kit";
 import { trpcResult } from "~/src/lib/trpc-result";
 import { FC, useCallback, useMemo, useState } from "react";
 import { formatRelativeDate } from "~/src/lib/helpers";
@@ -103,6 +110,8 @@ const RoleControl: FC<RoleControlProps> = ({
 
 type Props = {
   members: Member[];
+  /** Team names and last activity per user id. */
+  extras?: Record<string, { teams: string[]; lastActive: string | null }>;
   userId: string;
   permissions: {
     canRemoveMembers: boolean;
@@ -114,7 +123,9 @@ export const MembersSection: FC<Props> = ({
   members: initialMembers,
   userId,
   permissions,
+  extras = {},
 }) => {
+  const canInvite = usePermission("members.invite");
   const [members, setMembers] = useState(initialMembers);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [accessMember, setAccessMember] = useState<Member | null>(null);
@@ -234,6 +245,37 @@ export const MembersSection: FC<Props> = ({
         },
       },
       {
+        id: "team",
+        header: "Team",
+        meta: { label: "Team", className: "text-muted-foreground" },
+        cell: ({ row }) => {
+          const teamNames = extras[row.original.userId]?.teams ?? [];
+
+          return (
+            <span className="text-sm text-ink-2">
+              {teamNames.length ? teamNames.join(", ") : "—"}
+            </span>
+          );
+        },
+      },
+      {
+        id: "lastActive",
+        header: "Last active",
+        meta: { label: "Last active", className: "text-muted-foreground" },
+        cell: ({ row }) => {
+          const at = extras[row.original.userId]?.lastActive;
+
+          return (
+            <span
+              suppressHydrationWarning
+              className="font-mono text-xs text-ink-2"
+            >
+              {at ? formatRelativeDate(new Date(at)) : "Never"}
+            </span>
+          );
+        },
+      },
+      {
         accessorKey: "joinedAt",
         header: "Joined",
         meta: {
@@ -312,6 +354,7 @@ export const MembersSection: FC<Props> = ({
       },
     ],
     [
+      extras,
       handleRoleChange,
       permissions.canRemoveMembers,
       permissions.canUpdateMemberRoles,
@@ -322,6 +365,20 @@ export const MembersSection: FC<Props> = ({
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-0 flex-1">
+          <SettingsHeader
+            eyebrow="ORGANIZATION"
+            title="Members"
+            description="Everyone in this organization, their role and when they were last around."
+          />
+        </div>
+        {canInvite ? (
+          <Button asChild>
+            <Link href={paths.invitationsSettings()}>Invite</Link>
+          </Button>
+        ) : null}
+      </div>
       <div className="-mx-4 sm:mx-0">
         <DataTable
           columns={columns}

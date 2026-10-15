@@ -10,7 +10,10 @@ export default async function GeneralSettingsPage(): Promise<JSX.Element> {
   );
 
   return (
-    <AuthorizationBoundary isAllowed={authorization.isAllowed}>
+    <AuthorizationBoundary
+      isAllowed={authorization.isAllowed}
+      permission={authorization.permission}
+    >
       <GeneralSection
         organization={{
           name: organization.name,

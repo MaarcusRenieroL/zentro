@@ -21,6 +21,18 @@ type Props = {
   orgName: string;
   data: DashboardData;
   week: TodayData["week"];
+  projectRows: Array<{
+    name: string;
+    slug: string;
+    open: number;
+    done: number;
+  }>;
+  teamRows: Array<{
+    id: string;
+    name: string;
+    projects: number;
+    people: number;
+  }>;
 };
 
 const statStyle: Record<string, { tint: TileTint; icon: FC }> = {
@@ -32,7 +44,13 @@ const statStyle: Record<string, { tint: TileTint; icon: FC }> = {
 };
 
 /** The workspace numbers for owners and admins, as a bento grid. */
-export const OverviewBento: FC<Props> = ({ orgName, data, week }) => {
+export const OverviewBento: FC<Props> = ({
+  orgName,
+  data,
+  week,
+  projectRows,
+  teamRows,
+}) => {
   const trends: Record<string, string | undefined> = {
     "Open tasks": data.activityPills.find((pill) => pill.kind === "tasks")
       ?.label,
@@ -122,6 +140,107 @@ export const OverviewBento: FC<Props> = ({ orgName, data, week }) => {
           />
         </Tile>
       </div>
+      {projectRows.length > 0 || teamRows.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {projectRows.length > 0 ? (
+            <Tile title="By project" tint="projects" flush>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="eyebrow border-b border-hairline text-left">
+                    <th className="px-(--pad-tile) py-2 font-medium">
+                      Project
+                    </th>
+                    <th className="px-2 py-2 text-right font-medium">Open</th>
+                    <th className="px-2 py-2 text-right font-medium">Done</th>
+                    <th className="w-28 px-(--pad-tile) py-2 font-medium">
+                      Progress
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projectRows.map((row) => {
+                    const total = row.open + row.done;
+                    const pct = total
+                      ? Math.round((row.done / total) * 100)
+                      : 0;
+
+                    return (
+                      <tr
+                        key={row.slug}
+                        className="border-b border-hairline/60 last:border-b-0 hover:bg-hover"
+                      >
+                        <td className="px-(--pad-tile) py-2.5">
+                          <Link
+                            href={`/projects/${row.slug}`}
+                            className="font-medium hover:text-signal"
+                          >
+                            {row.name}
+                          </Link>
+                        </td>
+                        <td className="px-2 text-right font-mono text-xs">
+                          {row.open}
+                        </td>
+                        <td className="px-2 text-right font-mono text-xs">
+                          {row.done}
+                        </td>
+                        <td className="px-(--pad-tile)">
+                          <span
+                            role="progressbar"
+                            aria-label={`${row.name}: ${pct}% done`}
+                            aria-valuenow={pct}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            className="block h-1.5 overflow-hidden rounded-full bg-sunken"
+                          >
+                            <span
+                              className="block h-full bg-status-done"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Tile>
+          ) : null}
+
+          {teamRows.length > 0 ? (
+            <Tile title="By team" tint="teams" flush>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="eyebrow border-b border-hairline text-left">
+                    <th className="px-(--pad-tile) py-2 font-medium">Team</th>
+                    <th className="px-2 py-2 text-right font-medium">People</th>
+                    <th className="px-(--pad-tile) py-2 text-right font-medium">
+                      Projects
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamRows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-hairline/60 last:border-b-0 hover:bg-hover"
+                    >
+                      <td className="px-(--pad-tile) py-2.5 font-medium">
+                        {row.name}
+                      </td>
+                      <td className="px-2 text-right font-mono text-xs">
+                        {row.people}
+                      </td>
+                      <td className="px-(--pad-tile) text-right font-mono text-xs">
+                        {row.projects}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Tile>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 };

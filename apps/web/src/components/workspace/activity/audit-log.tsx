@@ -1,16 +1,14 @@
 "use client";
 
 import { formatEventTime } from "@zentro/utils";
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { CalendarIcon, DownloadIcon, SearchIcon } from "lucide-react";
 
 import { auditCatalog, getAuditEvent } from "@zentro/audit";
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError } from "@zentro/ui/index";
 import { Button } from "@zentro/ui/shadcn/button";
-import { ThreadNode } from "@zentro/ui/components/thread";
-import { Tile } from "@zentro/ui/components/tile";
-import { Input } from "@zentro/ui/shadcn/input";
-import { Label } from "@zentro/ui/shadcn/label";
+import { EmptyState } from "@zentro/ui/components/empty-state";
 import {
   Select,
   SelectContent,
@@ -27,6 +25,7 @@ import {
 } from "@zentro/ui/shadcn/sheet";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
+import { ActorAvatar } from "~/src/components/actor-avatar";
 import { usePermission } from "~/src/components/permissions/permission-provider";
 import { sentenceFor } from "~/src/components/workspace/activity/activity-feed";
 import { trpcResult } from "~/src/lib/trpc-result";
@@ -90,6 +89,59 @@ function Diff({ metadata }: { metadata: Record<string, unknown> }) {
   );
 }
 
+const moduleNames: Record<string, string> = {
+  task: "Tasks",
+  project: "Projects",
+  doc: "Docs",
+  role: "Roles",
+  org: "Org",
+  member: "Members",
+  invitation: "Members",
+  team: "Teams",
+  auth: "Auth",
+  audit: "Audit",
+  module: "Modules",
+};
+
+function moduleOf(action: string) {
+  const prefix = action.split(".")[0] ?? "";
+
+  return (
+    moduleNames[prefix] ?? prefix.charAt(0).toUpperCase() + prefix.slice(1)
+  );
+}
+
+function clock(date: Date) {
+  return new Date(date).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
+
+function dayHeading(date: Date) {
+  const day = new Date(date);
+  const now = new Date();
+  const diff = Math.round(
+    (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
+      new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime()) /
+      86_400_000,
+  );
+  const label = day
+    .toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    .toUpperCase();
+
+  return diff === 0
+    ? `TODAY · ${label}`
+    : diff === 1
+      ? `YESTERDAY · ${label}`
+      : label;
+}
+
+const chip =
+  "h-8 shrink-0 gap-1.5 rounded-xl border-hairline bg-transparent px-2.5 text-[13px] shadow-none data-[size=default]:h-8";
+
 export const AuditLog: FC = () => {
   const trpc = useTrpcClient();
   const canExport = usePermission("audit_logs.export");
@@ -103,8 +155,16 @@ export const AuditLog: FC = () => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
-  const [applied, setApplied] = useState(0);
+  const [debounced, setDebounced] = useState("");
+  const [reload, setReload] = useState(0);
   const [selected, setSelected] = useState<Row | null>(null);
+
+  // Typing waits a moment; the other filters apply at once.
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(search), 250);
+
+    return () => clearTimeout(id);
+  }, [search]);
 
   const filter = useCallback(
     () => ({
@@ -112,9 +172,9 @@ export const AuditLog: FC = () => {
       actionPrefix: prefix === allValue ? undefined : prefix,
       from: from ? new Date(`${from}T00:00:00`) : undefined,
       to: to ? new Date(`${to}T23:59:59.999`) : undefined,
-      search: search.trim() || undefined,
+      search: debounced.trim() || undefined,
     }),
-    [actor, prefix, from, to, search],
+    [actor, prefix, from, to, debounced],
   );
 
   const load = useCallback(
@@ -137,14 +197,13 @@ export const AuditLog: FC = () => {
       );
       setCursor(data.nextCursor);
     },
-    // Filters apply when "Apply" is pressed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [trpc, applied],
+    [trpc, filter],
   );
 
   useEffect(() => {
     void load();
-  }, [load]);
+    // `reload` re-reads after an export, which is itself an event.
+  }, [load, reload]);
 
   useEffect(() => {
     void trpcResult(trpc.member.getMembers.query()).then(({ data }) =>
@@ -175,141 +234,201 @@ export const AuditLog: FC = () => {
     link.download = data.filename;
     link.click();
     URL.revokeObjectURL(url);
-    // The export is itself an audit event.
-    setApplied((count) => count + 1);
+    setReload((count) => count + 1);
   }
 
+  const groups = useMemo(() => {
+    const days: Array<{ label: string; rows: Row[] }> = [];
+
+    for (const row of rows ?? []) {
+      const label = dayHeading(row.createdAt);
+      const last = days[days.length - 1];
+
+      if (last && last.label === label) last.rows.push(row);
+      else days.push({ label, rows: [row] });
+    }
+
+    return days;
+  }, [rows]);
+
+  const filtering =
+    actor !== allValue || prefix !== allValue || from || to || debounced.trim();
+
   return (
-    <div className="space-y-4" data-testid="audit-log">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="font-display text-2xl text-ink">Audit log</h2>
-          <p className="mt-1 text-sm text-ink-2">
-            Every recorded event in the organization, including sign-ins and
-            permission changes.
-          </p>
-        </div>
+    <div className="flex flex-col gap-4" data-testid="audit-log">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="text-[22px] leading-7 font-semibold">Audit log</h2>
+        <span className="rounded-full border border-hairline px-2 py-px font-mono text-[10px] tracking-[0.06em] text-ink-2">
+          OWNERS AND ADMINS
+        </span>
+        <span className="flex-1" />
         {canExport ? (
           <Button variant="outline" onClick={exportCsv}>
+            <DownloadIcon />
             Export CSV
           </Button>
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="space-y-1">
-          <Label>Actor</Label>
-          <Select value={actor} onValueChange={setActor}>
-            <SelectTrigger aria-label="Actor">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={allValue}>Anyone</SelectItem>
-              {actors.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative h-8 w-full sm:w-60">
+          <SearchIcon
+            aria-hidden="true"
+            className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3"
+          />
+          <input
+            id="audit-search"
+            aria-label="Search"
+            value={search}
+            placeholder="Search events"
+            onChange={(event) => setSearch(event.target.value)}
+            className="h-full w-full rounded-xl border border-hairline bg-surface pr-2.5 pl-8 text-[13px] outline-none placeholder:text-ink-3 focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/22"
+          />
         </div>
-        <div className="space-y-1">
-          <Label>Action</Label>
-          <Select value={prefix} onValueChange={setPrefix}>
-            <SelectTrigger aria-label="Action">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={allValue}>All actions</SelectItem>
-              {prefixes.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}*
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="audit-from">From</Label>
-          <Input
+
+        <Select value={actor} onValueChange={setActor}>
+          <SelectTrigger aria-label="Actor" className={chip}>
+            <span className="text-ink-3">Actor</span>
+            <SelectValue>
+              {actor === allValue ? null : (
+                <span className="font-medium text-ink">
+                  {actors.find((item) => item.id === actor)?.label}
+                </span>
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={allValue}>Anyone</SelectItem>
+            {actors.map((item) => (
+              <SelectItem key={item.id} value={item.id}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={prefix} onValueChange={setPrefix}>
+          <SelectTrigger aria-label="Action" className={chip}>
+            <span className="text-ink-3">Action</span>
+            <SelectValue>
+              {prefix === allValue ? null : (
+                <span className="font-medium text-ink">{prefix}*</span>
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={allValue}>All actions</SelectItem>
+            {prefixes.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item}*
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <label className="flex h-8 items-center gap-1.5 rounded-xl border border-hairline px-2.5 text-[13px]">
+          <CalendarIcon className="size-3.5 text-ink-3" aria-hidden="true" />
+          <span className="text-ink-3">From</span>
+          <input
             id="audit-from"
             type="date"
+            aria-label="From"
             value={from}
-            onChange={(e) => setFrom(e.target.value)}
+            onChange={(event) => setFrom(event.target.value)}
+            className="bg-transparent font-mono text-xs outline-none"
           />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="audit-to">To</Label>
-          <Input
+        </label>
+        <label className="flex h-8 items-center gap-1.5 rounded-xl border border-hairline px-2.5 text-[13px]">
+          <span className="text-ink-3">To</span>
+          <input
             id="audit-to"
             type="date"
+            aria-label="To"
             value={to}
-            onChange={(e) => setTo(e.target.value)}
+            onChange={(event) => setTo(event.target.value)}
+            className="bg-transparent font-mono text-xs outline-none"
           />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="audit-search">Search</Label>
-          <Input
-            id="audit-search"
-            value={search}
-            placeholder="Name or action"
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" && setApplied((count) => count + 1)
-            }
-          />
-        </div>
+        </label>
+
+        <span className="font-mono text-xs text-ink-3">
+          {rows ? `${rows.length}${cursor ? "+" : ""} events` : ""}
+        </span>
+        <span className="flex-1" />
+        <span className="font-mono text-xs text-ink-3">
+          Every recorded event is kept
+        </span>
       </div>
-      <Button onClick={() => setApplied((count) => count + 1)}>
-        Apply filters
-      </Button>
 
       {!rows ? (
-        <Skeleton className="h-64 w-full" />
+        <div className="flex flex-col gap-1" aria-busy="true">
+          {[0, 1, 2, 3, 4, 5].map((row) => (
+            <Skeleton key={row} className="h-12" />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title={
+            filtering ? "No events match those filters." : "No events yet."
+          }
+          description={
+            filtering
+              ? "Widen the dates or clear the search."
+              : "Changes made in the organization are recorded here."
+          }
+        />
       ) : (
-        <Tile flush>
-          {rows.length ? (
-            <ol aria-label="Events, newest first">
-              {rows.map((row) => (
-                <li
-                  key={row.id}
-                  className="border-b border-hairline last:border-b-0"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelected(row)}
-                    className="grid w-full grid-cols-[1.25rem_minmax(0,1fr)_auto] items-start gap-x-3 px-(--pad-tile) py-3 text-left outline-none transition-colors duration-(--duration-fast) hover:bg-hover focus-visible:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                  >
-                    <span className="mt-1.5 flex justify-center">
-                      <ThreadNode />
-                    </span>
-                    <span className="min-w-0 text-sm break-words text-ink">
-                      {sentenceFor(row)}
-                      <span className="mt-0.5 block font-mono text-[11px] text-ink-3">
-                        {row.action}
-                      </span>
-                    </span>
-                    <time
-                      dateTime={new Date(row.createdAt).toISOString()}
-                      className="font-mono text-xs whitespace-nowrap text-ink-3"
-                    >
-                      {formatEventTime(row.createdAt)}
-                    </time>
-                  </button>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="px-(--pad-tile) py-8 text-center text-sm text-ink-2">
-              No events match those filters. Widen the dates or clear the
-              search.
-            </p>
-          )}
-        </Tile>
+        <div className="flex flex-col gap-3.5">
+          {groups.map((group) => (
+            <section
+              key={group.label}
+              aria-label={group.label}
+              className="flex flex-col"
+            >
+              <h3 className="eyebrow px-3 pt-2 pb-1.5">{group.label}</h3>
+              <ol aria-label="Events, newest first">
+                {group.rows.map((row) => {
+                  const actorLabel =
+                    row.actorName ?? row.actorEmail ?? "System";
+
+                  return (
+                    <li key={row.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(row)}
+                        className="flex min-h-12 w-full items-center gap-3 rounded-xl border-t border-hairline/60 px-3 py-2 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <time
+                          dateTime={new Date(row.createdAt).toISOString()}
+                          className="w-[68px] shrink-0 font-mono text-xs text-ink-3"
+                        >
+                          {clock(row.createdAt)}
+                        </time>
+                        <ActorAvatar name={actorLabel} size={26} />
+                        <span className="min-w-0 flex-1 text-sm break-words">
+                          {sentenceFor(row)}
+                        </span>
+                        <span className="hidden rounded-sm border border-hairline px-1.5 py-px font-mono text-[11px] text-ink-2 sm:block">
+                          {moduleOf(row.action)}
+                        </span>
+                        <span className="hidden w-28 text-right font-mono text-xs text-ink-3 md:block">
+                          {row.ip ?? ""}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </div>
       )}
 
       {cursor ? (
-        <Button variant="outline" onClick={() => load(cursor)}>
+        <Button
+          variant="outline"
+          className="self-start"
+          onClick={() => load(cursor)}
+        >
           Load more
         </Button>
       ) : null}

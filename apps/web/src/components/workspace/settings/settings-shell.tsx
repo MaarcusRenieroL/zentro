@@ -4,9 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FC, ReactNode } from "react";
 
-import { OrgAvatar } from "@zentro/ui/components/org-avatar";
-import { PageHeader } from "@zentro/ui/components/page-header";
-import { SectionNav } from "@zentro/ui/components/section-nav";
+import { cn } from "@zentro/ui/lib/utils";
 import {
   Select,
   SelectContent,
@@ -34,7 +32,6 @@ const groups: Array<{ label: string; items: Item[] }> = [
     items: [
       { href: "/settings/account/profile", label: "Profile" },
       { href: "/settings/account/appearance", label: "Appearance" },
-      { href: "/settings/account/security", label: "Security" },
     ],
   },
   {
@@ -78,6 +75,7 @@ const groups: Array<{ label: string; items: Item[] }> = [
   {
     label: "Security",
     items: [
+      { href: "/settings/account/security", label: "Password & sessions" },
       {
         href: paths.auditLogSettings(),
         label: "Audit log",
@@ -90,7 +88,7 @@ const groups: Array<{ label: string; items: Item[] }> = [
     items: [
       {
         href: paths.dangerSettings(),
-        label: "Danger zone",
+        label: "Delete or transfer",
         permission: "org.delete",
       },
     ],
@@ -99,14 +97,14 @@ const groups: Array<{ label: string; items: Item[] }> = [
 
 type Props = {
   children: ReactNode;
-  organization: {
+  organization?: {
     name: string;
     slug: string;
     logo?: string | null;
   };
 };
 
-export const SettingsShell: FC<Props> = ({ children, organization }) => {
+export const SettingsShell: FC<Props> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const permissions = usePermissionMap();
@@ -129,14 +127,12 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
   const active = all.find(isActive);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Settings"
-        description={organization.name}
-        meta={<OrgAvatar name={organization.name} seed={organization.slug} />}
-      />
+    <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
+      <div className="flex flex-col gap-4 lg:gap-6">
+        <h1 className="font-display text-[length:var(--title-size)] leading-[1.1]">
+          Settings
+        </h1>
 
-      <div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
         {/* Below 1024px the pages are one compact menu. */}
         <div className="lg:hidden">
           <Select
@@ -160,33 +156,41 @@ export const SettingsShell: FC<Props> = ({ children, organization }) => {
           </Select>
         </div>
 
-        <aside className="hidden lg:block">
-          <div className="tile sticky top-20 space-y-5 p-3">
-            {visible.map((group) => (
-              <div key={group.label} className="space-y-1">
-                {group.items.length > 1 ||
-                group.label !== group.items[0]?.label ? (
-                  <p className="px-2.5 pt-1 text-xs font-semibold tracking-wide text-ink-3 uppercase">
-                    {group.label}
-                  </p>
-                ) : null}
-                <SectionNav
-                  orientation="vertical"
-                  label={group.label}
-                  LinkComponent={Link}
-                  activeHref={active?.href ?? null}
-                  items={group.items.map(({ href, label }) => ({
-                    href,
-                    label,
-                  }))}
-                />
-              </div>
-            ))}
-          </div>
-        </aside>
+        <nav aria-label="Settings" className="hidden flex-col gap-5 lg:flex">
+          {visible.map((group) => (
+            <div key={group.label} className="flex flex-col gap-0.5">
+              <span
+                className={cn(
+                  "eyebrow px-2.5 pb-1.5",
+                  group.label === "Danger zone" && "text-danger-text",
+                )}
+              >
+                {group.label}
+              </span>
+              {group.items.map((item) => {
+                const current = active?.href === item.href;
 
-        <div className="min-w-0">{children}</div>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={current ? "page" : undefined}
+                    className={cn(
+                      "flex h-[34px] items-center rounded-[10px] px-2.5 text-sm text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-ring",
+                      current &&
+                        "bg-hover font-medium text-ink shadow-[inset_0_0_0_1px_var(--hairline)]",
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
       </div>
+
+      <div className="max-w-[780px] min-w-0">{children}</div>
     </div>
   );
 };

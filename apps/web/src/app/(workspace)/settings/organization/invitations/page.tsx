@@ -18,7 +18,10 @@ export default async function InvitationsSettingsPage(): Promise<JSX.Element> {
   });
 
   return (
-    <AuthorizationBoundary isAllowed={authorization.isAllowed}>
+    <AuthorizationBoundary
+      isAllowed={authorization.isAllowed}
+      permission={authorization.permission}
+    >
       <InvitationsSection invitations={invitations} />
     </AuthorizationBoundary>
   );
