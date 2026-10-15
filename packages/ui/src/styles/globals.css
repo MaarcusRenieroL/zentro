@@ -630,6 +630,26 @@
     box-shadow: 0 0 0 5px transparent;
   }
 }
+/* Loading shimmer: a slow opacity breath, never a moving gradient. */
+@keyframes zsh {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+/* "Now" dots: a green ring that grows and fades. */
+@keyframes zpulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--done-glow);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
 @keyframes ring-pulse {
   from {
     opacity: 0.7;

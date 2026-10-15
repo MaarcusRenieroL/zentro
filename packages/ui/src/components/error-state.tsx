@@ -1,6 +1,4 @@
 import type { ReactElement, ReactNode } from "react";
-import { TriangleAlertIcon } from "lucide-react";
-
 import { cn } from "@zentro/ui/lib/utils";
 import { Button } from "./shadcn/button";
 
@@ -31,16 +29,17 @@ export function ErrorState({
       role="alert"
       data-slot="error-state"
       className={cn(
-        "flex min-h-48 flex-col items-center justify-center rounded-lg border border-hairline bg-danger-subtle/40 px-6 py-10 text-center",
+        "flex min-h-48 flex-col items-center justify-center rounded-xl border border-hairline bg-surface px-6 py-14 text-center",
         className,
       )}
     >
-      <div className="mb-3 flex size-9 items-center justify-center rounded-full bg-danger-subtle text-danger-text">
-        <TriangleAlertIcon className="size-4" aria-hidden="true" />
-      </div>
-      <h2 className="font-display text-2xl leading-tight text-balance text-ink">
-        {title}
-      </h2>
+      <span
+        aria-hidden="true"
+        className="mb-3 flex size-9 items-center justify-center rounded-full border-[1.5px] border-danger font-mono text-base text-danger-text"
+      >
+        !
+      </span>
+      <h2 className="text-lg font-semibold text-balance text-ink">{title}</h2>
       <p className="mt-1.5 max-w-sm text-sm text-ink-2">{message}</p>
       {requestId ? (
         <p className="mt-2 font-mono text-xs text-ink-3">Request {requestId}</p>

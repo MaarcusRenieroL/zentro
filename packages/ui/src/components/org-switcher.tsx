@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useId, useMemo, useState } from "react";
+import { FC, ReactNode, useId, useMemo, useState } from "react";
 import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
@@ -25,6 +25,10 @@ type Props = {
   createOrganizationHref?: string;
   onSwitchOrganization: (organizationId: string) => void | Promise<void>;
   className?: string;
+  /** The second line under the name, in mono: "Admin · 18 people". */
+  subtitle?: string;
+  /** Replaces the squircle mark in the trigger (the app uses the logo mark). */
+  mark?: ReactNode;
 };
 
 /** The organization menu: a searchable list with squircle marks. */
@@ -34,6 +38,8 @@ export const OrgSwitcher: FC<Props> = ({
   createOrganizationHref,
   onSwitchOrganization,
   className,
+  subtitle,
+  mark,
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -72,9 +78,16 @@ export const OrgSwitcher: FC<Props> = ({
             className,
           )}
         >
-          <OrgAvatar name={active.name} seed={active.id} />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink group-data-[collapsible=icon]:hidden">
-            {active.name}
+          {mark ?? <OrgAvatar name={active.name} seed={active.id} />}
+          <span className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-sm leading-[18px] font-semibold text-ink">
+              {active.name}
+            </span>
+            {subtitle ? (
+              <span className="truncate font-mono text-[11px] leading-4 text-ink-3">
+                {subtitle}
+              </span>
+            ) : null}
           </span>
           <ChevronsUpDownIcon
             className="size-3.5 shrink-0 text-ink-3 group-data-[collapsible=icon]:hidden"

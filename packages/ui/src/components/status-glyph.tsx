@@ -178,6 +178,45 @@ export function PriorityGlyph({
   );
 }
 
+const meterLevels = { low: 1, medium: 2, high: 3 } as const;
+
+/**
+ * Priority as four rising bars, filled up to the level (the list and the focus
+ * tile draw it this way). Always ink, never a state color.
+ */
+export function PriorityMeter({
+  priority,
+  className,
+}: {
+  priority: string;
+  className?: string;
+}): ReactElement {
+  const level = meterLevels[priority as keyof typeof meterLevels] ?? 2;
+
+  return (
+    <span
+      role="img"
+      aria-label={`Priority: ${priorityLabels[priority] ?? priority}`}
+      data-priority={priority}
+      className={cn(
+        "flex h-[13px] w-[18px] shrink-0 items-end gap-0.5",
+        className,
+      )}
+    >
+      {[4, 7, 10, 13].map((height, index) => (
+        <span
+          key={height}
+          style={{ height }}
+          className={cn(
+            "w-[3px] rounded-[1px]",
+            index < level ? "bg-ink" : "bg-hairline",
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
 /** Spec name for the state dot: the same glyph, the task's one color. */
 export const TaskStateDot = StatusGlyph;
 export const PriorityBars = PriorityGlyph;
