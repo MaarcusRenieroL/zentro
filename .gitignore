@@ -51,3 +51,4 @@ AUDIT_REPORT.md
 # test artifacts
 playwright-report/
 test-results/
+.neon
