@@ -5,13 +5,18 @@ import { usePermission } from "~/src/components/permissions/permission-provider"
 import { useEffect, useMemo, useState } from "react";
 import {
   Edit3Icon,
+  FileTextIcon,
+  LayoutGridIcon,
   PlusIcon,
-  SearchIcon,
-  ShieldCheckIcon,
+  SquareCheckIcon,
   Trash2Icon,
   UserPlusIcon,
-  UsersIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { ActorAvatar } from "~/src/components/actor-avatar";
+import { paths } from "~/src/lib/paths";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { cn, toastError, toastSuccess } from "@zentro/ui";
@@ -25,16 +30,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@zentro/ui/components/shadcn/alert-dialog";
-import { Avatar, AvatarFallback } from "@zentro/ui/components/shadcn/avatar";
 import { Badge } from "@zentro/ui/components/shadcn/badge";
 import { Button } from "@zentro/ui/components/shadcn/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@zentro/ui/components/shadcn/card";
+import { Card } from "@zentro/ui/components/shadcn/card";
 import { Checkbox } from "@zentro/ui/components/shadcn/checkbox";
 import {
   Dialog,
@@ -89,6 +87,7 @@ type TeamScopeCounts = Record<
   string,
   {
     projects: number;
+    archived: number;
     tasks: number;
     docs: number;
   }
@@ -131,15 +130,6 @@ const emptyForm: TeamFormState = {
   color: "slate",
   memberIds: [],
 };
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
-}
 
 function getColorClass(color: string) {
   return (
@@ -294,11 +284,7 @@ function TeamDialog({
                       disabled={!canManageMembers}
                       onCheckedChange={() => toggleMember(member.id)}
                     />
-                    <Avatar className="size-8">
-                      <AvatarFallback className="text-xs">
-                        {getInitials(member.name)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <ActorAvatar name={member.name} size={32} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
                         {member.name}
@@ -374,18 +360,13 @@ function TeamActions({
   const canDelete = usePermission("teams.delete", { teamId });
 
   return (
-    <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={!canUpdate}
-        onClick={onEdit}
-      >
+    <div className="-mx-1 flex flex-wrap gap-1 border-t border-hairline/70 pt-2.5">
+      <Button variant="ghost" size="sm" disabled={!canUpdate} onClick={onEdit}>
         <Edit3Icon className="size-4" />
         Edit
       </Button>
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
         disabled={!canManageMembers}
         onClick={onEdit}
@@ -393,9 +374,11 @@ function TeamActions({
         <UserPlusIcon className="size-4" />
         Members
       </Button>
+      <span className="flex-1" />
       <Button
-        variant="destructive"
+        variant="ghost"
         size="sm"
+        className="text-danger-text"
         disabled={!canDelete}
         onClick={onDelete}
       >
@@ -413,7 +396,6 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
     [],
   );
   const [scopeCounts, setScopeCounts] = useState<TeamScopeCounts>({});
-  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -441,6 +423,7 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
       for (const team of teamList) {
         nextScopeCounts[team.id] = {
           projects: 0,
+          archived: 0,
           tasks: 0,
           docs: 0,
         };
@@ -452,12 +435,14 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
 
           if (counts) {
             counts.projects += 1;
+            if (project.archivedAt) counts.archived += 1;
           }
         }
       }
 
       for (const task of taskList) {
-        if (task.teamId) {
+        // Only work still to do counts as the team's load.
+        if (task.teamId && task.status !== "done") {
           const counts = nextScopeCounts[task.teamId];
 
           if (counts) {
@@ -491,29 +476,25 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredTeams = useMemo(() => {
-    const normalizedSearch = searchQuery.trim().toLowerCase();
+  // "New team" in the Team header and "Edit team" on a team's page open the
+  // dialog here through the URL.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const wantsNew = searchParams.get("new") === "1";
+  const wantsEdit = searchParams.get("edit");
 
-    if (!normalizedSearch) {
-      return teams;
-    }
+  useEffect(() => {
+    if (isLoading || (!wantsNew && !wantsEdit)) return;
 
-    return teams.filter((team) =>
-      [
-        team.name,
-        team.description ?? "",
-        ...team.members.map((member) => `${member.name} ${member.email}`),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch),
-    );
-  }, [searchQuery, teams]);
+    const team = wantsEdit
+      ? teams.find((entry) => entry.id === wantsEdit)
+      : null;
 
-  const totalMemberships = teams.reduce(
-    (total, team) => total + team.members.length,
-    0,
-  );
+    if (wantsNew && permissions.canCreateTeams) openCreateDialog();
+    if (team) openEditDialog(team);
+    router.replace(paths.teamsSettings(), { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, wantsNew, wantsEdit]);
 
   function openCreateDialog() {
     setDialogMode("create");
@@ -589,177 +570,177 @@ export function TeamsSection({ permissions }: TeamsSectionProps) {
     }
   }
 
+  const people = availableMembers.length;
+  const inATeam = new Set(
+    teams.flatMap((team) => team.members.map((member) => member.memberId)),
+  );
+  const noTeam = sortMembers(
+    availableMembers.filter((member) => !inATeam.has(member.id)),
+  );
+  const largest = [...teams].sort(
+    (a, b) => b.members.length - a.members.length,
+  )[0];
+  const ownedProjects = Object.values(scopeCounts).reduce(
+    (total, counts) => total + counts.projects,
+    0,
+  );
+  const archivedProjects = Object.values(scopeCounts).reduce(
+    (total, counts) => total + counts.archived,
+    0,
+  );
+  const firstNames = (list: AvailableMember[]) => {
+    const names = list.map((member) => member.name);
+
+    if (names.length <= 2) return names.join(" and ");
+
+    return `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`;
+  };
+
+  const stats = [
+    {
+      label: "Teams",
+      value: teams.length,
+      note: largest?.members.length
+        ? `${largest.name} is the largest`
+        : "None yet",
+    },
+    { label: "In a team", value: inATeam.size, note: `of ${people} people` },
+    {
+      label: "Projects owned",
+      value: ownedProjects,
+      note: `${ownedProjects - archivedProjects} active, ${archivedProjects} archived`,
+    },
+    {
+      label: "No team",
+      value: noTeam.length,
+      note: noTeam.length ? firstNames(noTeam) : "Everyone has a team",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-            <ShieldCheckIcon className="size-5" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">Teams</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Group members by function, squad, or ownership area so workspace
-              planning stays easier to manage.
-            </p>
-          </div>
-        </div>
-
-        <Button
-          disabled={!permissions.canCreateTeams}
-          onClick={openCreateDialog}
-        >
-          <PlusIcon className="size-4" />
-          New team
-        </Button>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="rounded-lg">
-          <CardContent className="p-4">
-            <p className="text-2xl font-semibold">{teams.length}</p>
-            <p className="text-sm text-muted-foreground">Teams</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-lg">
-          <CardContent className="p-4">
-            <p className="text-2xl font-semibold">{availableMembers.length}</p>
-            <p className="text-sm text-muted-foreground">Workspace members</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-lg">
-          <CardContent className="p-4">
-            <p className="text-2xl font-semibold">{totalMemberships}</p>
-            <p className="text-sm text-muted-foreground">Team assignments</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="relative">
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          value={searchQuery}
-          placeholder="Search teams or members..."
-          onChange={(event) => setSearchQuery(event.target.value)}
-        />
-      </div>
-
+    <div className="flex flex-col gap-5">
       {isLoading ? (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-52 rounded-lg" />
+            <Skeleton key={index} className="h-36 rounded-xl" />
           ))}
         </div>
-      ) : filteredTeams.length ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {filteredTeams.map((team) => (
-            <Card key={team.id} className="rounded-lg">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
+      ) : teams.length ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="tile flex flex-col gap-1 p-4">
+                <span className="eyebrow">{stat.label}</span>
+                <span className="font-serif-italic text-[2.25rem] leading-10">
+                  {stat.value}
+                </span>
+                <span className="truncate text-xs text-ink-2">{stat.note}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            {teams.map((team) => {
+              const counts = scopeCounts[team.id];
+              const shown = sortMembers(team.members).slice(0, 4);
+
+              return (
+                <Card
+                  key={team.id}
+                  className="gap-0 overflow-hidden rounded-xl py-0 shadow-none"
+                >
+                  <div className="flex items-center gap-2.5 border-b border-hairline bg-tint-teams px-4 py-3">
                     <span
+                      aria-hidden="true"
                       className={cn(
-                        "mt-1 size-3 shrink-0 rounded-full",
+                        "size-2.5 shrink-0 rounded-full",
                         getColorClass(team.color),
                       )}
                     />
-                    <div className="min-w-0">
-                      <CardTitle className="truncate text-base">
-                        {team.name}
-                      </CardTitle>
-                      <CardDescription className="mt-1 line-clamp-2">
-                        {team.description || "No description yet."}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Badge variant="secondary">
-                    {team.members.length} member
-                    {team.members.length === 1 ? "" : "s"}
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <div className="flex min-h-10 flex-wrap gap-2">
-                  {sortMembers(team.members)
-                    .slice(0, 6)
-                    .map((member) => (
-                      <span
-                        key={member.id}
-                        className="inline-flex items-center gap-2 rounded-xl border border-hairline/60 bg-surface px-2 py-1 text-xs"
-                      >
-                        <Avatar className="size-5">
-                          <AvatarFallback className="text-[10px]">
-                            {getInitials(member.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        {member.name}
-                      </span>
-                    ))}
-                  {!team.members.length ? (
-                    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                      <UsersIcon className="size-4" />
-                      No members assigned
+                    <Link
+                      href={paths.teamSettings(team.id)}
+                      className="min-w-0 flex-1 truncate font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {team.name}
+                    </Link>
+                    <span className="flex items-center">
+                      {shown.map((member) => (
+                        <span
+                          key={member.id}
+                          title={member.name}
+                          className="-ml-1.5 rounded-full ring-2 ring-surface first:ml-0"
+                        >
+                          <ActorAvatar name={member.name} size={22} />
+                        </span>
+                      ))}
+                      {team.members.length > shown.length ? (
+                        <span className="ml-1.5 font-mono text-xs text-ink-2">
+                          +{team.members.length - shown.length}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
-                  {team.members.length > 6 ? (
-                    <Badge variant="outline">+{team.members.length - 6}</Badge>
-                  ) : null}
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 rounded-md border bg-muted/20 p-2 text-center">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {scopeCounts[team.id]?.projects ?? 0}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Projects
-                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {scopeCounts[team.id]?.tasks ?? 0}
+                  <div className="flex flex-col gap-3 px-4 py-3.5">
+                    <p className="line-clamp-2 text-sm text-ink-2">
+                      {team.description || "No description yet."}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">Tasks</p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-2">
+                      <span className="flex items-center gap-1.5">
+                        <LayoutGridIcon
+                          aria-hidden="true"
+                          className="size-3.5 text-ink-3"
+                        />
+                        {counts?.projects ?? 0}{" "}
+                        {counts?.projects === 1 ? "project" : "projects"}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <SquareCheckIcon
+                          aria-hidden="true"
+                          className="size-3.5 text-ink-3"
+                        />
+                        {counts?.tasks ?? 0} open tasks
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <FileTextIcon
+                          aria-hidden="true"
+                          className="size-3.5 text-ink-3"
+                        />
+                        {counts?.docs ?? 0} docs
+                      </span>
+                      <span className="flex-1" />
+                      <span className="text-ink-3">
+                        {team.members.length}{" "}
+                        {team.members.length === 1 ? "member" : "members"}
+                      </span>
+                    </div>
+                    <TeamActions
+                      teamId={team.id}
+                      onEdit={() => openEditDialog(team)}
+                      onDelete={() => setTeamToDelete(team)}
+                    />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {scopeCounts[team.id]?.docs ?? 0}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">Docs</p>
-                  </div>
-                </div>
-
-                <TeamActions
-                  teamId={team.id}
-                  onEdit={() => openEditDialog(team)}
-                  onDelete={() => setTeamToDelete(team)}
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+        </>
       ) : (
-        <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-14 text-center">
-          <ShieldCheckIcon className="mx-auto mb-3 size-10 text-muted-foreground" />
-          <p className="text-sm font-medium">
-            {searchQuery.trim() ? "No teams found" : "No teams yet"}
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line-strong px-6 py-14 text-center">
+          <p className="font-serif-italic text-[2rem] leading-10">
+            No teams yet.
           </p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            {searchQuery.trim()
-              ? "Try a different team name or member search."
-              : "Create your first team to group workspace members by ownership area."}
+          <p className="max-w-[440px] text-[15px] leading-[22px] text-ink-2">
+            Teams group people who work together. Projects can belong to a team,
+            and its members get access automatically.
           </p>
-          {!searchQuery.trim() ? (
+          {permissions.canCreateTeams ? (
             <Button
               variant="outline"
-              className="mt-4"
-              disabled={!permissions.canCreateTeams}
+              className="mt-3"
               onClick={openCreateDialog}
             >
               <PlusIcon className="size-4" />
-              Create team
+              New team
             </Button>
           ) : null}
         </div>

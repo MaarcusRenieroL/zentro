@@ -46,6 +46,7 @@ const listInput = z
     targetType: z.string().max(40).optional(),
     targetId: z.string().max(100).optional(),
     projectId: uuid.optional(),
+    teamId: uuid.optional(),
     scope: z.literal("organization").optional(),
     cursor: cursorSchema.optional(),
   })
@@ -54,9 +55,10 @@ const listInput = z
       [
         Boolean(input.targetType && input.targetId),
         Boolean(input.projectId),
+        Boolean(input.teamId),
         input.scope === "organization",
       ].filter(Boolean).length === 1,
-    "Choose one of: a target, a project, or the organization.",
+    "Choose one of: a target, a project, a team, or the organization.",
   );
 
 export const activityRouter = router({
@@ -89,6 +91,10 @@ export const activityRouter = router({
 
       if (input.projectId) {
         conditions.push(eq(activityEvents.projectId, input.projectId));
+      }
+
+      if (input.teamId) {
+        conditions.push(eq(activityEvents.teamId, input.teamId));
       }
 
       const rows = await ctx.db

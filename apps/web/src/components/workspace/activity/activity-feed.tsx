@@ -12,7 +12,8 @@ import { trpcResult } from "~/src/lib/trpc-result";
 
 export type FeedSelector =
   | { targetType: string; targetId: string }
-  | { projectId: string };
+  | { projectId: string }
+  | { teamId: string };
 
 type FeedEvent = {
   id: string;
@@ -97,5 +98,68 @@ export const ActivityFeed: FC<{
         </Button>
       ) : null}
     </div>
+  );
+};
+
+/** A team's recent activity as a compact timeline. */
+export const TeamActivity: FC<{ teamId: string }> = ({ teamId }) => {
+  const trpc = useTrpcClient();
+  const [events, setEvents] = useState<FeedEvent[] | null>(null);
+
+  useEffect(() => {
+    let live = true;
+
+    void trpcResult(trpc.activity.list.query({ teamId })).then(({ data }) => {
+      if (live) setEvents(((data?.items ?? []) as FeedEvent[]).slice(0, 8));
+    });
+
+    return () => {
+      live = false;
+    };
+  }, [trpc, teamId]);
+
+  if (!events) return <Skeleton className="h-40 w-full" />;
+
+  if (!events.length) {
+    return (
+      <p className="text-sm text-ink-2">
+        Nothing yet. Work on this team&apos;s tasks and docs shows up here.
+      </p>
+    );
+  }
+
+  return (
+    <ol className="flex flex-col gap-3.5" data-testid="activity-feed">
+      {events.map((event) => {
+        const sentence = sentenceFor(event);
+        const finished = /done|complet|finish/i.test(
+          `${event.action} ${JSON.stringify(event.metadata)}`,
+        );
+        const started = /progress|start/i.test(
+          `${event.action} ${JSON.stringify(event.metadata)}`,
+        );
+
+        return (
+          <li key={event.id} className="flex gap-2.5">
+            <span
+              aria-hidden="true"
+              className={
+                finished
+                  ? "mt-1 size-2.5 shrink-0 rounded-full bg-success"
+                  : started
+                    ? "mt-1 size-2.5 shrink-0 rounded-full border-2 border-warning"
+                    : "mt-1 size-2.5 shrink-0 rounded-full border border-ink-3"
+              }
+            />
+            <span className="flex min-w-0 flex-col">
+              <span className="text-sm break-words">{sentence}</span>
+              <span className="font-mono text-[11px] text-ink-3">
+                {formatEventTime(event.createdAt)}
+              </span>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 };
