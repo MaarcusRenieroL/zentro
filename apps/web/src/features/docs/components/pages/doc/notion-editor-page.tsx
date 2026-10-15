@@ -71,6 +71,7 @@ import {
   getDocTitle,
 } from "../../../lib/docs";
 import { ActorAvatar } from "~/src/components/actor-avatar";
+import { LinkedWork } from "~/src/components/links/linked-work";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
@@ -1174,6 +1175,13 @@ export function NotionEditorPage({ slug }: { slug: string }) {
         </main>
 
         <div className="flex flex-col gap-4 p-6 pl-0 xl:sticky xl:top-16 xl:max-h-[calc(100vh-5rem)] xl:self-start xl:overflow-y-auto max-xl:contents">
+          <LinkedWork
+            source={{ type: "doc", id: doc.id }}
+            selfId={doc.id}
+            canEdit={canEdit}
+            refreshKey={saveStatus}
+          />
+
           <section aria-label="Thread" className="tile hidden p-4 xl:block">
             <LinkedThread
               header={(count) => (

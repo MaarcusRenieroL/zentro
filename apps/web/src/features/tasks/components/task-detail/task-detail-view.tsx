@@ -11,6 +11,7 @@ import {
   RichTextPreview,
 } from "@zentro/ui/components/rich-text-editor";
 
+import { LinkedWork } from "~/src/components/links/linked-work";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 
@@ -117,28 +118,36 @@ export function TaskDetailView({
           canAssign={canAssign}
           canDelete={canDelete}
           thread={
-            <section aria-label="Thread" className="tile p-4">
-              <LinkedThread
-                header={(count) => (
-                  <div className="flex items-baseline justify-between pb-3">
-                    <h2 className="eyebrow">Thread</h2>
-                    <span className="font-mono text-xs text-ink-3">
-                      {count} linked
-                    </span>
-                  </div>
-                )}
-                current={{
-                  kind: "task",
-                  label: task.name,
-                  meta: task.key,
-                  status: task.status,
-                }}
-                currentId={task.id}
-                projectId={task.projectId}
-                projectName={task.projectName}
-                projectSlug={task.projectSlug}
+            <>
+              <LinkedWork
+                source={{ type: "task", key: task.key }}
+                selfId={task.id}
+                canEdit={canEdit}
+                refreshKey={task.description ?? ""}
               />
-            </section>
+              <section aria-label="Thread" className="tile p-4">
+                <LinkedThread
+                  header={(count) => (
+                    <div className="flex items-baseline justify-between pb-3">
+                      <h2 className="eyebrow">Thread</h2>
+                      <span className="font-mono text-xs text-ink-3">
+                        {count} linked
+                      </span>
+                    </div>
+                  )}
+                  current={{
+                    kind: "task",
+                    label: task.name,
+                    meta: task.key,
+                    status: task.status,
+                  }}
+                  currentId={task.id}
+                  projectId={task.projectId}
+                  projectName={task.projectName}
+                  projectSlug={task.projectSlug}
+                />
+              </section>
+            </>
           }
         />
       </div>
