@@ -68,7 +68,7 @@ export const GeneralSection: FC<Props> = ({ organization }) => {
       <SettingsHeader
         eyebrow="ORGANIZATION"
         title="General"
-        description="How your organization appears across Zentro."
+        description={`The name and address of ${organization.name}. Only owners and admins can change these.`}
       />
       <SettingsTile>
         <SettingsRow label="Name" htmlFor="organization-name">

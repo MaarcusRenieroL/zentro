@@ -32,9 +32,11 @@ import {
 export function ProfileSection({
   name,
   email,
+  organizationName,
 }: {
   name: string;
   email: string;
+  organizationName: string;
 }) {
   const [saved, setSaved] = useState(name);
   const [value, setValue] = useState(name);
@@ -76,7 +78,7 @@ export function ProfileSection({
       <SettingsHeader
         eyebrow="ACCOUNT"
         title="Profile"
-        description="How you appear to your team."
+        description={`How you appear to people in ${organizationName}.`}
       />
       <SettingsTile>
         <SettingsRow label="Full name" htmlFor="profile-name">
