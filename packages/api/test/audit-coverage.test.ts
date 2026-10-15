@@ -18,7 +18,12 @@ const mutations = procedures.filter(({ def }) => def.type === "mutation");
 
 // Mutations that legitimately record no event, each with the reason. A new
 // mutation must declare `meta.audit` or be added here on purpose.
-const recordsNothing: Record<string, string> = {};
+const recordsNothing: Record<string, string> = {
+  "notification.markRead":
+    "A personal read mark on your own inbox; it changes nothing anyone else sees.",
+  "notification.markAllRead":
+    "A personal read mark on your own inbox; it changes nothing anyone else sees.",
+};
 
 describe("audit coverage sweep", () => {
   it("enumerates the router's mutations", () => {

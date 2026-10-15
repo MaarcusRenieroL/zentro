@@ -186,6 +186,8 @@ export async function recordTaskChanges(
     await ctx.audit.record(tx, {
       action: "task.assigned",
       ...common,
+      // The new assignee's member id, so their inbox can find this event.
+      metadata: { ...common.metadata, assignedToMemberId: assignee.toValue },
       changes: [
         {
           field: "assignee",

@@ -32,7 +32,7 @@ export function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon-sm" className="relative size-8">
           <BellIcon />
           {unreadCount > 0 ? (
             <span
@@ -93,7 +93,7 @@ export function NotificationBell() {
                   {group.map((item) => (
                     <div
                       key={item.id}
-                      className="flex gap-2.5 rounded-xl px-3 py-2.5 hover:bg-hover"
+                      className="relative flex gap-2.5 rounded-xl px-3 py-2.5 hover:bg-hover"
                     >
                       <UnreadDot unread={item.unread} />
                       <ActorAvatar name={item.actor} />

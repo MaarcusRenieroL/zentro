@@ -39,13 +39,22 @@ const tabs: Array<{ id: Tab; label: string }> = [
 ];
 
 export function InboxView({
-  state = "ready",
+  state: forced,
   onRetry,
 }: {
+  /** The dev gallery forces a state; the workspace uses the live one. */
   state?: InboxState;
   onRetry?: () => void;
 }) {
-  const { items, unreadCount, markAllRead, resolve } = useNotifications();
+  const {
+    items,
+    unreadCount,
+    markAllRead,
+    resolve,
+    state: live,
+    reload,
+  } = useNotifications();
+  const state = forced ?? live;
   const [tab, setTab] = useState<Tab>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
 
@@ -96,6 +105,9 @@ export function InboxView({
       >
         {tabs.map(({ id, label }) => {
           const count = id === "all" ? items.length : counts[id];
+
+          // Approvals only appear where something asks for one.
+          if (id === "approval" && count === 0) return null;
           const active = tab === id;
 
           return (
@@ -180,7 +192,7 @@ export function InboxView({
           className="mt-3"
           title="We couldn’t load your notifications."
           message="The server didn’t answer in time. New notifications still arrive in the bell. Try again in a moment."
-          onRetry={onRetry}
+          onRetry={onRetry ?? reload}
         />
       ) : null}
 
@@ -208,7 +220,7 @@ export function InboxView({
               {day.items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex gap-3 rounded-xl border-t border-hairline/60 p-3 hover:bg-hover"
+                  className="relative flex gap-3 rounded-xl border-t border-hairline/60 p-3 hover:bg-hover"
                 >
                   <UnreadDot unread={item.unread} />
                   <ActorAvatar name={item.actor} />

@@ -9,3 +9,4 @@ export * from "./team";
 export * from "./organization-module";
 export * from "./permissions";
 export * from "./activity";
+export * from "./notification";

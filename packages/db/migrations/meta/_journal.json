@@ -99,6 +99,13 @@
       "when": 1791910574976,
       "tag": "0013_activity_event",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792073238595,
+      "tag": "0014_notification_read",
+      "breakpoints": true
     }
   ]
 }
