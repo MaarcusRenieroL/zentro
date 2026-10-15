@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FC, ReactNode } from "react";
+import { ArrowUpRightIcon } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
 import {
@@ -16,16 +17,19 @@ import {
 import { usePermissionMap } from "~/src/components/permissions/permission-provider";
 import { paths } from "~/src/lib/paths";
 
+import { AdminFrame, adminPaths, inArea, TeamFrame, teamPaths } from "./frames";
+
 type Item = {
   href: string;
   label: string;
   /** Leave out for pages everyone can open (your own account). */
   permission?: string;
-  matchPrefix?: boolean;
+  /** Opens a page in another area (Team or Overview). */
+  external?: boolean;
 };
 
-// Settings are grouped by what they are for. The permission of each page is
-// the same as it has always been.
+// Settings are grouped by what they are for. Members, Roles and Modules live
+// in the Team and Overview areas now, so the rail links out to them (↗).
 const groups: Array<{ label: string; items: Item[] }> = [
   {
     label: "Account",
@@ -43,32 +47,27 @@ const groups: Array<{ label: string; items: Item[] }> = [
         permission: "org.settings.update",
       },
       {
-        href: paths.membersSettings(),
-        label: "Members",
-        permission: "members.view",
+        href: paths.modulesSettings(),
+        label: "Modules",
+        permission: "modules.view",
+        external: true,
       },
-      {
-        href: paths.invitationsSettings(),
-        label: "Invitations",
-        permission: "invitations.view",
-      },
-      { href: paths.teamsSettings(), label: "Teams", permission: "teams.view" },
     ],
   },
   {
     label: "Access",
     items: [
       {
-        href: paths.rolesSettings(),
-        label: "Roles & permissions",
-        permission: "roles.view",
-        // The roles area has its own pages below this path.
-        matchPrefix: true,
+        href: paths.membersSettings(),
+        label: "Members",
+        permission: "members.view",
+        external: true,
       },
       {
-        href: paths.modulesSettings(),
-        label: "Modules",
-        permission: "modules.view",
+        href: paths.rolesSettings(),
+        label: "Roles & access",
+        permission: "roles.view",
+        external: true,
       },
     ],
   },
@@ -76,11 +75,6 @@ const groups: Array<{ label: string; items: Item[] }> = [
     label: "Security",
     items: [
       { href: "/settings/account/security", label: "Password & sessions" },
-      {
-        href: paths.auditLogSettings(),
-        label: "Audit log",
-        permission: "audit_logs.view",
-      },
     ],
   },
   {
@@ -106,6 +100,17 @@ type Props = {
 
 export const SettingsShell: FC<Props> = ({ children }) => {
   const pathname = usePathname();
+
+  // Members, Invitations and Teams read as the Team area; Roles, Modules and
+  // the Audit log as the admin Overview. Their URLs stay under /settings.
+  if (inArea(pathname, teamPaths)) return <TeamFrame>{children}</TeamFrame>;
+  if (inArea(pathname, adminPaths)) return <AdminFrame>{children}</AdminFrame>;
+
+  return <SettingsRail>{children}</SettingsRail>;
+};
+
+const SettingsRail: FC<{ children: ReactNode }> = ({ children }) => {
+  const pathname = usePathname();
   const router = useRouter();
   const permissions = usePermissionMap();
 
@@ -120,7 +125,6 @@ export const SettingsShell: FC<Props> = ({ children }) => {
   const all = visible.flatMap((group) => group.items);
   const isActive = (item: Item) =>
     pathname === item.href ||
-    (item.matchPrefix && pathname.startsWith(`${item.href}/`)) ||
     (item.href === paths.generalSettings() &&
       (pathname === paths.settings() ||
         pathname === paths.organizationSettings()));
@@ -182,6 +186,12 @@ export const SettingsShell: FC<Props> = ({ children }) => {
                     )}
                   >
                     {item.label}
+                    {item.external ? (
+                      <ArrowUpRightIcon
+                        aria-hidden="true"
+                        className="ml-auto size-3.5 text-ink-3"
+                      />
+                    ) : null}
                   </Link>
                 );
               })}

@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { cn } from "@zentro/ui/lib/utils";
 import { Button } from "@zentro/ui/shadcn/button";
 
+import { HideWhenFramed } from "./frames";
+
 /** The top of a settings page: mono eyebrow, 22/600 title, one sentence. */
 export function SettingsHeader({
   eyebrow,
@@ -15,18 +17,31 @@ export function SettingsHeader({
   description?: ReactNode;
   tone?: "default" | "danger";
 }) {
+  // Inside the Team and Overview frames the frame carries the title.
   return (
-    <header className="flex flex-col gap-1.5">
-      <span className={cn("eyebrow", tone === "danger" && "text-danger-text")}>
-        {eyebrow}
-      </span>
-      <h2 className="text-[22px] leading-7 font-semibold">{title}</h2>
-      {description ? (
-        <p className="max-w-[620px] text-[15px] leading-[22px] text-ink-2">
-          {description}
-        </p>
-      ) : null}
-    </header>
+    <HideWhenFramed
+      fallback={
+        description ? (
+          <p className="max-w-[640px] text-[15px] leading-[22px] text-ink-2">
+            {description}
+          </p>
+        ) : null
+      }
+    >
+      <header className="flex flex-col gap-1.5">
+        <span
+          className={cn("eyebrow", tone === "danger" && "text-danger-text")}
+        >
+          {eyebrow}
+        </span>
+        <h2 className="text-[22px] leading-7 font-semibold">{title}</h2>
+        {description ? (
+          <p className="max-w-[620px] text-[15px] leading-[22px] text-ink-2">
+            {description}
+          </p>
+        ) : null}
+      </header>
+    </HideWhenFramed>
   );
 }
 
