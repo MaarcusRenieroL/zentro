@@ -3,7 +3,6 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import {
   createProjectViaUi,
-  createTaskViaUi,
   registerWithOrganization,
   uniqueName,
 } from "./helpers";
@@ -75,7 +74,7 @@ test("dialogs open clean, and errors wait for blur or submit", async ({
     .getByLabel(/task name|title/i)
     .first()
     .blur();
-  await expect(dialog.getByText(/task name is required/i)).toBeVisible();
+  await expect(dialog.getByText(/give the task a name/i)).toBeVisible();
   await page.keyboard.press("Escape");
 
   await page.goto("/projects");
@@ -230,7 +229,19 @@ test("Today: an empty workspace asks for a task, then start and finish work", as
 
   const name = uniqueName("Ship it");
 
-  await createTaskViaUi(page, name);
+  // New tasks are yours by default; leave this one unassigned.
+  await page.goto("/tasks");
+  await page.getByRole("button", { name: "Create task" }).first().click();
+
+  const dialog = page.getByRole("dialog");
+
+  await dialog.getByRole("combobox", { name: "Project" }).click();
+  await page.getByRole("option").first().click();
+  await dialog.getByLabel("Task name").fill(name);
+  await dialog.getByRole("combobox", { name: "Assignee" }).click();
+  await page.getByRole("option", { name: "Unassigned" }).click();
+  await dialog.getByRole("button", { name: /^Create task/ }).click();
+  await expect(page.getByText(name).first()).toBeVisible();
 
   // A task nobody owns can be pulled in, started, and finished.
   await page.goto("/dashboard");

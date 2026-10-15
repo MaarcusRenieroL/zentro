@@ -27,7 +27,8 @@ test("an admin turns Tasks off and on; dependencies are enforced", async ({
   await createProjectViaUi(page, projectName);
   await createTaskViaUi(page, taskName);
 
-  const sidebarTasks = page.getByRole("link", { name: "Tasks", exact: true });
+  // The link reads "Tasks 1" once a task is yours.
+  const sidebarTasks = page.getByRole("link", { name: /^Tasks( \d+)?$/ });
 
   await page.goto(modulesPath);
 

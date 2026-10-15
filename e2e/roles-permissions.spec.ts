@@ -115,7 +115,7 @@ test("an admin builds a custom role and assigns it to a member", async ({
   // A read-only member sees the task but cannot comment or delete it.
   await member.page.goto(`/tasks/${taskKey}`);
   await expect(member.page.getByText(taskKey).first()).toBeVisible();
-  await expect(member.page.getByText("Add a comment...")).toHaveCount(0);
+  await expect(member.page.getByText("Write a comment.")).toHaveCount(0);
   await expect(
     member.page.getByRole("button", { name: "Delete task" }),
   ).toHaveCount(0);
@@ -141,7 +141,7 @@ test("an admin builds a custom role and assigns it to a member", async ({
 
   // The member can now comment, but still cannot edit the task.
   await member.page.reload();
-  await expect(member.page.getByText("Add a comment...")).toBeVisible();
+  await expect(member.page.getByText("Write a comment.")).toBeVisible();
 
   const forbidden = await member.page.request.post(
     "/api/trpc/task.deleteTaskByKey?batch=1",
@@ -190,6 +190,7 @@ test("a private project is hidden from members until they get a role on it", asy
 
   // The admin adds the member as a project viewer.
   await page.goto(`/projects/${slug}/settings/access`);
+  await page.getByRole("button", { name: "Add people" }).click();
   await page.getByRole("combobox", { name: "Person or team" }).click();
   await page.getByRole("option", { name: new RegExp(member.name) }).click();
   await page.getByRole("combobox", { name: "Project role" }).click();
@@ -233,7 +234,7 @@ test("a role given to a team applies to its members", async ({
 
   await member.page.goto(`/tasks/${taskKey}`);
   await expect(member.page.getByText(taskKey).first()).toBeVisible();
-  await expect(member.page.getByText("Add a comment...")).toHaveCount(0);
+  await expect(member.page.getByText("Write a comment.")).toHaveCount(0);
 
   // Give the whole team the role from the team dialog.
   await page.goto("/settings/organization/teams");
@@ -256,7 +257,7 @@ test("a role given to a team applies to its members", async ({
   ).toBeVisible();
 
   await member.page.reload();
-  await expect(member.page.getByText("Add a comment...")).toBeVisible();
+  await expect(member.page.getByText("Write a comment.")).toBeVisible();
 
   await member.context.close();
 });

@@ -133,21 +133,28 @@ test("the dashboard shows numbers computed from the database", async ({
   await page.goto("/overview");
 
   const overview = page
-    .getByRole("heading", { name: "Workspace overview" })
+    .getByRole("heading", { name: "Workspace numbers" })
     .locator("xpath=..");
   const text = async () =>
-    ((await overview.innerText()) ?? "").replace(/\s+/g, " ");
+    ((await overview.innerText()) ?? "").replace(/\s+/g, " ").toLowerCase();
 
-  await expect.poll(text).toContain("1 Members");
-  await expect.poll(text).toContain("2 Projects");
-  await expect.poll(text).toContain("3 Open tasks");
-  await expect.poll(text).toContain("1 Docs");
-  await expect.poll(text).toContain("0 Teams");
+  await expect.poll(text).toContain("open tasks 3");
+  await expect.poll(text).toContain("overdue 0");
+  await expect.poll(text).toContain("docs edited · 7d 1");
+  await expect.poll(text).toContain("active people 1 / 1");
 
-  await expect(page.getByText("3 tasks due")).toHaveCount(0);
+  // Two projects, each with its real open count.
+  const projects = page.getByRole("table", { name: "Project" });
+
+  await expect(
+    projects.getByRole("row").filter({ hasText: "Counted one" }),
+  ).toContainText("3");
+  await expect(
+    projects.getByRole("row").filter({ hasText: "Counted two" }),
+  ).toBeVisible();
+
   await expect(page.getByText(/mentions?/i)).toHaveCount(0);
   await expect(page.getByText(/events today/i)).toHaveCount(0);
-  await expect(page.getByText("1 doc updated")).toBeVisible();
 });
 
 test("the sidebar has one level and exactly one active item per route", async ({
@@ -169,7 +176,10 @@ test("the sidebar has one level and exactly one active item per route", async ({
     ["/tasks?status=done", "Tasks", "Completed"],
     ["/docs", "Docs", null],
     ["/docs/recent", "Docs", "Recent"],
-    ["/settings/organization/modules", "Settings", null],
+    ["/settings/organization/modules", "Overview", "Modules"],
+    ["/settings/organization/members", "Team", "Members"],
+    ["/settings/organization/teams", "Team", "Teams"],
+    ["/settings/account/profile", "Settings", null],
   ];
 
   for (const [route, module, section] of routes) {
@@ -304,7 +314,7 @@ test("every page of a fresh account shows empty states without sample data", asy
 
   // Task detail of a task that does not exist.
   await page.goto("/tasks/NOPE-1");
-  await expect(page.getByText("Task not found")).toBeVisible();
+  await expect(page.getByText("We can’t find that page.")).toBeVisible();
 
   expect(errors).toEqual([]);
   expect(await trpcQuery(page, "task.getTasksByOrgId", {})).toEqual([]);

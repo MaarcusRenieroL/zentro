@@ -75,7 +75,10 @@ test("actions show up in the feeds and the audit log, and exports download", asy
 
   // The Today team pulse says who started what.
   await page.goto("/dashboard");
-  await expect(page.getByText(`started ${task.key}`)).toBeVisible();
+  // A role query skips the hidden copy React streams in before swapping it.
+  await expect(
+    page.getByRole("link", { name: new RegExp(`started ${task.key}`) }),
+  ).toBeVisible();
 
   // Project Activity tab.
   await page.goto(`/projects/${project.slug}`);
