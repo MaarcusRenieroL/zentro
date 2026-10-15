@@ -1,25 +1,50 @@
 "use client";
 
-import { paths } from "~/src/lib/paths";
 import { JSX, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+
+import { authClient } from "@zentro/auth/client";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Input } from "@zentro/ui/shadcn/input";
-import { Field, FieldGroup, FieldLabel } from "@zentro/ui/shadcn/field";
+
+import {
+  AuthField,
+  AuthHeading,
+  AuthNote,
+} from "~/src/features/auth/components/kit/auth-kit";
+import { getResetPasswordRedirectUrl } from "~/src/features/auth/lib/helpers";
+import {
+  formatMmSs,
+  useCountdown,
+} from "~/src/features/auth/lib/use-countdown";
 import {
   ForgotPasswordFormValues,
   forgotPasswordSchema,
 } from "~/src/features/auth/lib/zod-schema";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { authClient } from "@zentro/auth/client";
-import { toastError, toastSuccess } from "@zentro/ui/index";
-import { getResetPasswordRedirectUrl } from "~/src/features/auth/lib/helpers";
+import { paths } from "~/src/lib/paths";
+
+const resendWait = 60;
+
+function BackToSignIn() {
+  return (
+    <Link
+      href={paths.auth.signIn()}
+      className="-mb-2 flex w-fit items-center gap-1 rounded-xs text-[13px] text-ink-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    >
+      <ArrowLeftIcon className="size-3.5" aria-hidden="true" />
+      Back to sign in
+    </Link>
+  );
+}
 
 export default function ForgotPasswordPage(): JSX.Element {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const wait = useCountdown();
 
   const {
     handleSubmit,
@@ -28,178 +53,114 @@ export default function ForgotPasswordPage(): JSX.Element {
     formState: { isSubmitting },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: "",
-    },
+    defaultValues: { email: "" },
     mode: "onTouched",
   });
 
-  const onSubmit = async (formValues: ForgotPasswordFormValues) => {
-    const { error } = await authClient.requestPasswordReset({
-      email: formValues.email,
-      redirectTo: getResetPasswordRedirectUrl(),
-    });
-
-    if (error) {
-      toastError(error.statusText, error.message);
-      return;
-    }
-
-    toastSuccess(
-      "Success",
-      "If an account exists, we sent reset instructions.",
-    );
-
-    setIsSubmitted(true);
-  };
-
-  const resendEmail = async () => {
-    const email = getValues("email");
-
-    if (!email) {
-      toastError("Email missing", "Please go back and enter your email.");
-      setIsSubmitted(false);
-      return;
-    }
-
-    setIsResending(true);
-
+  const send = async (email: string) => {
     const { error } = await authClient.requestPasswordReset({
       email,
       redirectTo: getResetPasswordRedirectUrl(),
     });
 
-    setIsResending(false);
-
     if (error) {
       toastError(error.statusText, error.message);
-      return;
+      return false;
     }
 
-    toastSuccess(
-      "Email sent",
-      "If an account exists, we sent reset instructions again.",
-    );
+    wait.start(resendWait);
+
+    return true;
+  };
+
+  const onSubmit = async ({ email }: ForgotPasswordFormValues) => {
+    if (await send(email)) setIsSubmitted(true);
+  };
+
+  const resend = async () => {
+    setIsResending(true);
+
+    if (await send(getValues("email"))) {
+      toastSuccess("Link sent again", "Check your inbox in a minute.");
+    }
+
+    setIsResending(false);
   };
 
   if (isSubmitted) {
-    const email = getValues("email");
-
     return (
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <Mail className="h-7 w-7 text-primary" />
-          </div>
-
-          <h1 className="font-display text-3xl text-ink">Check your email</h1>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            We sent reset instructions to{" "}
-            <span className="font-medium text-foreground">{email}</span>.
-          </p>
+      <div className="flex flex-col gap-5">
+        <BackToSignIn />
+        <AuthHeading
+          title="Check your email"
+          description="If an account uses this address, a reset link is on its way."
+        />
+        <div className="flex flex-col gap-1.5 rounded-2xl border border-hairline bg-surface p-4">
+          <span className="font-mono text-sm break-all">
+            {getValues("email")}
+          </span>
+          <span className="text-sm leading-5 text-ink-2">
+            The link works once and expires in 30 minutes. Check spam if it
+            isn’t there in a minute.
+          </span>
         </div>
-
-        <div className="flex flex-col gap-5 tile p-5 sm:p-7">
-          <p className="text-center text-sm text-muted-foreground">
-            Didn&apos;t receive the email?
-          </p>
-
-          <Button onClick={resendEmail} disabled={isResending}>
-            {isResending ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                Resending...
+        <div className="flex justify-center">
+          {wait.done ? (
+            <Button
+              variant="ghost"
+              loading={isResending}
+              onClick={resend}
+              className="w-full"
+            >
+              Send the link again
+            </Button>
+          ) : (
+            <AuthNote>
+              Didn’t get it? Send again in{" "}
+              <span className="font-mono">
+                {formatMmSs(wait.seconds, false)}
               </span>
-            ) : (
-              "Click to resend"
-            )}
-          </Button>
+            </AuthNote>
+          )}
         </div>
-
-        <p className="mt-6 text-center">
-          <Link
-            href={paths.auth.signIn()}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to sign in
-          </Link>
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="mb-8 text-center">
-        <h1 className="font-display text-3xl text-ink">
-          Forgot your password?
-        </h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          No worries, we&apos;ll send you reset instructions.
-        </p>
-      </div>
-
-      <div className="tile p-5 sm:p-7">
-        <form noValidate onSubmit={handleSubmit(onSubmit)}>
-          <FieldGroup>
-            <Controller
-              name="email"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Field>
-                  <FieldLabel htmlFor="email">Email</FieldLabel>
-
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@company.com"
-                    required
-                    autoComplete="email"
-                    {...field}
-                  />
-
-                  {fieldState.error && (
-                    <p className="mt-2 text-xs text-danger-text">
-                      {fieldState.error.message}
-                    </p>
-                  )}
-                </Field>
-              )}
-            />
-
-            <Button
-              type="submit"
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={isSubmitting}
+    <form noValidate onSubmit={handleSubmit(onSubmit)}>
+      <div className="flex flex-col gap-5">
+        <BackToSignIn />
+        <AuthHeading
+          title="Reset your password"
+          description="Enter the email you sign in with and we’ll send a link to choose a new password."
+        />
+        <Controller
+          name="email"
+          control={control}
+          render={({ field, fieldState }) => (
+            <AuthField
+              label="Email"
+              htmlFor="email"
+              error={fieldState.error?.message}
             >
-              {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  Sending...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  Reset password
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              )}
-            </Button>
-          </FieldGroup>
-        </form>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@company.com"
+                autoComplete="email"
+                aria-invalid={fieldState.invalid || undefined}
+                aria-describedby={fieldState.error ? "email-error" : undefined}
+                className="font-mono text-sm"
+                {...field}
+              />
+            </AuthField>
+          )}
+        />
+        <Button type="submit" loading={isSubmitting} className="w-full">
+          Send reset link
+        </Button>
       </div>
-
-      <p className="mt-6 text-center">
-        <Link
-          href={paths.auth.signIn()}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to sign in
-        </Link>
-      </p>
-    </div>
+    </form>
   );
 }

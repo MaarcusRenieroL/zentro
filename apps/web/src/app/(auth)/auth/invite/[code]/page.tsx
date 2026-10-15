@@ -2,16 +2,12 @@
 
 import { useTrpcClient } from "@zentro/api/react";
 import { authClient } from "@zentro/auth/client";
+import { OrgAvatar } from "@zentro/ui/components/org-avatar";
 import { Button } from "@zentro/ui/components/shadcn/button";
+import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
+import { AuthHeading } from "~/src/features/auth/components/kit/auth-kit";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { paths } from "~/src/lib/paths";
-import {
-  AlertCircleIcon,
-  ArrowRightIcon,
-  Building2Icon,
-  UsersIcon,
-} from "lucide-react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { InvitationType } from "~/src/features/auth/lib/types";
@@ -118,59 +114,45 @@ export default function InviteAcceptPage() {
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-14 w-14 animate-pulse rounded-full bg-secondary" />
-          <div className="h-6 w-48 animate-pulse rounded bg-secondary" />
-          <div className="h-4 w-64 animate-pulse rounded bg-secondary" />
-        </div>
+      <div aria-busy="true" className="flex flex-col gap-5">
+        <Skeleton className="h-[72px] rounded-2xl" />
+        <Skeleton className="h-9 w-4/5" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-11 rounded-md" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
-            <AlertCircleIcon className="h-7 w-7 text-destructive" />
-          </div>
-          <h1 className="font-display text-3xl text-ink">
-            {error === "expired"
-              ? "Invite expired"
-              : "Invitation not available"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {error === "expired"
-              ? "This invitation link has expired. Please ask for a new invite."
-              : "This invitation link is invalid, or it was sent to another email address. Sign in with the email address it was sent to, or ask for a new invite."}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-5">
+        <AuthHeading
+          title={
+            error === "expired"
+              ? "This invite has expired."
+              : "This invite isn’t available."
+          }
+          description={
+            error === "expired"
+              ? "Invitation links work for 7 days. Ask for a new one and it will land in your inbox."
+              : "The link is invalid, or it was sent to another email address. Sign in with the address it was sent to, or ask for a new invite."
+          }
+        />
+        <div className="flex flex-col gap-2">
           <Button
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            className="w-full"
             onClick={() => router.push(paths.auth.joinOrganization())}
           >
-            <span className="flex items-center gap-2">
-              Go to invitations
-              <ArrowRightIcon className="h-4 w-4" />
-            </span>
+            Go to invitations
           </Button>
           <Button
             variant="outline"
             className="w-full"
             onClick={() => router.replace(paths.auth.createOrganization())}
           >
-            Create new organization
+            Create a new organization
           </Button>
         </div>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          <Link href="/" className="text-primary hover:text-primary/80">
-            Return to homepage
-          </Link>
-        </p>
       </div>
     );
   }
@@ -178,76 +160,40 @@ export default function InviteAcceptPage() {
   if (!data) return null;
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <Building2Icon className="h-7 w-7 text-primary" />
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-3 rounded-2xl border border-hairline bg-surface p-3.5">
+        <OrgAvatar name={data.organizationName} size="lg" />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-[15px] font-semibold">
+            {data.organizationName}
+          </span>
+          <span className="font-mono text-xs text-ink-3">
+            {memberCountLabel}
+          </span>
         </div>
-        <h1 className="font-display text-3xl text-ink">
-          Join {data.organizationName}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {data.organizationName} has invited you to join their organization.
-        </p>
       </div>
 
-      <div className="tile p-5 sm:p-7">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3 sm:gap-4 sm:p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-linear-to-br from-primary to-primary/60">
-              <span className="text-lg font-bold text-primary-foreground">
-                {data.organizationName.charAt(0)}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-foreground">
-                {data.organizationName}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <UsersIcon className="h-3 w-3" />
-                <span>{memberCountLabel}</span>
-              </div>
-            </div>
-          </div>
+      <AuthHeading
+        title={`${data.inviterName} invited you to ${data.organizationName}`}
+        description={`You’ll join as ${/^[aeiou]/i.test(data.role) ? "an" : "a"} ${data.role}.`}
+      />
 
-          <div className="flex flex-col gap-2 rounded-lg bg-secondary/30 p-3 text-sm sm:p-4">
-            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-              <span className="text-muted-foreground">Invited by</span>
-              <span className="text-foreground">{data.inviterName}</span>
-            </div>
-            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
-              <span className="text-muted-foreground">Your role</span>
-              <span className="text-foreground">{data.role}</span>
-            </div>
-          </div>
-
-          <Button
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-            disabled={isAccepting}
-            onClick={() => handleAcceptInvite(invite)}
-          >
-            {isAccepting ? (
-              <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                Joining...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                Accept invitation
-                <ArrowRightIcon className="h-4 w-4" />
-              </span>
-            )}
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="w-full text-muted-foreground hover:text-foreground"
-            disabled={isDeclining}
-            onClick={handleDeclineInvite}
-          >
-            Decline
-          </Button>
-        </div>
+      <div className="flex flex-col gap-2">
+        <Button
+          className="w-full"
+          loading={isAccepting}
+          onClick={() => handleAcceptInvite(invite)}
+        >
+          Accept invitation
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full"
+          loading={isDeclining}
+          onClick={handleDeclineInvite}
+        >
+          Decline
+        </Button>
       </div>
     </div>
   );

@@ -1,53 +1,56 @@
 import z from "zod";
 
 export const signupSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.email("Enter a valid email"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Add your name. Teammates see it on tasks, comments and mentions."),
+  email: z.email("Enter an email like name@company.com."),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/\d/, "Password must contain a number")
-    .regex(/[a-z]/, "Password must contain a lowercase letter")
-    .regex(/[A-Z]/, "Password must contain an uppercase letter"),
+    .min(8, "Use at least 8 characters.")
+    .regex(/\d/, "Add a number to your password.")
+    .regex(/[a-z]/, "Add a lowercase letter to your password.")
+    .regex(/[A-Z]/, "Add an uppercase letter to your password."),
 });
 
 export const signInSchema = z.object({
-  email: z.email("Enter a valid email"),
-  password: z.string().min(1, "Enter your password"),
+  email: z.email("Enter an email like name@company.com."),
+  password: z.string().min(1, "Enter your password."),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.email("Enter a valid email"),
+  email: z.email("Enter an email like name@company.com."),
 });
 
 export const resetPasswordSchema = z
   .object({
     newPassword: z
       .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/\d/, "Password must contain a number")
-      .regex(/[a-z]/, "Password must contain a lowercase letter")
-      .regex(/[A-Z]/, "Password must contain an uppercase letter"),
+      .min(8, "Use at least 8 characters.")
+      .regex(/\d/, "Add a number to your password.")
+      .regex(/[a-z]/, "Add a lowercase letter to your password.")
+      .regex(/[A-Z]/, "Add an uppercase letter to your password."),
     confirmNewPassword: z
       .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/\d/, "Password must contain a number")
-      .regex(/[a-z]/, "Password must contain a lowercase letter")
-      .regex(/[A-Z]/, "Password must contain an uppercase letter"),
+      .min(8, "Use at least 8 characters.")
+      .regex(/\d/, "Add a number to your password.")
+      .regex(/[a-z]/, "Add a lowercase letter to your password.")
+      .regex(/[A-Z]/, "Add an uppercase letter to your password."),
   })
   .refine((value) => value.newPassword === value.confirmNewPassword, {
-    message: "Passwords do not match",
+    message: "These passwords don’t match. Check both and try again.",
     path: ["confirmNewPassword"],
   });
 
 export const createOrganizationSchema = z.object({
-  name: z.string().min(2, "Organization name must be at least 2 characters"),
+  name: z.string().min(2, "Name your workspace with at least 2 characters."),
   slug: z
     .string()
-    .min(2, "Workspace URL must be at least 2 characters")
+    .min(2, "The workspace URL needs at least 2 characters.")
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      "Use lowercase letters, numbers, and single hyphens only",
+      "Use lowercase letters, numbers and single dashes only.",
     ),
 });
 

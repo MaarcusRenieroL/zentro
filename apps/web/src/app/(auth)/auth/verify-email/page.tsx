@@ -1,9 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, RefreshCw, ArrowRight } from "lucide-react";
 
 import { authClient } from "@zentro/auth/client";
 import { toastError, toastSuccess } from "@zentro/ui/lib/toast";
@@ -13,8 +11,12 @@ import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-  InputOTPSeparator,
 } from "@zentro/ui/shadcn/input-otp";
+import { AuthHeading } from "~/src/features/auth/components/kit/auth-kit";
+import {
+  formatMmSs,
+  useCountdown,
+} from "~/src/features/auth/lib/use-countdown";
 import { LoadingState } from "@zentro/ui/components/loading-state";
 import { paths } from "~/src/lib/paths";
 import { getOtpErrorMessage } from "~/src/features/auth/lib/helpers";
@@ -28,6 +30,11 @@ function VerifyEmailContent() {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const wait = useCountdown();
+  const startWait = wait.start;
+
+  // A code was just sent, so the first resend waits out the same minute.
+  useEffect(() => startWait(60), [startWait]);
 
   useEffect(() => {
     if (!email) {
@@ -50,7 +57,10 @@ function VerifyEmailContent() {
   }, [router]);
 
   const handleVerify = async () => {
-    if (otp.length !== 6) return;
+    if (otp.length !== 6) {
+      toastError("Enter the 6-digit code", "Paste it or type all six digits.");
+      return;
+    }
 
     if (!email) {
       toastError("Missing email", "Please sign up again.");
@@ -105,7 +115,8 @@ function VerifyEmailContent() {
       }
 
       setOtp("");
-      toastSuccess("Success", "Verification code resent.");
+      wait.start(60);
+      toastSuccess("Code sent again", "Check your inbox in a minute.");
     } finally {
       setIsResending(false);
     }
@@ -116,88 +127,68 @@ function VerifyEmailContent() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-md">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-          <Mail className="h-7 w-7 text-primary" />
-        </div>
+    <div className="flex flex-col gap-5">
+      <AuthHeading
+        title="Check your email"
+        description={
+          <>
+            We sent a 6-digit code to{" "}
+            <span className="font-mono text-ink break-all">{email}</span>. It
+            expires in 10 minutes.
+          </>
+        }
+      />
 
-        <h1 className="font-display text-3xl text-ink">Verify your email</h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          We sent a verification code to{" "}
-          <span className="font-medium text-foreground">{email}</span>.
-          <br />
-          Enter it below to continue.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center tile p-5 sm:p-7">
-        <div className="space-y-6">
-          <InputOTP
-            maxLength={6}
-            value={otp}
-            onChange={setOtp}
-            disabled={isLoading}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
+      <div className="flex flex-col gap-2.5">
+        <InputOTP
+          maxLength={6}
+          value={otp}
+          onChange={setOtp}
+          disabled={isLoading}
+          autoFocus
+          aria-label="Verification code"
+          containerClassName="gap-[18px]"
+        >
+          {[0, 3].map((start) => (
+            <InputOTPGroup key={start} className="gap-1.5 sm:gap-2">
+              {[0, 1, 2].map((offset) => (
+                <InputOTPSlot
+                  key={start + offset}
+                  index={start + offset}
+                  className="h-14 w-11 rounded-xl border bg-surface font-mono text-[22px] first:rounded-xl first:border-l sm:h-16 sm:w-14 sm:text-[26px] data-[active=true]:ring-4 data-[active=true]:ring-ring/22"
+                />
+              ))}
             </InputOTPGroup>
-
-            <InputOTPSeparator />
-
-            <InputOTPGroup>
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
-
-          <Button
-            type="button"
-            onClick={handleVerify}
-            disabled={isLoading || otp.length !== 6}
-            className="w-full"
-          >
-            {isLoading ? (
-              <span>Verifying...</span>
-            ) : (
-              <span className="flex items-center gap-2">
-                Verify Email
-                <ArrowRight className="h-4 w-4" />
-              </span>
-            )}
-          </Button>
-
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <span>Didn&apos;t receive the code?</span>
-
+          ))}
+        </InputOTP>
+        <p className="text-[13px] leading-5 text-ink-3">
+          You can paste the whole code.{" "}
+          {wait.done ? (
             <button
               type="button"
               onClick={handleResend}
               disabled={isResending}
-              className="inline-flex items-center gap-1 text-primary disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xs text-signal underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-60"
             >
-              <RefreshCw
-                className={`h-3 w-3 ${isResending ? "animate-spin" : ""}`}
-              />
-              {isResending ? "Sending..." : "Resend"}
+              {isResending ? "Sending…" : "Resend the code"}
             </button>
-          </div>
-        </div>
+          ) : (
+            <span className="font-mono">
+              Resend in {formatMmSs(wait.seconds, false)}
+            </span>
+          )}
+        </p>
       </div>
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Wrong email?{" "}
-        <Link
-          href={paths.auth.signUp()}
-          className="text-primary hover:text-primary/80"
-        >
-          Use a different email
-        </Link>
-      </p>
+      <Button
+        type="button"
+        onClick={handleVerify}
+        loading={isLoading}
+        // Short codes are checked on press, never by a dead button.
+        className="w-full"
+      >
+        Verify email
+      </Button>
     </div>
   );
 }
