@@ -91,3 +91,70 @@ export const DensityMenuItems: FC = () => {
     </>
   );
 };
+
+const segmentGroup =
+  "mx-2 mb-2 flex gap-0.5 rounded-md border border-hairline p-[3px]";
+const segment =
+  "h-7 flex-1 justify-center rounded-[9px] px-2 text-xs text-ink-2 focus:bg-hover focus:text-ink data-[state=checked]:bg-ink data-[state=checked]:text-ink-inverse [&>[data-slot=dropdown-menu-radio-item-indicator]]:hidden";
+
+/** Theme choice as a segmented control inside a dropdown menu. */
+export const ThemeSegments: FC = () => {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  return (
+    <>
+      <DropdownMenuLabel className="eyebrow px-2.5 pt-2 pb-1 text-[10px]">
+        Theme
+      </DropdownMenuLabel>
+      <DropdownMenuRadioGroup
+        value={mounted ? (theme ?? "system") : "system"}
+        onValueChange={setTheme}
+        className={segmentGroup}
+      >
+        {themes.map(({ value, label }) => (
+          <DropdownMenuRadioItem
+            key={value}
+            value={value}
+            // Switching stays in the menu, so the change can be compared.
+            onSelect={(event) => event.preventDefault()}
+            className={segment}
+          >
+            {label}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </>
+  );
+};
+
+/** Density choice as a segmented control inside a dropdown menu. */
+export const DensitySegments: FC = () => {
+  const [density, setDensity] = useDensity();
+
+  return (
+    <>
+      <DropdownMenuLabel className="eyebrow px-2.5 pt-1 pb-1 text-[10px]">
+        Density
+      </DropdownMenuLabel>
+      <DropdownMenuRadioGroup
+        value={density}
+        onValueChange={(value) => setDensity(parseDensity(value))}
+        className={segmentGroup}
+      >
+        {(["comfortable", "compact"] as const).map((value) => (
+          <DropdownMenuRadioItem
+            key={value}
+            value={value}
+            onSelect={(event) => event.preventDefault()}
+            className={segment}
+          >
+            {value === "comfortable" ? "Comfortable" : "Compact"}
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </>
+  );
+};

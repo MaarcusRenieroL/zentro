@@ -1,7 +1,7 @@
 "use client";
 
 import { FC, ReactNode, useId, useMemo, useState } from "react";
-import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
 import { Input } from "@zentro/ui/shadcn/input";
@@ -89,7 +89,7 @@ export const OrgSwitcher: FC<Props> = ({
               </span>
             ) : null}
           </span>
-          <ChevronsUpDownIcon
+          <ChevronDownIcon
             className="size-3.5 shrink-0 text-ink-3 group-data-[collapsible=icon]:hidden"
             aria-hidden="true"
           />

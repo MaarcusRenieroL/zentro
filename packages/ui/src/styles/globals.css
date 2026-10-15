@@ -27,7 +27,7 @@
   --raised: #ffffff;
   --sunken: #efede8;
   --pressed: #e5e2db;
-  --sidebar: #ffffff;
+  --sidebar: #f6f5f1;
   --overlay: #ffffff;
   --hover: #efede8;
   --selected: #ece8ff;
@@ -66,6 +66,8 @@
   --danger: #c21f43;
   --danger-text: #b01a3b;
   --on-danger: #ffffff;
+  /* Danger text on an ink surface (the selection bar) */
+  --danger-on-ink: #ff8fa3;
   --info-subtle: #ddf1fa;
   --info: #0b7fa8;
   --info-text: #086487;
@@ -133,7 +135,7 @@
   --raised: #181821;
   --sunken: #181821;
   --pressed: #20202c;
-  --sidebar: #111118;
+  --sidebar: #0a0a0f;
   --overlay: #181821;
   --hover: #181821;
   --selected: #1e1838;
@@ -167,6 +169,7 @@
   --danger: #ff5c7a;
   --danger-text: #ff8099;
   --on-danger: #0a0a0f;
+  --danger-on-ink: #c21f43;
   --info-subtle: #0e2430;
   --info: #4cc9f0;
   --info-text: #7cd8f5;
@@ -238,7 +241,7 @@
   --density-body: 0.9375rem;
   --density-body-lh: 1.4667;
   --density-label: 0.8125rem;
-  --gutter: 2rem;
+  --gutter: 2.5rem;
   --pad-tile: 1.5rem;
   --card-pad: 1.5rem;
   --gap: 1rem;
@@ -340,6 +343,7 @@
   --color-danger-subtle: var(--danger-subtle);
   --color-danger-text: var(--danger-text);
   --color-on-danger: var(--on-danger);
+  --color-danger-on-ink: var(--danger-on-ink);
   --color-info: var(--info);
   --color-info-subtle: var(--info-subtle);
   --color-info-text: var(--info-text);
