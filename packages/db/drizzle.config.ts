@@ -7,6 +7,7 @@ export default defineConfig({
   schema: "./src/schema/index.ts",
   dialect: "postgresql",
   dbCredentials: {
-    url: dbEnv.DATABASE_URL,
+    // Migrations need a direct (non-pooled) connection; Neon sets this one.
+    url: process.env.DATABASE_URL_UNPOOLED ?? dbEnv.DATABASE_URL,
   },
 });
