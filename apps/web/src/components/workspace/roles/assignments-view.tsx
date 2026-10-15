@@ -170,8 +170,7 @@ export const AssignmentsView: FC = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-display text-2xl text-ink">Assignments</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-[15px] text-ink-2">
           Who has which role, and where. Base roles (Owner, Admin, Member) are
           set on the members page.
         </p>

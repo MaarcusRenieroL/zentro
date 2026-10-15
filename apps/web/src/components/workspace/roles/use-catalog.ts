@@ -46,3 +46,20 @@ export const scopeLabels: Record<string, string> = {
   team: "Team",
   project: "Project",
 };
+
+const baseOrder = ["owner", "admin", "member"];
+const scopeOrder = ["organization", "team", "project"];
+
+/** Owner, Admin, Member, then custom roles, then team and project roles. */
+export function roleOrder(
+  a: { systemKey: string | null; scope: string; name: string },
+  b: { systemKey: string | null; scope: string; name: string },
+) {
+  const rank = (role: { systemKey: string | null; scope: string }) => {
+    const base = baseOrder.indexOf(role.systemKey ?? "");
+
+    return base >= 0 ? base : 10 + scopeOrder.indexOf(role.scope) * 10;
+  };
+
+  return rank(a) - rank(b) || a.name.localeCompare(b.name);
+}

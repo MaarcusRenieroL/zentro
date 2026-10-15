@@ -98,8 +98,7 @@ export const PermissionLog: FC = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-display text-2xl text-ink">Permission log</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-[15px] text-ink-2">
           Every change to roles, assignments, overrides and base roles.
         </p>
       </div>

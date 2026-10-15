@@ -1,13 +1,12 @@
 "use client";
 
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, LockIcon } from "lucide-react";
 import { useMemo, type FC } from "react";
 
 import { listModules } from "@zentro/modules";
-import { Tile } from "@zentro/ui/components/tile";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
-import { useCatalog } from "./use-catalog";
+import { roleOrder, useCatalog } from "./use-catalog";
 
 type Role = {
   id: string;
@@ -27,7 +26,9 @@ const moduleNames: Record<string, string> = {
 /** Who can do what: a check where a role grants it, a dim dash where it does not. */
 export const PermissionMatrix: FC<{ roles: Role[] }> = ({ roles }) => {
   const catalog = useCatalog();
-  const columns = roles.filter((role) => role.scope === "organization");
+  const columns = roles
+    .filter((role) => role.scope === "organization")
+    .sort(roleOrder);
   const rows = useMemo(
     () =>
       (catalog ?? [])
@@ -42,18 +43,20 @@ export const PermissionMatrix: FC<{ roles: Role[] }> = ({ roles }) => {
   if (!catalog) return <Skeleton className="h-64 w-full rounded-xl" />;
 
   return (
-    <Tile
-      title="Permission matrix"
-      description="What each organization role can do."
-      flush
-    >
-      <div className="max-h-[32rem] overflow-auto">
+    <section aria-labelledby="matrix-title" className="flex flex-col gap-3">
+      <h2 id="matrix-title" className="flex flex-wrap items-baseline gap-x-2.5">
+        <span className="font-semibold">Permission matrix</span>
+        <span className="text-sm text-ink-3">
+          What each role can do across every module
+        </span>
+      </h2>
+      <div className="tile overflow-x-auto">
         <table className="w-full min-w-[32rem] border-collapse text-sm">
-          <thead className="sticky top-0 z-[1] bg-surface">
+          <thead>
             <tr className="border-b border-hairline">
               <th
                 scope="col"
-                className="px-(--pad-tile) py-3 text-left font-medium text-ink-2"
+                className="px-(--pad-tile) py-3.5 text-left font-mono text-[11px] font-normal tracking-[0.08em] text-ink-3 uppercase"
               >
                 Permission
               </th>
@@ -61,7 +64,7 @@ export const PermissionMatrix: FC<{ roles: Role[] }> = ({ roles }) => {
                 <th
                   key={role.id}
                   scope="col"
-                  className="px-3 py-3 text-center font-medium text-ink-2"
+                  className="px-3 py-3.5 text-center font-medium text-ink"
                 >
                   {role.name}
                 </th>
@@ -75,11 +78,14 @@ export const PermissionMatrix: FC<{ roles: Role[] }> = ({ roles }) => {
 
               return [
                 showModule ? (
-                  <tr key={`m-${entry.module}`} className="bg-sunken/60">
+                  <tr
+                    key={`m-${entry.module}`}
+                    className="border-b border-hairline"
+                  >
                     <th
                       colSpan={columns.length + 1}
                       scope="colgroup"
-                      className="eyebrow px-(--pad-tile) py-2 text-left"
+                      className="eyebrow px-(--pad-tile) pt-4 pb-2 text-left"
                     >
                       {moduleNames[entry.module] ?? entry.module}
                     </th>
@@ -93,7 +99,15 @@ export const PermissionMatrix: FC<{ roles: Role[] }> = ({ roles }) => {
                     scope="row"
                     className="px-(--pad-tile) py-2.5 text-left font-normal text-ink"
                   >
-                    {entry.label}
+                    <span className="flex flex-wrap items-center gap-2">
+                      {entry.label}
+                      {entry.ownerOnly ? (
+                        <span className="inline-flex items-center gap-1 rounded-xs border border-hairline px-1.5 font-mono text-[10px] tracking-[0.04em] text-ink-2 uppercase">
+                          <LockIcon className="size-2.5" aria-hidden="true" />
+                          Owner only
+                        </span>
+                      ) : null}
+                    </span>
                   </th>
                   {columns.map((role) => {
                     const granted =
@@ -105,7 +119,7 @@ export const PermissionMatrix: FC<{ roles: Role[] }> = ({ roles }) => {
                         {granted ? (
                           <>
                             <CheckIcon
-                              className="mx-auto size-4 text-status-done"
+                              className="mx-auto size-4 text-ink"
                               aria-hidden="true"
                             />
                             <span className="sr-only">Allowed</span>
@@ -130,6 +144,6 @@ export const PermissionMatrix: FC<{ roles: Role[] }> = ({ roles }) => {
           </tbody>
         </table>
       </div>
-    </Tile>
+    </section>
   );
 };

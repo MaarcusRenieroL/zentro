@@ -95,8 +95,7 @@ export const AccessCheck: FC = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-display text-2xl text-ink">Access check</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-[15px] text-ink-2">
           See whether someone can do something, and which role, assignment or
           override decides it.
         </p>
