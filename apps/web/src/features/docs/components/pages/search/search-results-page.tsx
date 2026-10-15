@@ -1,25 +1,23 @@
 "use client";
 
 import { paths } from "~/src/lib/paths";
-import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
-import { Badge } from "@zentro/ui/shadcn/badge";
-import { Button } from "@zentro/ui/shadcn/button";
-import { Input } from "@zentro/ui/shadcn/input";
-import { FileSearchIcon, SearchIcon } from "lucide-react";
+import { FileTextIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
+import { Kbd } from "@zentro/ui/components/kbd";
+
+import { ActorAvatar } from "~/src/components/actor-avatar";
+import { ModuleTabs } from "~/src/components/shell/module-section-nav";
 
 import {
   DocsListItem,
   formatDocDate,
   getDocOwner,
-  getDocProject,
-  getDocTeam,
   getDocTitle,
-  getInitials,
 } from "../../../lib/docs";
+import { ProjectChip } from "../../doc-rows";
 
 type SearchResultsPageProps = {
   query: string;
@@ -27,7 +25,9 @@ type SearchResultsPageProps = {
 
 export function SearchResultsPage({ query }: SearchResultsPageProps) {
   const trpc = useTrpcClient();
-  const [results, setResults] = useState<DocsListItem[]>([]);
+  const [results, setResults] = useState<
+    Array<DocsListItem & { snippet?: string | null }>
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -65,122 +65,145 @@ export function SearchResultsPage({ query }: SearchResultsPageProps) {
   }, [normalizedQuery, query, trpc]);
 
   return (
-    <section className="flex w-full flex-col gap-6">
-      <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-          <SearchIcon className="size-5" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Search docs</h1>
-          <p className="text-sm text-muted-foreground">
-            Find pages by title, content, project, team, or owner.
-          </p>
-        </div>
-      </div>
+    <section className="flex w-full flex-col">
+      <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
+        Search docs
+      </h1>
+      <ModuleTabs className="mt-4" />
 
       <form
         action={paths.searchDocs()}
-        className="flex flex-col gap-3 rounded-2xl border border-hairline/60 bg-surface p-3 shadow-sm sm:flex-row sm:items-center"
+        role="search"
+        className="mt-4 flex h-12 items-center gap-2.5 rounded-xl border border-hairline bg-surface px-3.5 focus-within:border-signal focus-within:ring-[3px] focus-within:ring-ring/22"
       >
-        <div className="relative flex-1">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            name="q"
-            className="pl-9"
-            defaultValue={query}
-            placeholder="Search docs..."
-          />
-        </div>
-        <Button type="submit" className="w-full sm:w-auto">
-          <SearchIcon className="size-4" />
-          Search
-        </Button>
+        <SearchIcon aria-hidden="true" className="size-4 shrink-0 text-ink-3" />
+        <input
+          name="q"
+          defaultValue={query}
+          autoFocus={!query}
+          aria-label="Search docs"
+          placeholder="Search docs by title or text"
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3"
+        />
+        <Kbd>↵</Kbd>
       </form>
 
-      <div className="overflow-hidden rounded-2xl border border-hairline/60 bg-surface shadow-sm">
-        <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-          <div>
-            <p className="text-sm font-medium">
-              {normalizedQuery
-                ? `${results.length} result${results.length === 1 ? "" : "s"}`
-                : "Start a search"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {normalizedQuery
-                ? `Showing matches for "${query.trim()}"`
-                : "Use the search box to find docs across the workspace."}
-            </p>
-          </div>
-          {normalizedQuery ? (
-            <Button variant="ghost" size="sm" asChild>
-              <Link href={paths.searchDocs()}>Clear</Link>
-            </Button>
-          ) : null}
+      <p className="mt-3 mb-2 font-mono text-xs text-ink-3" role="status">
+        {!normalizedQuery
+          ? "Type a word from a title or from the text."
+          : isLoading
+            ? "Searching…"
+            : `${results.length} ${results.length === 1 ? "result" : "results"}`}
+      </p>
+
+      {normalizedQuery && !isLoading && !results.length ? (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line-strong px-6 py-14 text-center">
+          <p className="font-serif-italic text-[2.25rem] leading-none text-balance">
+            Nothing matches “{query.trim()}”.
+          </p>
+          <p className="max-w-[420px] text-sm text-ink-2">
+            Search looks at titles and the text of every doc you can open. Try a
+            shorter word, or look in Trash.
+          </p>
         </div>
+      ) : null}
 
-        {isLoading ? (
-          <div className="space-y-3 p-4">
-            {Array.from({ length: 5 }).map((_, index) => (
+      {results.length ? (
+        <div role="table" aria-label="Results" className="flex flex-col">
+          <div
+            role="row"
+            className="hidden h-9 items-center gap-3 border-b border-hairline px-3 font-mono text-[11px] tracking-[0.08em] text-ink-3 sm:flex"
+          >
+            <span role="columnheader" className="flex-1">
+              TITLE
+            </span>
+            <span role="columnheader" className="w-24">
+              PROJECT
+            </span>
+            <span role="columnheader" className="w-40">
+              OWNER
+            </span>
+            <span role="columnheader" className="w-20 text-right">
+              EDITED
+            </span>
+          </div>
+          {results.map((doc) => {
+            const owner = getDocOwner(doc);
+
+            return (
               <div
-                key={index}
-                className="h-16 animate-pulse rounded-md bg-muted"
-              />
-            ))}
-          </div>
-        ) : results.length > 0 ? (
-          <div>
-            {results.map((doc) => {
-              const owner = getDocOwner(doc);
-
-              return (
-                <Link
-                  key={doc.id}
-                  href={paths.doc(doc.slug)}
-                  className="flex flex-col gap-3 border-b px-4 py-4 last:border-b-0 hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                role="row"
+                key={doc.id}
+                className="relative flex min-h-14 items-center gap-3 border-b border-hairline/70 px-3 py-2 hover:bg-hover"
+              >
+                <span
+                  role="cell"
+                  className="flex min-w-0 flex-1 items-start gap-2.5"
                 >
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-                      <FileSearchIcon className="size-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">{getDocTitle(doc.title)}</p>
-                        <Badge variant="secondary">Doc</Badge>
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                        Updated {formatDocDate(doc.updatedAt)}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline">{getDocProject(doc)}</Badge>
-                        <Badge variant="secondary">{getDocTeam(doc)}</Badge>
-                        <span>Created by {owner}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
-                    <Avatar className="size-7">
-                      <AvatarFallback>{getInitials(owner)}</AvatarFallback>
-                    </Avatar>
-                    {owner}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-            <FileSearchIcon className="mb-3 size-9 text-muted-foreground" />
-            <p className="text-sm font-medium">
-              {normalizedQuery ? "No docs found" : "Search your docs"}
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              {normalizedQuery
-                ? "Try searching by doc title, project, team, status, or owner."
-                : "Enter a keyword above to see matching workspace docs."}
-            </p>
-          </div>
-        )}
-      </div>
+                  <FileTextIcon
+                    className="mt-0.5 size-4 shrink-0 text-ink-3"
+                    aria-hidden="true"
+                  />
+                  <span className="flex min-w-0 flex-col">
+                    <Link
+                      href={paths.doc(doc.slug)}
+                      className="truncate text-[15px] outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                    >
+                      <Highlight text={getDocTitle(doc.title)} query={query} />
+                    </Link>
+                    {doc.snippet ? (
+                      <span className="truncate text-[13px] text-ink-2">
+                        <Highlight text={doc.snippet} query={query} />
+                      </span>
+                    ) : null}
+                  </span>
+                </span>
+                <span role="cell" className="hidden w-24 sm:block">
+                  <ProjectChip doc={doc} />
+                </span>
+                <span
+                  role="cell"
+                  className="hidden w-40 items-center gap-2 text-[13px] text-ink-2 sm:flex"
+                >
+                  <ActorAvatar name={owner} size={22} />
+                  <span className="truncate">{owner}</span>
+                </span>
+                <span
+                  role="cell"
+                  className="w-20 text-right font-mono text-xs text-ink-3"
+                >
+                  {formatDocDate(doc.updatedAt)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
+  );
+}
+
+/** The words that matched, marked. */
+function Highlight({ text, query }: { text: string; query: string }) {
+  const needle = query.trim();
+
+  if (!needle) return <>{text}</>;
+
+  const parts = text.split(
+    new RegExp(`(${needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "i"),
+  );
+
+  return (
+    <>
+      {parts.map((part, index) =>
+        index % 2 ? (
+          <mark key={index} className="rounded-[3px] bg-selected text-ink">
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }

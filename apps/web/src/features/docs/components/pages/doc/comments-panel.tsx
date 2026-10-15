@@ -29,6 +29,8 @@ type CommentsPanelProps = {
   canComment?: boolean;
   isOpen: boolean;
   onClose: () => void;
+  /** Told how many comments are open, for the count in the top bar. */
+  onCount?: (count: number) => void;
 };
 
 export function CommentsPanel({
@@ -36,9 +38,14 @@ export function CommentsPanel({
   canComment = true,
   isOpen,
   onClose,
+  onCount,
 }: CommentsPanelProps) {
   const trpc = useTrpcClient();
   const [comments, setComments] = useState<DocComment[]>([]);
+
+  useEffect(() => {
+    onCount?.(comments.length);
+  }, [comments.length, onCount]);
   const [body, setBody] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);

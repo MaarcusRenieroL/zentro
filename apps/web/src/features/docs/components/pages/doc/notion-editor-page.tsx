@@ -1,8 +1,6 @@
 "use client";
 
 import { paths } from "~/src/lib/paths";
-import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
-import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   DropdownMenu,
@@ -33,12 +31,11 @@ import {
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
-  ArrowLeftIcon,
   BoldIcon,
-  BracesIcon,
+  CheckIcon,
+  ChevronLeftIcon,
   ItalicIcon,
   LinkIcon,
-  CalendarClockIcon,
   CheckSquareIcon,
   Code2Icon,
   FileTextIcon,
@@ -53,13 +50,13 @@ import {
   MoreHorizontalIcon,
   PlusIcon,
   QuoteIcon,
-  SaveIcon,
   TableIcon,
   Trash2Icon,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
@@ -72,9 +69,8 @@ import {
   getDocOwner,
   getDocProject,
   getDocTitle,
-  getInitials,
 } from "../../../lib/docs";
-import { Tile } from "@zentro/ui/components/tile";
+import { ActorAvatar } from "~/src/components/actor-avatar";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
@@ -84,54 +80,63 @@ import { CommentsPanel } from "./comments-panel";
 const slashCommands = [
   {
     label: "Heading 1",
+    hint: "#",
     description: "Big section heading",
     icon: Heading1Icon,
     action: "heading-1",
   },
   {
     label: "Heading 2",
+    hint: "##",
     description: "Section heading",
     icon: Heading2Icon,
     action: "heading-2",
   },
   {
     label: "Heading 3",
+    hint: "###",
     description: "Nested section heading",
     icon: Heading3Icon,
     action: "heading-3",
   },
   {
     label: "Bullet list",
+    hint: "-",
     description: "Create a simple list",
     icon: ListIcon,
     action: "bullet-list",
   },
   {
-    label: "Todo",
+    label: "Checklist",
+    hint: "[ ]",
     description: "Track an action item",
     icon: CheckSquareIcon,
     action: "task-list",
   },
   {
     label: "Quote",
+    hint: ">",
     description: "Highlight a decision",
     icon: QuoteIcon,
     action: "quote",
   },
   {
     label: "Code block",
+    hint: "```",
     description: "Add a code block",
     icon: Code2Icon,
     action: "code-block",
   },
   {
     label: "Inline code",
+    hint: "`",
     description: "Add a short code phrase",
     icon: Code2Icon,
     action: "inline-code",
   },
   {
     label: "Table",
+    hint: "",
     description: "Insert a 3 by 3 markdown table",
     icon: TableIcon,
     action: "table",
@@ -354,22 +359,8 @@ function DocToolbar({ editor, canEdit, onAction, onHeading }: ToolbarProps) {
   );
 }
 
-type MetaPillProps = {
-  icon?: LucideIcon;
-  children: ReactNode;
-};
-
-function MetaPill({ icon: Icon, children }: MetaPillProps) {
-  return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-sm bg-sunken px-2.5 text-xs text-ink-2">
-      {Icon ? <Icon className="size-3.5" /> : null}
-      {children}
-    </span>
-  );
-}
-
 const docsEditorClassName =
-  "min-h-[620px] text-[15px] leading-8 outline-none [&_.ProseMirror]:min-h-[620px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_h1]:mt-8 [&_.ProseMirror_h1]:mb-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-semibold [&_.ProseMirror_h1]:tracking-tight [&_.ProseMirror_h2]:mt-7 [&_.ProseMirror_h2]:mb-3 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:mt-6 [&_.ProseMirror_h3]:mb-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_h4]:mt-5 [&_.ProseMirror_h4]:mb-2 [&_.ProseMirror_h4]:text-lg [&_.ProseMirror_h4]:font-semibold [&_.ProseMirror_h5]:mt-4 [&_.ProseMirror_h5]:mb-2 [&_.ProseMirror_h5]:text-base [&_.ProseMirror_h5]:font-semibold [&_.ProseMirror_h6]:mt-4 [&_.ProseMirror_h6]:mb-2 [&_.ProseMirror_h6]:text-sm [&_.ProseMirror_h6]:font-semibold [&_.ProseMirror_h6]:uppercase [&_.ProseMirror_h6]:text-muted-foreground [&_.ProseMirror_ul]:ml-5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ol]:ml-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_blockquote]:my-4 [&_.ProseMirror_blockquote]:border-l-2 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-muted-foreground [&_.ProseMirror_pre]:my-4 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-lg [&_.ProseMirror_pre]:border [&_.ProseMirror_pre]:bg-muted/50 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:bg-muted [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:text-sm [&_.ProseMirror_table]:my-4 [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_th]:border [&_.ProseMirror_th]:bg-muted/60 [&_.ProseMirror_th]:px-3 [&_.ProseMirror_th]:py-2 [&_.ProseMirror_th]:text-left [&_.ProseMirror_td]:border [&_.ProseMirror_td]:px-3 [&_.ProseMirror_td]:py-2 [&_.ProseMirror_ul[data-type='taskList']]:ml-0 [&_.ProseMirror_ul[data-type='taskList']]:list-none [&_.ProseMirror_li[data-type='taskItem']]:flex [&_.ProseMirror_li[data-type='taskItem']]:gap-2 [&_.ProseMirror_li[data-type='taskItem']>label]:pt-1";
+  "min-h-[620px] text-base leading-[26px] outline-none [&_.ProseMirror>*+*]:mt-3 [&_.ProseMirror]:min-h-[620px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.ProseMirror_h1]:mt-8 [&_.ProseMirror_h1]:mb-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-semibold [&_.ProseMirror_h1]:tracking-tight [&_.ProseMirror_h2]:mt-7 [&_.ProseMirror_h2]:mb-0 [&_.ProseMirror_h2]:text-[22px] [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:mt-6 [&_.ProseMirror_h3]:mb-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_h4]:mt-5 [&_.ProseMirror_h4]:mb-2 [&_.ProseMirror_h4]:text-lg [&_.ProseMirror_h4]:font-semibold [&_.ProseMirror_h5]:mt-4 [&_.ProseMirror_h5]:mb-2 [&_.ProseMirror_h5]:text-base [&_.ProseMirror_h5]:font-semibold [&_.ProseMirror_h6]:mt-4 [&_.ProseMirror_h6]:mb-2 [&_.ProseMirror_h6]:text-sm [&_.ProseMirror_h6]:font-semibold [&_.ProseMirror_h6]:uppercase [&_.ProseMirror_h6]:text-muted-foreground [&_.ProseMirror_ul]:ml-5 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ol]:ml-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_blockquote]:my-4 [&_.ProseMirror_blockquote]:border-l-2 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:text-muted-foreground [&_.ProseMirror_pre]:my-4 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-lg [&_.ProseMirror_pre]:border [&_.ProseMirror_pre]:bg-muted/50 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:bg-muted [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:text-sm [&_.ProseMirror_table]:my-4 [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_th]:border [&_.ProseMirror_th]:bg-muted/60 [&_.ProseMirror_th]:px-3 [&_.ProseMirror_th]:py-2 [&_.ProseMirror_th]:text-left [&_.ProseMirror_td]:border [&_.ProseMirror_td]:px-3 [&_.ProseMirror_td]:py-2 [&_.ProseMirror_ul[data-type='taskList']]:ml-0 [&_.ProseMirror_ul[data-type='taskList']]:list-none [&_.ProseMirror_ul[data-type='taskList']>li]:flex [&_.ProseMirror_ul[data-type='taskList']>li]:items-start [&_.ProseMirror_ul[data-type='taskList']>li]:gap-2.5 [&_.ProseMirror_ul[data-type='taskList']_input]:mt-[5px] [&_.ProseMirror_ul[data-type='taskList']_input]:size-4 [&_.ProseMirror_ul[data-type='taskList']_input]:accent-ink [&_.ProseMirror_li[data-checked='true']>div]:text-ink-3 [&_.ProseMirror_li[data-checked='true']>div]:line-through [&_.ProseMirror_li+li]:mt-1.5";
 
 function escapeHtml(value: string) {
   return value
@@ -510,9 +501,13 @@ function markdownToHtml(markdown: string) {
       continue;
     }
 
-    if (line.startsWith("- [ ] ")) {
+    const task = /^- \[([ xX])\] /.exec(line);
+
+    if (task) {
+      const checked = task[1] !== " ";
+
       html.push(
-        `<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>${renderInlineMarkdown(
+        `<ul data-type="taskList"><li data-type="taskItem" data-checked="${checked}"><label><input type="checkbox"${checked ? " checked" : ""}><span></span></label><div><p>${renderInlineMarkdown(
           line.slice(6),
         )}</p></div></li></ul>`,
       );
@@ -526,8 +521,8 @@ function markdownToHtml(markdown: string) {
       continue;
     }
 
+    // A blank line separates blocks; it is not a block of its own.
     if (!line.trim()) {
-      html.push("<p></p>");
       continue;
     }
 
@@ -538,7 +533,11 @@ function markdownToHtml(markdown: string) {
     html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
   }
 
-  return html.join("");
+  // Items written one per line belong to one list.
+  return html
+    .join("")
+    .replaceAll("</ul><ul>", "")
+    .replaceAll('</ul><ul data-type="taskList">', "");
 }
 
 function inlineMarkdown(node: Node): string {
@@ -672,6 +671,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
+  const [commentCount, setCommentCount] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   // Open beside the doc on wide screens; on a phone it would cover the page.
@@ -959,49 +959,86 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   return (
     <div className="min-h-[calc(100vh-3.5rem)] border-t border-hairline bg-canvas">
       <div className="sticky top-0 z-20 border-b border-hairline bg-canvas/90 backdrop-blur">
-        <div className="flex min-h-14 items-center justify-between gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => router.push(paths.docs())}
+        <div className="flex min-h-12 items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-1.5 text-[13px] text-ink-2">
+            <Link
+              href={paths.docs()}
+              className="flex items-center gap-1 rounded-xs outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <ArrowLeftIcon className="size-4" />
-              <span className="sr-only">Back to docs</span>
-            </Button>
-            <div className="hidden min-w-0 items-center gap-2 text-sm text-muted-foreground sm:flex">
-              <span>Docs</span>
-              <span>/</span>
-              <span className="truncate text-foreground">
-                {getDocTitle(title)}
+              <ChevronLeftIcon className="size-3.5" aria-hidden="true" />
+              Docs
+            </Link>
+            {doc.projectName ? (
+              <span className="hidden truncate text-ink-3 sm:inline">
+                / {doc.projectName}
               </span>
-            </div>
+            ) : null}
+            <span
+              role="status"
+              className="ml-2 flex items-center gap-1.5 font-mono text-xs text-ink-3"
+              suppressHydrationWarning
+            >
+              {saveStatus === "saving" ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="size-2 animate-pulse rounded-full bg-status-progress"
+                  />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="flex size-3.5 items-center justify-center rounded-full bg-success text-on-success"
+                  >
+                    <CheckIcon className="size-2.5" strokeWidth={3} />
+                  </span>
+                  Saved{" "}
+                  {new Date(doc.updatedAt).toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </>
+              )}
+            </span>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <Badge
-              variant={saveStatus === "saving" ? "outline" : "secondary"}
-              className="h-8 gap-1.5 rounded-md px-2.5 font-normal"
-            >
-              {saveStatus === "saving" ? (
-                <BracesIcon className="size-3.5" />
-              ) : (
-                <SaveIcon className="size-3.5" />
-              )}
-              {saveStatus}
-            </Badge>
             <Button
-              variant={commentsOpen ? "secondary" : "outline"}
+              variant="outline"
               size="sm"
-              className="hidden sm:flex"
+              aria-pressed={commentsOpen}
+              aria-label={commentsOpen ? "Hide comments" : "Show comments"}
+              className={cn(
+                "h-8 gap-1.5 border-hairline px-2.5 text-[13px]",
+                commentsOpen ? "border-ink bg-hover" : "bg-transparent",
+              )}
               onClick={() => setCommentsOpen((isOpen) => !isOpen)}
             >
               <MessageSquareIcon className="size-4" />
-              Comments
+              {commentCount ?? ""}
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 px-3 text-[13px] font-semibold"
+              onClick={() => {
+                void navigator.clipboard
+                  .writeText(window.location.href)
+                  .then(() =>
+                    toastSuccess(
+                      "Link copied",
+                      "Anyone with access can open it.",
+                    ),
+                  )
+                  .catch(() => toastError("Error", "Could not copy the link"));
+              }}
+            >
+              Share
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm">
+                <Button variant="ghost" size="icon-sm" className="size-8">
                   <MoreHorizontalIcon className="size-4" />
                   <span className="sr-only">Page actions</span>
                 </Button>
@@ -1037,21 +1074,19 @@ export function NotionEditorPage({ slug }: { slug: string }) {
         <main className="min-w-0 bg-canvas">
           <div className="mx-auto w-full max-w-[720px] px-5 py-8 sm:px-8 lg:py-12">
             <div>
-              <div className="mb-6 flex flex-wrap items-center gap-2">
-                <MetaPill>
-                  <FileTextIcon className="size-3.5" />
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <span className="inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-hairline pr-2 pl-1 text-xs text-ink-2">
+                  <span className="flex size-4 items-center justify-center rounded-[5px] bg-tint-projects font-mono text-[8px] text-ink">
+                    {getDocProject(doc).charAt(0).toUpperCase()}
+                  </span>
                   {getDocProject(doc)}
-                </MetaPill>
-                <MetaPill icon={CalendarClockIcon}>
-                  Edited {formatDocDate(doc.updatedAt)}
-                </MetaPill>
-                <span className="inline-flex h-7 items-center gap-2 rounded-sm bg-sunken px-2.5 text-xs text-ink-2">
-                  <Avatar className="size-4">
-                    <AvatarFallback className="text-[9px]">
-                      {getInitials(owner)}
-                    </AvatarFallback>
-                  </Avatar>
+                </span>
+                <span className="inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-hairline pr-2 pl-1 text-xs text-ink-2">
+                  <ActorAvatar name={owner} size={18} />
                   {owner}
+                </span>
+                <span className="inline-flex h-[26px] items-center rounded-sm border border-hairline px-2 font-mono text-xs text-ink-3">
+                  Edited {formatDocDate(doc.updatedAt)}
                 </span>
               </div>
 
@@ -1095,26 +1130,33 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 )}
 
                 {showSlashMenu && (
-                  <div className="absolute top-9 left-0 z-10 w-84 overflow-hidden rounded-lg border bg-popover shadow-lg">
-                    <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
-                      Insert block
+                  <div
+                    role="menu"
+                    aria-label="Insert block"
+                    className="absolute top-9 left-0 z-10 w-[300px] overflow-hidden rounded-2xl border border-hairline bg-overlay p-1.5 shadow-xl"
+                  >
+                    <div className="eyebrow px-2.5 pt-2 pb-1 text-[10px]">
+                      Basic
                     </div>
                     {slashCommands.map((command) => (
                       <button
                         key={command.label}
                         type="button"
+                        role="menuitem"
                         onClick={() => runEditorAction(command.action, true)}
-                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted"
+                        className="flex h-9 w-full items-center gap-3 rounded-[10px] px-2 text-left text-sm outline-none hover:bg-hover focus-visible:bg-hover"
                       >
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                          <command.icon className="size-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium">{command.label}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {command.description}
-                          </p>
-                        </div>
+                        <span className="flex size-6 shrink-0 items-center justify-center rounded-sm border border-hairline text-ink-2">
+                          <command.icon className="size-3.5" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {command.label}
+                        </span>
+                        {command.hint ? (
+                          <span className="font-mono text-[11px] text-ink-3">
+                            {command.hint}
+                          </span>
+                        ) : null}
                       </button>
                     ))}
                   </div>
@@ -1132,33 +1174,29 @@ export function NotionEditorPage({ slug }: { slug: string }) {
         </main>
 
         <div className="flex flex-col gap-4 p-6 pl-0 xl:sticky xl:top-16 xl:max-h-[calc(100vh-5rem)] xl:self-start xl:overflow-y-auto max-xl:contents">
-          <div className="hidden xl:block">
-            <Tile
-              title="Thread"
-              actions={
-                <span className="font-mono text-xs text-ink-3">
-                  Linked work
-                </span>
-              }
-            >
-              <LinkedThread
-                current={{
-                  kind: "doc",
-                  label: getDocTitle(title),
-                  meta: "Doc",
-                }}
-                currentId={doc.id}
-                projectId={doc.projectId}
-                projectName={doc.projectName}
-              />
-            </Tile>
-          </div>
+          <section aria-label="Thread" className="tile hidden p-4 xl:block">
+            <LinkedThread
+              header={(count) => (
+                <div className="flex items-baseline justify-between pb-3">
+                  <h2 className="eyebrow">Thread</h2>
+                  <span className="font-mono text-xs text-ink-3">
+                    {count} linked
+                  </span>
+                </div>
+              )}
+              current={{ kind: "doc", label: getDocTitle(title) }}
+              currentId={doc.id}
+              projectId={doc.projectId}
+              projectName={doc.projectName}
+            />
+          </section>
 
           <CommentsPanel
             docId={doc.id}
             canComment={canComment}
             isOpen={commentsOpen}
             onClose={() => setCommentsOpen(false)}
+            onCount={setCommentCount}
           />
         </div>
       </div>

@@ -4,11 +4,15 @@ export type DocsListItem = {
   slug: string;
   projectId: string | null;
   projectName: string | null;
+  /** The project's task key prefix, such as ZEN. */
+  projectKey?: string | null;
   teamId: string | null;
   teamName: string | null;
   teamColor: string | null;
   createdBy: string | null;
   createdByUserId?: string | null;
+  /** The opening words of the doc, without markup. */
+  excerpt?: string | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

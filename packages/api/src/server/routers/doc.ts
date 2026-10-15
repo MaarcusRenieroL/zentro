@@ -8,6 +8,7 @@ import {
   isNotNull,
   isNull,
   or,
+  sql,
 } from "@zentro/db/drizzle";
 import {
   docComments,
@@ -81,6 +82,9 @@ async function getDocForActiveOrganization({
   return doc;
 }
 
+// A doc's text with Markdown marks and runs of whitespace taken out.
+const plainContent = sql`regexp_replace(regexp_replace(${docs.content}, '[[][ xX][]]|[#>\`*_|]+|-{2,}', ' ', 'g'), '[[:space:]]+', ' ', 'g')`;
+
 export const docsRouter = router({
   getAll: listProcedure("docs.view", "docs")
     .input(getDocsSchema)
@@ -110,11 +114,14 @@ export const docsRouter = router({
           slug: docs.slug,
           projectId: docs.projectId,
           projectName: projects.name,
+          projectKey: projects.taskKeyPrefix,
           teamId: docs.teamId,
           teamName: teams.name,
           teamColor: teams.color,
           createdBy: users.name,
           createdByUserId: members.userId,
+          // The opening words, without Markdown marks, for previews.
+          excerpt: sql<string>`left(trim(${plainContent}), 180)`,
           deletedAt: docs.deletedAt,
           createdAt: docs.createdAt,
           updatedAt: docs.updatedAt,
@@ -177,6 +184,9 @@ export const docsRouter = router({
           teamColor: teams.color,
           createdBy: users.name,
           createdByUserId: members.userId,
+          projectKey: projects.taskKeyPrefix,
+          // About 160 characters of plain text around the first match.
+          snippet: sql<string>`substr(${plainContent}, greatest(strpos(lower(${plainContent}), lower(${query})) - 50, 1), 160)`,
           deletedAt: docs.deletedAt,
           createdAt: docs.createdAt,
           updatedAt: docs.updatedAt,

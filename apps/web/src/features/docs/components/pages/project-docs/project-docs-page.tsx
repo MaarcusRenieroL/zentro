@@ -1,25 +1,21 @@
 "use client";
 
-import { paths } from "~/src/lib/paths";
-import { Badge } from "@zentro/ui/shadcn/badge";
+import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@zentro/ui/shadcn/card";
-import { FileTextIcon, FolderIcon } from "lucide-react";
-import Link from "next/link";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@zentro/ui/shadcn/select";
 import { useEffect, useMemo, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 
-import {
-  DocsListItem,
-  formatDocDate,
-  getDocTeam,
-  getDocTitle,
-} from "../../../lib/docs";
+import { ModuleTabs } from "~/src/components/shell/module-section-nav";
+
+import type { DocsListItem } from "../../../lib/docs";
+import { DocTable } from "../../doc-rows";
 import { CreateDocModal } from "../home/create-doc-modal";
 
 type ProjectItem = {
@@ -64,129 +60,71 @@ export function ProjectDocsPage() {
     };
   }, [trpc]);
 
-  const groups = useMemo(() => {
-    const projectGroups = projects.map((project) => ({
-      id: project.id,
-      name: project.name,
-      teamName: project.teamName,
-      docs: docs.filter((doc) => doc.projectId === project.id),
-    }));
-    const projectIds = new Set(projects.map((project) => project.id));
-    const workspaceDocs = docs.filter(
-      (doc) => !doc.projectId || !projectIds.has(doc.projectId),
-    );
-
-    return [
-      ...projectGroups,
-      {
-        id: "workspace",
-        name: "Workspace",
-        docs: workspaceDocs,
-      },
-    ].filter((group) => group.docs.length > 0 || group.id !== "workspace");
-  }, [docs, projects]);
+  const [project, setProject] = useState("all");
+  const shown = useMemo(
+    () =>
+      project === "all"
+        ? docs.filter((doc) => doc.projectId)
+        : docs.filter((doc) => doc.projectId === project),
+    [docs, project],
+  );
 
   return (
-    <section className="flex w-full flex-col gap-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-            <FolderIcon className="size-5" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Project docs
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Browse documentation grouped by active project.
-            </p>
-          </div>
+    <section className="flex w-full flex-col">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
+          Project docs
+        </h1>
+        <span className="flex-1" />
+        <CreateDocModal />
+      </div>
+      <ModuleTabs className="mt-4" />
+
+      <div className="mt-3.5 mb-3 flex flex-wrap items-center gap-2">
+        <Select
+          value={project}
+          onValueChange={(value) => value && setProject(value)}
+        >
+          <SelectTrigger
+            aria-label="Project"
+            className="h-8 gap-1.5 rounded-md border-hairline bg-transparent px-2.5 text-[13px] shadow-none data-[size=default]:h-8"
+          >
+            <span className="text-ink-3">Project</span>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All projects</SelectItem>
+            {projects.map((item) => (
+              <SelectItem key={item.id} value={item.id}>
+                {item.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="font-mono text-xs text-ink-3">
+          {shown.length} {shown.length === 1 ? "doc" : "docs"}
+        </span>
+      </div>
+
+      {isLoading ? (
+        <div className="flex flex-col gap-2" aria-busy="true">
+          {[0, 1, 2, 3].map((row) => (
+            <Skeleton key={row} className="h-12" />
+          ))}
         </div>
-        <CreateDocModal triggerLabel="New project doc" />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, index) => (
-              <Card key={index} className="rounded-lg">
-                <CardHeader>
-                  <div className="h-14 animate-pulse rounded-md bg-muted" />
-                </CardHeader>
-                <CardContent>
-                  <div className="h-20 animate-pulse rounded-md bg-muted" />
-                </CardContent>
-              </Card>
-            ))
-          : null}
-
-        {!isLoading && !groups.length ? (
-          <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-12 text-center lg:col-span-2">
-            <FolderIcon className="mx-auto mb-3 size-10 text-muted-foreground" />
-            <p className="text-sm font-medium">No project docs yet</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Attach docs to projects and they will be grouped here.
-            </p>
-            <div className="mt-4">
-              <CreateDocModal
-                triggerLabel="Create project doc"
-                triggerVariant="outline"
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {groups.map((group) => {
-          return (
-            <Card key={group.id} className="rounded-lg shadow-sm">
-              <CardHeader className="border-b">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-9 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-                    <FolderIcon className="size-4" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm font-semibold">
-                      {group.name}
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground">
-                      {group.docs.length} docs
-                      {"teamName" in group && group.teamName
-                        ? ` · ${group.teamName}`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="grid gap-2 pt-4">
-                {group.docs.map((doc) => (
-                  <Link
-                    key={`${group.id}-${doc.id}`}
-                    href={paths.doc(doc.slug)}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-hairline/60 bg-surface p-3 transition-colors hover:bg-muted/30"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                        <FileTextIcon className="size-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {getDocTitle(doc.title)}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          Updated {formatDocDate(doc.updatedAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                      <Badge variant="outline">{getDocTeam(doc)}</Badge>
-                      <Badge variant="secondary">Doc</Badge>
-                    </div>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      ) : shown.length ? (
+        <DocTable docs={shown} />
+      ) : (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line-strong px-6 py-14 text-center">
+          <p className="font-serif-italic text-[2.25rem] leading-none">
+            No docs in this project yet.
+          </p>
+          <p className="max-w-[420px] text-sm text-ink-2">
+            Docs you create inside a project show up here and on the project
+            page.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

@@ -36,18 +36,18 @@ function tintFor(seed: string) {
 /** The project as a small tinted mono chip, or "No project". */
 export function ProjectChip({ doc }: { doc: DocsListItem }) {
   if (!doc.projectName) {
-    return <span className="text-xs text-ink-3">No project</span>;
+    return <span className="font-mono text-[11px] text-ink-3">No project</span>;
   }
 
   return (
     <span
       title={doc.projectName}
       className={cn(
-        "inline-flex max-w-full items-center rounded-xs border border-hairline px-1.5 font-mono text-[11px] text-ink",
+        "inline-flex max-w-full items-center rounded-xs border border-hairline px-1.5 py-px font-mono text-[11px] text-ink",
         tintFor(doc.projectName),
       )}
     >
-      <span className="truncate">{getDocProject(doc)}</span>
+      <span className="truncate">{doc.projectKey ?? getDocProject(doc)}</span>
     </span>
   );
 }
@@ -131,7 +131,7 @@ export const DocTiles: FC<{ docs: DocsListItem[]; columns?: string }> = ({
         <Link
           key={doc.id}
           href={paths.doc(doc.slug)}
-          className="tile flex min-h-[124px] flex-col gap-2 bg-tint-docs! p-4 outline-none hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring"
+          className="tile flex min-h-[150px] flex-col gap-2 bg-tint-docs! p-[18px] outline-none hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="flex">
             <ProjectChip doc={doc} />
@@ -139,10 +139,15 @@ export const DocTiles: FC<{ docs: DocsListItem[]; columns?: string }> = ({
           <span className="text-[15px] leading-5 font-semibold">
             {getDocTitle(doc.title)}
           </span>
-          <span className="mt-auto flex items-center gap-2 text-xs text-ink-2">
-            <ActorAvatar name={owner} size={20} />
-            <span className="truncate">{owner}</span>
-            <span className="flex-1" />
+          {doc.excerpt ? (
+            <span className="line-clamp-2 text-[13px] leading-5 text-ink-2">
+              {doc.excerpt}
+            </span>
+          ) : null}
+          <span className="mt-auto flex items-center gap-2 pt-1 text-xs text-ink-2">
+            <span title={owner}>
+              <ActorAvatar name={owner} size={20} />
+            </span>
             <span className="font-mono">{formatDocDate(doc.updatedAt)}</span>
           </span>
         </Link>

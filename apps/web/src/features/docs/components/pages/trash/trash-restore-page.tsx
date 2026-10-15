@@ -1,32 +1,24 @@
 "use client";
 
 import { Can } from "~/src/components/permissions/permission-provider";
-import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
-import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@zentro/ui/shadcn/table";
-import { ArchiveRestoreIcon, Trash2Icon } from "lucide-react";
+import { FileTextIcon, InfoIcon, RotateCcwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 
+import { ActorAvatar } from "~/src/components/actor-avatar";
+import { ModuleTabs } from "~/src/components/shell/module-section-nav";
+import { paths } from "~/src/lib/paths";
+
 import {
   DocsListItem,
   formatDocDate,
   getDocOwner,
-  getDocProject,
-  getDocTeam,
   getDocTitle,
-  getInitials,
 } from "../../../lib/docs";
+import { ProjectChip } from "../../doc-rows";
 
 export function TrashRestorePage() {
   const trpc = useTrpcClient();
@@ -77,114 +69,114 @@ export function TrashRestorePage() {
   }
 
   return (
-    <section className="flex w-full flex-col gap-6">
-      <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-          <Trash2Icon className="size-5" />
+    <section className="flex w-full flex-col">
+      <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
+        Trash
+      </h1>
+      <ModuleTabs
+        className="mt-4"
+        counts={{ [paths.trashedDocs()]: isLoading ? undefined : docs.length }}
+      />
+      <p className="mt-3.5 mb-3 flex items-start gap-2.5 rounded-md border border-hairline bg-surface px-4 py-3 text-[13px] text-ink-2">
+        <InfoIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        Docs moved to Trash stay here until someone restores them. Restoring a
+        doc puts it back where it was, with its comments.
+      </p>
+
+      <div role="table" aria-label="Docs in trash" className="flex flex-col">
+        <div
+          role="row"
+          className="hidden h-9 items-center gap-3 border-b border-hairline px-3 font-mono text-[11px] tracking-[0.08em] text-ink-3 sm:flex"
+        >
+          <span role="columnheader" className="flex-1">
+            TITLE
+          </span>
+          <span role="columnheader" className="w-40">
+            OWNER
+          </span>
+          <span role="columnheader" className="w-32">
+            PROJECT
+          </span>
+          <span role="columnheader" className="w-20 text-right">
+            DELETED
+          </span>
+          <span role="columnheader" className="w-28" />
         </div>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Trash</h1>
-          <p className="text-sm text-muted-foreground">
-            Restore pages that were moved out of the workspace.
-          </p>
-        </div>
-      </div>
 
-      <div className="overflow-hidden rounded-2xl border border-hairline/60 bg-surface shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Doc</TableHead>
-              <TableHead>Deleted by</TableHead>
-              <TableHead>Project</TableHead>
-              <TableHead>Team</TableHead>
-              <TableHead>Deleted</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <div className="space-y-3 py-2">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className="h-10 animate-pulse rounded-md bg-muted"
-                      />
-                    ))}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : null}
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="my-1 h-11 rounded-md bg-hover motion-safe:animate-[zsh_2.4s_ease-in-out_infinite]"
+              />
+            ))
+          : null}
 
-            {!isLoading && !docs.length ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-36 text-center">
-                  <Trash2Icon className="mx-auto mb-3 size-9 text-muted-foreground" />
-                  <p className="text-sm font-medium">Trash is empty</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Deleted docs will appear here.
-                  </p>
-                </TableCell>
-              </TableRow>
-            ) : null}
+        {!isLoading && !docs.length ? (
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line-strong px-6 py-14 text-center">
+            <p className="font-serif-italic text-[2.25rem] leading-none">
+              Trash is empty.
+            </p>
+            <p className="text-sm text-ink-2">
+              Docs you move to Trash show up here, ready to restore.
+            </p>
+          </div>
+        ) : null}
 
-            {docs.map((doc) => {
-              const owner = getDocOwner(doc);
+        {docs.map((doc) => {
+          const owner = getDocOwner(doc);
 
-              return (
-                <TableRow key={doc.id}>
-                  <TableCell>
-                    <div className="flex min-w-64 items-center gap-3">
-                      <div className="flex size-8 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground">
-                        <Trash2Icon className="size-4" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{getDocTitle(doc.title)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Updated {formatDocDate(doc.updatedAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-6">
-                        <AvatarFallback>{getInitials(owner)}</AvatarFallback>
-                      </Avatar>
-                      {owner}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{getDocProject(doc)}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{getDocTeam(doc)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDocDate(doc.deletedAt)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <Can permission="docs.restore">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={restoringId === doc.id}
-                          onClick={() => restoreDoc(doc.id)}
-                        >
-                          <ArchiveRestoreIcon className="size-4" />
-                          {restoringId === doc.id ? "Restoring..." : "Restore"}
-                        </Button>
-                      </Can>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+          return (
+            <div
+              role="row"
+              key={doc.id}
+              className="flex min-h-12 flex-wrap items-center gap-3 border-b border-hairline/70 px-3 py-1.5"
+            >
+              <span
+                role="cell"
+                className="flex min-w-0 flex-1 items-center gap-2.5"
+              >
+                <FileTextIcon
+                  className="size-4 shrink-0 text-ink-3"
+                  aria-hidden="true"
+                />
+                <span className="truncate text-[15px]">
+                  {getDocTitle(doc.title)}
+                </span>
+              </span>
+              <span
+                role="cell"
+                className="hidden w-40 items-center gap-2 text-[13px] text-ink-2 sm:flex"
+              >
+                <ActorAvatar name={owner} size={22} />
+                <span className="truncate">{owner}</span>
+              </span>
+              <span role="cell" className="hidden w-32 sm:block">
+                <ProjectChip doc={doc} />
+              </span>
+              <span
+                role="cell"
+                className="w-20 text-right font-mono text-xs text-ink-3"
+              >
+                {formatDocDate(doc.deletedAt)}
+              </span>
+              <span role="cell" className="flex w-28 justify-end">
+                <Can permission="docs.restore">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 border-hairline bg-transparent px-2.5 text-[13px]"
+                    disabled={restoringId === doc.id}
+                    onClick={() => restoreDoc(doc.id)}
+                  >
+                    <RotateCcwIcon className="size-3.5" />
+                    {restoringId === doc.id ? "Restoring..." : "Restore"}
+                  </Button>
+                </Can>
+              </span>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

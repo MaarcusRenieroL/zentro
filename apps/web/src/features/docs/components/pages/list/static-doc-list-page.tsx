@@ -6,6 +6,7 @@ import { useTrpcClient } from "@zentro/api/react";
 import { EmptyState } from "@zentro/ui/components/empty-state";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
+import { useCurrentUserId } from "~/src/components/permissions/permission-provider";
 import { ModuleTabs } from "~/src/components/shell/module-section-nav";
 
 import type { DocsListItem } from "../../../lib/docs";
@@ -24,6 +25,7 @@ export function StaticDocListPage({
   mode,
 }: StaticDocListPageProps) {
   const trpc = useTrpcClient();
+  const userId = useCurrentUserId();
   const [docs, setDocs] = useState<DocsListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +37,11 @@ export function StaticDocListPage({
         const docsList = await trpc.docs.getAll.query({});
 
         if (isMounted) {
-          setDocs(docsList.slice(0, mode === "my-docs" ? 3 : 12));
+          setDocs(
+            mode === "my-docs"
+              ? docsList.filter((doc) => doc.createdByUserId === userId)
+              : docsList.slice(0, 12),
+          );
         }
       } finally {
         if (isMounted) {
@@ -49,7 +55,7 @@ export function StaticDocListPage({
     return () => {
       isMounted = false;
     };
-  }, [mode, trpc]);
+  }, [mode, trpc, userId]);
 
   return (
     <section className="flex w-full flex-col">
