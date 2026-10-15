@@ -861,6 +861,16 @@
   .l-lift:hover {
     transform: translateY(-3px);
   }
+  /* Scroll reveal: --rv runs 0 to 1 with the block's position in the viewport.
+     filter/translate/scale leave the block's own opacity and transform alone. */
+  .l-rv {
+    --rv: 0;
+    filter: opacity(var(--rv));
+    translate: 0 calc((1 - var(--rv)) * 44px);
+    scale: calc(0.93 + 0.07 * var(--rv));
+    transform-origin: 50% 80%;
+    will-change: filter, translate, scale;
+  }
   .l-btn {
     position: relative;
     overflow: hidden;

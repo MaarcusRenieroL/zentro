@@ -263,6 +263,76 @@ export function LandingPage() {
     };
   }, [measure]);
 
+  // Scroll reveal: each block eases in (opacity, lift, size) as it enters the
+  // viewport and eases back out when you scroll up past it. Driven by position,
+  // so it runs in both directions. Skipped entirely under reduced motion.
+  useEffect(() => {
+    const root = rootRef.current;
+
+    if (!root || reduced) return;
+
+    const targets = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        [
+          "h2",
+          "h2 + p",
+          "#product [data-rv]",
+          "#modules h3",
+          "#modules .l-lift",
+          "#modules [data-dim]",
+          "#control [data-rv]",
+          "#control [role=row]",
+          "#control li",
+          "[data-rv]",
+        ].join(","),
+      ),
+    );
+    const items = Array.from(new Set(targets)).map((el) => {
+      const siblings = el.parentElement
+        ? Array.from(el.parentElement.children)
+        : [];
+
+      el.classList.add("l-rv");
+
+      return { el, order: Math.min(siblings.indexOf(el), 6), last: -1 };
+    });
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+
+      const vh = window.innerHeight;
+
+      for (const item of items) {
+        const top = item.el.getBoundingClientRect().top + item.order * 26;
+        const t = ease(clamp((vh * 0.98 - top) / (vh * 0.3)));
+
+        if (Math.abs(t - item.last) > 0.004) {
+          item.last = t;
+          item.el.style.setProperty("--rv", t.toFixed(3));
+        }
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
+
+      for (const item of items) {
+        item.el.classList.remove("l-rv");
+        item.el.style.removeProperty("--rv");
+      }
+    };
+  }, [reduced]);
+
   const theme = mode === "system" ? (sysLight ? "light" : "dark") : mode;
   const m = vw < 1100;
   const progress = reduced ? 1 : P;
@@ -3371,11 +3441,23 @@ export function LandingPage() {
             fontSize: 14,
           }}
         >
-          <span style={label}>Legal</span>
+          <span style={label}>Company</span>
+          {["Pricing", "Roadmap", "Changelog", "About", "Status"].map(
+            (name) => (
+              <a
+                key={name}
+                href={`/${name.toLowerCase()}`}
+                style={{ color: "var(--ink2)", textDecoration: "none" }}
+              >
+                {name}
+              </a>
+            ),
+          )}
+          <span style={{ ...label, marginTop: 8 }}>Legal</span>
           {["Privacy", "Terms", "Security", "Cookies"].map((name) => (
             <a
               key={name}
-              href="#top"
+              href={`/${name.toLowerCase()}`}
               style={{ color: "var(--ink2)", textDecoration: "none" }}
             >
               {name}
