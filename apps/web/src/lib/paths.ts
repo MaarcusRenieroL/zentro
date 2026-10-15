@@ -23,6 +23,7 @@ export const paths = {
     withQuery("/projects", query),
   project: (slug: string) => `/projects/${slug}`,
   projectSettings: (slug: string) => `/projects/${slug}/settings`,
+  projectSettingsAccess: (slug: string) => `/projects/${slug}/settings/access`,
   projectGeneralSettings: (slug: string) =>
     `/projects/${slug}/settings/general`,
   projectDangerSettings: (slug: string) => `/projects/${slug}/settings/danger`,
@@ -31,6 +32,7 @@ export const paths = {
   task: (key: string) => `/tasks/${key}`,
   tasksForProject: (slug: string) => withQuery("/tasks", { project: slug }),
   tasksOverview: () => "/tasks/overview",
+  overview: () => "/overview",
 
   docs: () => "/docs",
   doc: (slug: string) => `/docs/${slug}`,
@@ -56,6 +58,7 @@ export const paths = {
   membersSettings: () => "/settings/organization/members",
   teamsSettings: () => "/settings/organization/teams",
   invitationsSettings: () => "/settings/organization/invitations",
+  teamSettings: (id: string) => `/settings/organization/teams/${id}`,
   modulesSettings: () => "/settings/organization/modules",
   rolesSettings: () => "/settings/organization/roles",
   role: (id: string) => `/settings/organization/roles/${id}`,

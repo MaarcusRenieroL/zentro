@@ -73,6 +73,10 @@ export function AppShell({
               />
               <SidebarInset className="bg-canvas">
                 <TopBar
+                  orgName={
+                    organizations.find((org) => org.slug === activeOrgSlug)
+                      ?.name
+                  }
                   enabledModules={enabledModules}
                   modules={modules}
                   user={user}
@@ -81,7 +85,7 @@ export function AppShell({
                 <main
                   id="main"
                   tabIndex={-1}
-                  className="mx-auto w-full max-w-[1440px] min-w-0 flex-1 overflow-x-clip px-(--gutter) py-6 outline-none"
+                  className="mx-auto w-full max-w-[1440px] min-w-0 flex-1 overflow-x-clip px-4 pt-5 pb-12 outline-none md:px-(--gutter) md:pt-7 md:pb-16"
                 >
                   <OfflineBanner />
                   <div

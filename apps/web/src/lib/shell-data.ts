@@ -1,6 +1,7 @@
 import { listModules, type ModuleNavLink } from "@zentro/modules";
 
 import type { ShellModule } from "~/src/components/shell/app-sidebar";
+import { paths } from "~/src/lib/paths";
 
 type Reachable = Record<string, boolean>;
 
@@ -79,6 +80,7 @@ export function buildShell(
       href: teamHref,
       icon: "Users",
       base: teamHref,
+      bases: [paths.invitationsSettings(), paths.teamsSettings()],
     });
   }
 
@@ -89,6 +91,11 @@ export function buildShell(
       href: "/overview",
       icon: "Gauge",
       base: "/overview",
+      bases: [
+        paths.rolesSettings(),
+        paths.modulesSettings(),
+        paths.auditLogSettings(),
+      ],
     });
   }
 

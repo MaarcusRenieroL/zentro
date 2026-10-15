@@ -21,8 +21,8 @@ const labels: Record<string, string> = {
   invitations: "Invitations",
   teams: "Teams",
   modules: "Modules",
-  danger: "Danger zone",
-  roles: "Roles & permissions",
+  danger: "Delete or transfer",
+  roles: "Roles & access",
   assignments: "Assignments",
   log: "Permission log",
   "access-check": "Access check",
@@ -33,6 +33,17 @@ const labels: Record<string, string> = {
   profile: "Profile",
   appearance: "Appearance",
   security: "Security",
+};
+
+const team = { label: "Team", href: "/settings/organization/members" };
+// Admin pages stand on their own: "Northwind Labs / Roles & access".
+const areas: Record<string, BreadcrumbEntry | null> = {
+  members: team,
+  invitations: team,
+  teams: team,
+  roles: null,
+  modules: null,
+  "audit-log": null,
 };
 
 // Segments that are part of a route rather than a name.
@@ -50,8 +61,35 @@ export function getBreadcrumbs(
   const entries: BreadcrumbEntry[] = [];
   let href = "";
 
+  // People and administration live under /settings/organization but read as
+  // the Team and Overview areas.
+  if (segments[0] === "settings" && segments[1] === "organization") {
+    const area = areas[segments[2] ?? ""];
+
+    if (area !== undefined) {
+      if (area) entries.push(area);
+      href = `/settings/organization`;
+
+      for (const segment of segments.slice(2)) {
+        href += `/${segment}`;
+
+        const label = labels[segment];
+        const named = registered[href];
+
+        if (label) entries.push({ label, href });
+        else if (named) entries.push({ ...named, href });
+        else entries.push({ label: segment, href, loading: true });
+      }
+
+      return entries;
+    }
+  }
+
   for (const [index, segment] of segments.entries()) {
     href += `/${segment}`;
+
+    // "account" is only a path prefix: "Settings / Profile".
+    if (segment === "account" && segments[0] === "settings") continue;
 
     // "organization" is only a path prefix for settings pages.
     if (segment === "organization" && segments[0] === "settings") {

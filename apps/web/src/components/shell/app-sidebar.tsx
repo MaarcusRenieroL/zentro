@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
+import { XIcon } from "lucide-react";
 
 import { authClient } from "@zentro/auth/client";
 import { OrgSwitcher } from "@zentro/ui/components/org-switcher";
@@ -19,9 +20,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@zentro/ui/shadcn/sidebar";
+import { cn } from "@zentro/ui/lib/utils";
 
-import { getModuleIcon } from "~/src/lib/module-icons";
+import { getShellIcon } from "~/src/lib/module-icons";
 import { paths } from "~/src/lib/paths";
 
 export type ShellModule = {
@@ -31,6 +34,8 @@ export type ShellModule = {
   icon: string;
   /** Pages under this path belong to the module. */
   base: string;
+  /** Other paths whose pages read as part of the module. */
+  bases?: string[];
 };
 
 type Props = {
@@ -47,9 +52,16 @@ type Props = {
 export function findActiveModule(modules: ShellModule[], pathname: string) {
   let best: ShellModule | null = null;
 
+  let bestLength = 0;
+
   for (const item of modules) {
-    if (pathname === item.base || pathname.startsWith(`${item.base}/`)) {
-      if (!best || item.base.length > best.base.length) best = item;
+    for (const base of [item.base, ...(item.bases ?? [])]) {
+      if (pathname === base || pathname.startsWith(`${base}/`)) {
+        if (base.length > bestLength) {
+          best = item;
+          bestLength = base.length;
+        }
+      }
     }
   }
 
@@ -67,6 +79,13 @@ export function AppSidebar({
   const active = findActiveModule(modules, pathname);
   const listRef = useRef<HTMLUListElement>(null);
   const box = useActiveBox(listRef, '[data-active="true"]');
+  const { isMobile, setOpenMobile } = useSidebar();
+  // On a phone the sidebar is a sheet: bigger targets, and it closes once
+  // you pick a place.
+  const itemSize = isMobile ? "h-11 text-[15px]" : "h-9";
+  const close = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   const switchOrganization = async (organizationId: string) => {
     const { error } = await authClient.organization.setActive({
       organizationId,
@@ -84,7 +103,7 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" aria-label="Main">
-      <SidebarHeader className="px-3 pt-3 pb-0">
+      <SidebarHeader className="flex-row items-center px-3 pt-3 pb-0">
         <OrgSwitcher
           organizations={organizations}
           activeOrgSlug={activeOrgSlug}
@@ -99,8 +118,22 @@ export function AppSidebar({
               <span className="h-[13px] w-0.5 rounded-xs bg-signal" />
             </span>
           }
-          className="h-12 rounded-xl border border-hairline bg-surface px-2"
+          className={cn(
+            "h-12 rounded-md border border-hairline bg-surface px-2",
+            // The close button takes the chevron's place in the sheet.
+            isMobile && "h-[52px] pr-11 [&>svg:last-child]:hidden",
+          )}
         />
+        {isMobile ? (
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close navigation"
+            className="-ml-12 flex size-9 shrink-0 items-center justify-center rounded-md text-ink-2 outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <XIcon className="size-4" aria-hidden="true" />
+          </button>
+        ) : null}
       </SidebarHeader>
 
       <SidebarContent className="gap-0 px-3 pt-3.5 pb-3">
@@ -110,7 +143,7 @@ export function AppSidebar({
               {box ? (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-0 left-0 rounded-xl bg-selected transition-[transform,width,height] duration-[var(--duration-base)] ease-[var(--ease-out)]"
+                  className="pointer-events-none absolute top-0 left-0 rounded-md bg-selected transition-[transform,width,height] duration-[var(--duration-base)] ease-[var(--ease-out)]"
                   style={{
                     width: box.width,
                     height: box.height,
@@ -121,7 +154,7 @@ export function AppSidebar({
               {modules
                 .filter((item) => item.id !== "settings")
                 .map((item) => {
-                  const Icon = getModuleIcon(item.icon);
+                  const Icon = getShellIcon(item.id, item.icon);
                   const isActive = item.id === active?.id;
 
                   return (
@@ -130,10 +163,14 @@ export function AppSidebar({
                         asChild
                         isActive={isActive}
                         tooltip={item.label}
-                        className="h-9 rounded-xl text-ink-2 hover:bg-hover hover:text-ink data-active:bg-transparent data-active:font-medium data-active:text-ink"
+                        className={cn(
+                          itemSize,
+                          "rounded-md text-ink-2 hover:bg-hover hover:text-ink data-active:bg-transparent data-active:font-medium data-active:text-ink",
+                        )}
                       >
                         <Link
                           href={item.href}
+                          onClick={close}
                           aria-current={isActive ? "page" : undefined}
                         >
                           <Icon
@@ -165,7 +202,7 @@ export function AppSidebar({
           {modules
             .filter((item) => item.id === "settings")
             .map((item) => {
-              const Icon = getModuleIcon(item.icon);
+              const Icon = getShellIcon(item.id, item.icon);
               const isActive = item.id === active?.id;
 
               return (
@@ -175,10 +212,14 @@ export function AppSidebar({
                       asChild
                       isActive={isActive}
                       tooltip={item.label}
-                      className="h-9 rounded-xl text-ink-2 hover:bg-hover hover:text-ink data-active:bg-selected data-active:font-medium data-active:text-ink"
+                      className={cn(
+                        itemSize,
+                        "rounded-md text-ink-2 hover:bg-hover hover:text-ink data-active:bg-selected data-active:font-medium data-active:text-ink",
+                      )}
                     >
                       <Link
                         href={item.href}
+                        onClick={close}
                         aria-current={isActive ? "page" : undefined}
                       >
                         <Icon
