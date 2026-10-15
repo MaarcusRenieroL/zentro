@@ -1033,13 +1033,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <div
-        className={`grid min-h-[calc(100vh-7rem)] ${
-          commentsOpen
-            ? "xl:grid-cols-[minmax(0,1fr)_20rem_22rem]"
-            : "xl:grid-cols-[minmax(0,1fr)_20rem]"
-        }`}
-      >
+      <div className="grid min-h-[calc(100vh-7rem)] xl:grid-cols-[minmax(0,1fr)_22rem]">
         <main className="min-w-0 bg-canvas">
           <div className="mx-auto w-full max-w-[720px] px-5 py-8 sm:px-8 lg:py-12">
             <div>
@@ -1067,7 +1061,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 onBlur={saveTitle}
                 readOnly={!canEdit}
                 placeholder="Untitled"
-                className="!h-auto border-none bg-transparent px-0 py-0 font-display !text-5xl !leading-[1.08] shadow-none outline-none focus-visible:ring-0"
+                className="!h-auto border-none bg-transparent px-0 py-0 font-display !text-[2.25rem] !leading-10 shadow-none outline-none focus-visible:ring-0 sm:!text-[2.5rem] sm:!leading-[44px]"
               />
             </div>
 
@@ -1137,27 +1131,36 @@ export function NotionEditorPage({ slug }: { slug: string }) {
           </section>
         </main>
 
-        <aside className="hidden p-6 pl-0 xl:block">
-          <Tile
-            title="Thread"
-            description="Linked to this doc"
-            className="sticky top-20"
-          >
-            <LinkedThread
-              current={{ kind: "doc", label: getDocTitle(title), meta: "Doc" }}
-              currentId={doc.id}
-              projectId={doc.projectId}
-              projectName={doc.projectName}
-            />
-          </Tile>
-        </aside>
+        <div className="flex flex-col gap-4 p-6 pl-0 xl:sticky xl:top-16 xl:max-h-[calc(100vh-5rem)] xl:self-start xl:overflow-y-auto max-xl:contents">
+          <div className="hidden xl:block">
+            <Tile
+              title="Thread"
+              actions={
+                <span className="font-mono text-xs text-ink-3">
+                  Linked work
+                </span>
+              }
+            >
+              <LinkedThread
+                current={{
+                  kind: "doc",
+                  label: getDocTitle(title),
+                  meta: "Doc",
+                }}
+                currentId={doc.id}
+                projectId={doc.projectId}
+                projectName={doc.projectName}
+              />
+            </Tile>
+          </div>
 
-        <CommentsPanel
-          docId={doc.id}
-          canComment={canComment}
-          isOpen={commentsOpen}
-          onClose={() => setCommentsOpen(false)}
-        />
+          <CommentsPanel
+            docId={doc.id}
+            canComment={canComment}
+            isOpen={commentsOpen}
+            onClose={() => setCommentsOpen(false)}
+          />
+        </div>
       </div>
     </div>
   );

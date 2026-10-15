@@ -1,16 +1,17 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
-import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
+import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 import { Textarea } from "@zentro/ui/shadcn/textarea";
-import { CheckIcon, MessageSquareIcon, SendIcon, XIcon } from "lucide-react";
+import { CheckIcon, SendIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 
-import { formatDocDate, getInitials } from "../../../lib/docs";
+import { ActorAvatar } from "~/src/components/actor-avatar";
+
+import { formatDocDate } from "../../../lib/docs";
 
 type DocComment = {
   id: string;
@@ -112,49 +113,36 @@ export function CommentsPanel({
   }
 
   return (
-    <aside className="fixed inset-y-0 right-0 z-40 w-full max-w-sm border-l bg-muted/30 shadow-xl xl:static xl:z-auto xl:max-w-none xl:shadow-none">
-      <div className="sticky top-14 flex h-[calc(100vh-7rem)] flex-col">
-        <div className="flex items-center justify-between border-b bg-background px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <MessageSquareIcon className="size-4" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Comments</p>
-              <p className="text-xs text-muted-foreground">Open review notes</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Badge variant="secondary" className="rounded-md">
-              {comments.length}
-            </Badge>
-            <Button variant="ghost" size="icon-sm" onClick={onClose}>
-              <XIcon className="size-4" />
-              <span className="sr-only">Hide comments</span>
-            </Button>
-          </div>
+    <aside
+      aria-label="Comments"
+      className="fixed inset-y-0 right-0 z-40 w-full max-w-sm overflow-y-auto bg-surface shadow-xl xl:static xl:z-auto xl:max-w-none xl:overflow-visible xl:rounded-[20px] xl:border xl:border-hairline xl:shadow-none"
+    >
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2 px-[18px] pt-4 pb-3">
+          <h2 className="text-[15px] font-semibold">Comments</h2>
+          <span className="rounded-full border border-hairline px-2 py-px font-mono text-xs text-ink-2">
+            {comments.length} open
+          </span>
+          <span className="flex-1" />
+          <Button variant="ghost" size="icon-sm" onClick={onClose}>
+            <XIcon className="size-4" />
+            <span className="sr-only">Hide comments</span>
+          </Button>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        <div className="flex flex-col px-2 pb-2">
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-2 p-2">
               {Array.from({ length: 2 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-28 animate-pulse rounded-lg bg-background"
-                />
+                <Skeleton key={index} className="h-20" />
               ))}
             </div>
           ) : null}
 
           {!isLoading && !comments.length ? (
-            <div className="rounded-2xl border border-hairline/60 bg-surface p-5 text-center shadow-sm">
-              <MessageSquareIcon className="mx-auto mb-3 size-8 text-muted-foreground" />
-              <p className="text-sm font-medium">No open comments</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Leave a note when something needs review.
-              </p>
-            </div>
+            <p className="px-3 py-6 text-center text-sm text-ink-2">
+              No open comments. Leave a note when something needs review.
+            </p>
           ) : null}
 
           {comments.map((comment) => {
@@ -164,44 +152,28 @@ export function CommentsPanel({
             return (
               <div
                 key={comment.id}
-                className="rounded-2xl border border-hairline/60 bg-surface p-3 shadow-sm"
+                className="flex gap-2.5 rounded-xl border-t border-hairline/60 p-3 first:border-t-0"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Avatar className="size-7">
-                      <AvatarFallback>{getInitials(author)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{author}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDocDate(comment.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
+                <ActorAvatar name={author} size={28} />
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-baseline gap-2 text-sm">
+                    <span className="truncate font-medium">{author}</span>
+                    <span className="font-mono text-[11px] text-ink-3">
+                      {formatDocDate(comment.createdAt)}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-sm leading-5 text-ink-2">
+                    {comment.body}
+                  </p>
+                  <button
+                    type="button"
                     disabled={savingId === comment.id}
                     onClick={() => resolveComment(comment.id)}
+                    className="mt-1.5 flex items-center gap-1 rounded-xs text-xs text-signal outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                   >
-                    <XIcon className="size-3.5" />
-                    <span className="sr-only">Resolve comment</span>
-                  </Button>
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  {comment.body}
-                </p>
-                <div className="mt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    disabled={savingId === comment.id}
-                    onClick={() => resolveComment(comment.id)}
-                  >
-                    <CheckIcon className="size-4" />
+                    <CheckIcon className="size-3.5" />
                     {savingId === comment.id ? "Resolving..." : "Resolve"}
-                  </Button>
+                  </button>
                 </div>
               </div>
             );
@@ -209,24 +181,23 @@ export function CommentsPanel({
         </div>
 
         {canComment ? (
-          <div className="border-t bg-background p-4">
-            <div className="rounded-lg border bg-muted/20 p-3">
-              <Textarea
-                className="min-h-24 resize-none bg-background"
-                placeholder="Add a comment..."
-                value={body}
-                onChange={(event) => setBody(event.target.value)}
-              />
-              <Button
-                className="mt-2 w-full"
-                size="sm"
-                disabled={!body.trim() || savingId === "new"}
-                onClick={createComment}
-              >
-                <SendIcon className="size-4" />
-                {savingId === "new" ? "Posting..." : "Comment"}
-              </Button>
-            </div>
+          <div className="flex flex-col gap-2 border-t border-hairline p-3">
+            <Textarea
+              className="min-h-20 resize-none"
+              placeholder="Add a comment..."
+              aria-label="Add a comment"
+              value={body}
+              onChange={(event) => setBody(event.target.value)}
+            />
+            <Button
+              size="sm"
+              className="self-end"
+              disabled={!body.trim() || savingId === "new"}
+              onClick={createComment}
+            >
+              <SendIcon />
+              {savingId === "new" ? "Posting..." : "Comment"}
+            </Button>
           </div>
         ) : null}
       </div>

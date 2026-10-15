@@ -1,28 +1,15 @@
 "use client";
 
-import { paths } from "~/src/lib/paths";
-import { Badge } from "@zentro/ui/shadcn/badge";
-import { Button } from "@zentro/ui/shadcn/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@zentro/ui/shadcn/card";
-import { ClockIcon, FileTextIcon, StarIcon } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
+import { EmptyState } from "@zentro/ui/components/empty-state";
+import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
-import {
-  DocsListItem,
-  formatDocDate,
-  getDocProject,
-  getDocTeam,
-  getDocTitle,
-} from "../../../lib/docs";
+import { ModuleTabs } from "~/src/components/shell/module-section-nav";
+
+import type { DocsListItem } from "../../../lib/docs";
+import { DocTable } from "../../doc-rows";
 import { CreateDocModal } from "../home/create-doc-modal";
 
 type StaticDocListPageProps = {
@@ -36,7 +23,6 @@ export function StaticDocListPage({
   description,
   mode,
 }: StaticDocListPageProps) {
-  const Icon = mode === "my-docs" ? StarIcon : ClockIcon;
   const trpc = useTrpcClient();
   const [docs, setDocs] = useState<DocsListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,73 +52,32 @@ export function StaticDocListPage({
   }, [mode, trpc]);
 
   return (
-    <section className="flex w-full flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <div className="flex size-10 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-            <Icon className="size-4" />
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+    <section className="flex w-full flex-col">
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="font-display text-[length:var(--title-size)] leading-[1.1]">
+          {title}
+        </h1>
+        <span className="flex-1" />
+        <CreateDocModal />
+      </div>
+      <ModuleTabs className="mt-4" />
+      <p className="mt-3.5 mb-3 text-sm text-ink-2">{description}</p>
+
+      {isLoading ? (
+        <div className="flex flex-col gap-2" aria-busy="true">
+          {[0, 1, 2, 3].map((row) => (
+            <Skeleton key={row} className="h-12" />
+          ))}
         </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, index) => (
-              <Card key={index} className="rounded-lg" size="sm">
-                <CardHeader>
-                  <div className="h-24 animate-pulse rounded-md bg-muted" />
-                </CardHeader>
-              </Card>
-            ))
-          : null}
-
-        {docs.map((doc) => (
-          <Card
-            key={doc.id}
-            className="rounded-lg transition-colors hover:bg-muted/20"
-            size="sm"
-          >
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex size-9 items-center justify-center rounded-2xl border border-hairline/60 bg-surface text-muted-foreground shadow-sm">
-                  <FileTextIcon className="size-4" />
-                </div>
-                <Badge variant="secondary">Doc</Badge>
-              </div>
-              <CardTitle className="text-sm font-semibold">
-                <Link href={paths.doc(doc.slug)}>{getDocTitle(doc.title)}</Link>
-              </CardTitle>
-              <CardDescription className="line-clamp-2">
-                Updated {formatDocDate(doc.updatedAt)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">{getDocProject(doc)}</Badge>
-                <Badge variant="secondary">{getDocTeam(doc)}</Badge>
-              </div>
-              <Button variant="link" size="sm" asChild>
-                <Link href={paths.doc(doc.slug)}>Open</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-
-        {!isLoading && !docs.length ? (
-          <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-10 text-center md:col-span-2 xl:col-span-3">
-            <FileTextIcon className="mx-auto mb-3 size-9 text-muted-foreground" />
-            <p className="text-sm font-medium">No docs found</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Create a doc and it will appear here.
-            </p>
-            <div className="mt-4">
-              <CreateDocModal triggerVariant="outline" />
-            </div>
-          </div>
-        ) : null}
-      </div>
+      ) : docs.length ? (
+        <DocTable docs={docs} />
+      ) : (
+        <EmptyState
+          title="No docs found."
+          description="Create a doc and it will appear here."
+          action={<CreateDocModal triggerVariant="outline" />}
+        />
+      )}
     </section>
   );
 }

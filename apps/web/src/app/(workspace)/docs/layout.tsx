@@ -1,7 +1,10 @@
 import { ReactNode, Suspense } from "react";
 
 import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
-import { ModuleSectionNav } from "~/src/components/shell/module-section-nav";
+import {
+  ModuleNavProvider,
+  ModuleSectionNav,
+} from "~/src/components/shell/module-section-nav";
 import {
   getDashboardContext,
   getModuleAccess,
@@ -23,11 +26,13 @@ export default async function DocsLayout({
   const items = buildShell(enabledModules, reachable).moduleNav["docs"] ?? [];
 
   return (
-    <AuthorizationBoundary isAllowed={allowed}>
-      <Suspense fallback={null}>
-        <ModuleSectionNav items={items} label="Docs" />
-      </Suspense>
-      {children}
+    <AuthorizationBoundary isAllowed={allowed} permission="docs.view">
+      <ModuleNavProvider items={items} label="Docs">
+        <Suspense fallback={null}>
+          <ModuleSectionNav />
+        </Suspense>
+        {children}
+      </ModuleNavProvider>
     </AuthorizationBoundary>
   );
 }

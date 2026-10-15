@@ -1,108 +1,88 @@
 "use client";
 
-import { paths } from "~/src/lib/paths";
-import { Button } from "@zentro/ui/shadcn/button";
-import { Input } from "@zentro/ui/shadcn/input";
-import {
-  ClockIcon,
-  FolderIcon,
-  SearchIcon,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FC, useState } from "react";
-import type { FormEvent } from "react";
+import { FC, useEffect, useRef, useState, type FormEvent } from "react";
+import { ClockIcon, FolderIcon, SearchIcon, Trash2Icon } from "lucide-react";
+
+import { Kbd } from "@zentro/ui/components/kbd";
+import { Button } from "@zentro/ui/shadcn/button";
+
+import { paths } from "~/src/lib/paths";
 
 export const SearchToolbar: FC = () => {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const input = useRef<HTMLInputElement>(null);
+
+  // "/" jumps to search, like the hint says.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+
+      if (
+        event.key !== "/" ||
+        event.metaKey ||
+        event.ctrlKey ||
+        target?.closest("input, textarea, select, [contenteditable='true']")
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      input.current?.focus();
+    };
+
+    window.addEventListener("keydown", onKey);
+
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const normalizedQuery = query.trim();
-    const searchPath = normalizedQuery
-      ? paths.searchDocs(normalizedQuery)
-      : paths.searchDocs();
+    const value = query.trim();
 
-    router.push(searchPath);
-  }
-
-  function handleClearSearch() {
-    setQuery("");
+    router.push(value ? paths.searchDocs(value) : paths.searchDocs());
   }
 
   return (
-    <div className="rounded-xl bg-sunken p-2">
-      <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <form
-          onSubmit={handleSearch}
-          className="flex w-full flex-col gap-2 sm:flex-row xl:max-w-2xl"
-        >
-          <div className="relative flex-1">
-            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="rounded-full border-transparent bg-surface pr-9 pl-9"
-              placeholder="Search docs..."
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            {query ? (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label="Clear search"
-              >
-                <XIcon className="size-4" />
-              </button>
-            ) : null}
-          </div>
-          <Button
-            type="submit"
-            variant="secondary"
-            className="w-full rounded-full sm:w-auto"
-          >
-            <SearchIcon className="size-4" />
-            Search
-          </Button>
-        </form>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
-          <Button
-            variant="ghost"
-            className="justify-start rounded-full"
-            asChild
-          >
-            <Link href={paths.recentDocs()}>
-              <ClockIcon className="size-4" />
-              Recent
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            className="justify-start rounded-full"
-            asChild
-          >
-            <Link href={paths.projectDocs()}>
-              <FolderIcon className="size-4" />
-              Projects
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            className="justify-start rounded-full"
-            asChild
-          >
-            <Link href={paths.trashedDocs()}>
-              <Trash2Icon className="size-4" />
-              Trash
-            </Link>
-          </Button>
+    <div className="flex flex-wrap items-center gap-2">
+      <form onSubmit={handleSearch} className="min-w-0 flex-1 basis-72">
+        <div className="relative h-11">
+          <SearchIcon
+            aria-hidden="true"
+            className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3"
+          />
+          <input
+            ref={input}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search docs by title or text"
+            aria-label="Search docs"
+            className="h-full w-full rounded-xl border border-border-strong bg-surface pr-10 pl-10 text-[15px] outline-none placeholder:text-ink-3 focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/22"
+          />
+          <Kbd className="absolute top-1/2 right-3 -translate-y-1/2">/</Kbd>
         </div>
-      </div>
+      </form>
+      <Button variant="outline" asChild>
+        <Link href={paths.recentDocs()}>
+          <ClockIcon />
+          Recent
+        </Link>
+      </Button>
+      <Button variant="outline" asChild>
+        <Link href={paths.projectDocs()}>
+          <FolderIcon />
+          Projects
+        </Link>
+      </Button>
+      <Button variant="outline" asChild>
+        <Link href={paths.trashedDocs()}>
+          <Trash2Icon />
+          Trash
+        </Link>
+      </Button>
     </div>
   );
 };
