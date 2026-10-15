@@ -11,7 +11,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ProjectDetails } from "~/src/components/project-detail/project-details";
 import { ProjectHeader } from "~/src/components/project-detail/project-header";
-import { ProjectContributors } from "~/src/components/project-detail/project-contributors";
+import {
+  ProjectContributors,
+  type Contributor,
+} from "~/src/components/project-detail/project-contributors";
+import type { ProjectListItem } from "~/src/components/projects/list";
+import { usePermission } from "~/src/components/permissions/permission-provider";
+import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { ProjectSummary } from "~/src/components/project-detail/project-summary";
 import { ProjectTabs } from "~/src/components/project-detail/project-tabs";
 import { ProjectPageLoading } from "~/src/components/project-detail/project-loading";
@@ -24,6 +30,10 @@ export default function ProjectPage() {
   const [tasks, setTasks] = useState<WorkspaceTask[] | null>(null);
 
   const trpc = useTrpcClient();
+  const canManage = usePermission(
+    "projects.settings.manage",
+    project ? { projectId: project.id } : undefined,
+  );
 
   usePageCrumb(`/projects/${params.slug}`, project?.name);
 
@@ -77,6 +87,46 @@ export default function ProjectPage() {
     return <ProjectPageLoading />;
   }
 
+  const list = tasks ?? [];
+  const now = Date.now();
+  // Health is read from the tasks, as on the projects list.
+  const health: ProjectListItem = {
+    ...project,
+    teamId: null,
+    teamColor: null,
+    teamName: project.teamName ?? null,
+    totalTasks: tasks ? list.length : null,
+    doneTasks: list.filter((task) => task.status === "done").length,
+    overdueTasks: list.filter(
+      (task) =>
+        task.status !== "done" &&
+        task.dueAt &&
+        new Date(task.dueAt).getTime() < now,
+    ).length,
+    startedTasks: list.filter((task) =>
+      ["in-progress", "review", "done"].includes(task.status),
+    ).length,
+  };
+  const openBy = new Map<string, number>();
+
+  for (const task of list) {
+    if (task.assignee === "Unassigned") continue;
+    openBy.set(
+      task.assignee,
+      (openBy.get(task.assignee) ?? 0) + (task.status === "done" ? 0 : 1),
+    );
+  }
+  const contributors: Contributor[] = [
+    {
+      name: project.owner,
+      open: openBy.get(project.owner) ?? 0,
+      lead: true,
+    },
+    ...Array.from(openBy, ([name, open]) => ({ name, open, lead: false }))
+      .filter((person) => person.name !== project.owner)
+      .sort((a, b) => b.open - a.open || a.name.localeCompare(b.name)),
+  ];
+
   return (
     <section className="flex w-full flex-col gap-5">
       <ProjectHeader
@@ -87,38 +137,58 @@ export default function ProjectPage() {
         description={project.description}
         keyPrefix={project.taskKeyPrefix}
         teamName={project.teamName}
+        health={health}
       />
 
       <ProjectSummary tasks={tasks} totalDocs={project.totalDocs} />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0">
-          <ProjectTabs
-            projectId={project.id}
-            projectSlug={project.slug}
-            description={project.description}
-            tasks={tasks ?? []}
-            totalDocs={project.totalDocs}
-            showTasks={enabledModules.includes("tasks")}
-            showDocs={enabledModules.includes("docs")}
-          />
-        </div>
-
-        <aside className="flex min-w-0 flex-col gap-5">
-          <ProjectDetails
-            status={project.status}
-            createdAt={project.createdAt}
-            startDate={project.createdAt}
-            owner={project.owner}
-            teamName={project.teamName}
-            keyPrefix={project.taskKeyPrefix}
-          />
-          <ProjectContributors
-            owner={project.owner}
-            totalMembers={project.totalMembers}
-          />
-        </aside>
-      </div>
+      <ProjectTabs
+        projectId={project.id}
+        projectSlug={project.slug}
+        description={project.description}
+        tasks={tasks ?? []}
+        totalDocs={project.totalDocs}
+        showTasks={enabledModules.includes("tasks")}
+        showDocs={enabledModules.includes("docs")}
+        brief={{
+          owner: project.owner,
+          updatedAt: project.updatedAt,
+          editHref: canManage ? paths.projectSettings(project.slug) : null,
+          contributors: <ProjectContributors contributors={contributors} />,
+        }}
+        aside={
+          <>
+            <ProjectDetails
+              project={health}
+              owner={project.owner}
+              startDate={project.createdAt}
+              teamName={project.teamName}
+              keyPrefix={project.taskKeyPrefix}
+              people={contributors.map((person) => person.name)}
+              manageHref={
+                canManage ? paths.projectSettingsAccess(project.slug) : null
+              }
+            />
+            <section aria-label="Thread" className="tile p-4">
+              <LinkedThread
+                header={(count) => (
+                  <div className="flex items-baseline justify-between pb-3">
+                    <h2 className="eyebrow">Thread</h2>
+                    <span className="font-mono text-xs text-ink-3">
+                      {count} linked
+                    </span>
+                  </div>
+                )}
+                current={{ kind: "project", label: project.name }}
+                currentId={project.id}
+                projectId={project.id}
+                projectName={project.name}
+                projectSlug={project.slug}
+              />
+            </section>
+          </>
+        }
+      />
     </section>
   );
 }

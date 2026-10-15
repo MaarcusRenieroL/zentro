@@ -3,10 +3,9 @@
 import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { paths } from "~/src/lib/paths";
 import {
-  AlertTriangleIcon,
-  ArrowLeftIcon,
-  Building2Icon,
+  ChevronLeftIcon,
   SettingsIcon,
+  Trash2Icon,
   UsersIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -21,15 +20,6 @@ type Props = {
   };
   children: ReactNode;
 };
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
-}
 
 export const SettingsShell: FC<Props> = ({ project, children }) => {
   const pathname = usePathname();
@@ -49,60 +39,57 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
     },
     {
       href: paths.projectDangerSettings(project.slug),
-      label: "Danger Zone",
-      icon: AlertTriangleIcon,
+      label: "Danger zone",
+      icon: Trash2Icon,
     },
   ];
 
   return (
-    <section>
-      <div className="flex w-full flex-col gap-6">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-hairline/60 bg-card shadow-sm text-base font-semibold text-foreground shadow-sm sm:size-14 sm:text-lg">
-            {getInitials(project.name) || <Building2Icon className="size-6" />}
-          </div>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold tracking-tight sm:text-3xl">
-              Project Settings
-            </h1>
-            <p className="mt-1 truncate text-sm text-muted-foreground">
-              {project.name} · {project.slug}
-            </p>
-          </div>
-          <Link
-            href={paths.project(project.slug)}
-            className="ml-auto hidden items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground sm:flex"
-          >
-            <ArrowLeftIcon className="size-4" />
-            Back to project
-          </Link>
-        </div>
+    <section className="flex w-full flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Link
+          href={paths.project(project.slug)}
+          className="flex w-fit items-center gap-1.5 rounded-xs text-[13px] text-ink-2 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronLeftIcon className="size-3.5" aria-hidden="true" />
+          {project.name}
+        </Link>
+        <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
+          Project settings
+        </h1>
+      </div>
 
-        <div className="-mx-4 overflow-x-auto border-b px-4 sm:mx-0 sm:px-0">
-          <nav className="flex min-w-max gap-4 sm:gap-6">
-            {settingsNavItems.map((item) => {
-              const isActive = pathname === item.href;
+      <div className="grid items-start gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
+        <nav
+          aria-label="Project settings"
+          className="hide-scrollbar -mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:px-0"
+        >
+          {settingsNavItems.map((item) => {
+            const isActive = pathname === item.href;
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2 whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <item.icon className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex h-9 shrink-0 items-center gap-2.5 rounded-md px-2.5 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isActive
+                    ? "bg-selected font-medium text-ink"
+                    : "text-ink-2 hover:bg-hover hover:text-ink",
+                )}
+              >
+                <item.icon
+                  className={cn("size-4", isActive && "text-signal")}
+                  aria-hidden="true"
+                />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-        <div className="w-full">{children}</div>
+        <div className="min-w-0">{children}</div>
       </div>
     </section>
   );

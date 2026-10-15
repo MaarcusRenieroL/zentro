@@ -24,6 +24,15 @@ type Props = {
   // A tab is only offered when its module is enabled.
   showTasks?: boolean;
   showDocs?: boolean;
+  /** Beside every tab: details and the Thread. */
+  aside?: ReactNode;
+  /** The Overview's brief: who leads it, when it last changed, who works on it. */
+  brief?: {
+    owner: string;
+    updatedAt: Date;
+    editHref?: string | null;
+    contributors: ReactNode;
+  };
 };
 
 type TabId = "overview" | "tasks" | "docs" | "activity";
@@ -134,6 +143,8 @@ export const ProjectTabs: FC<Props> = ({
   totalDocs,
   showTasks = true,
   showDocs = true,
+  aside,
+  brief,
 }) => {
   const [tab, setTab] = useState<TabId>("overview");
 
@@ -169,7 +180,7 @@ export const ProjectTabs: FC<Props> = ({
       <div
         role="tablist"
         aria-label="Project sections"
-        className="hide-scrollbar flex gap-5 overflow-x-auto border-b border-hairline text-sm"
+        className="hide-scrollbar flex gap-5 overflow-x-auto border-b border-hairline text-[15px]"
       >
         {tabs.map(({ id, label, count }) => (
           <button
@@ -203,29 +214,67 @@ export const ProjectTabs: FC<Props> = ({
         </span>
       </div>
 
-      <div role="tabpanel" className="mt-5">
-        {tab === "overview" ? (
-          <Panel title="Project Overview">
-            <p className="text-sm leading-6 text-ink-2">
-              {description ||
-                "Use this space for the project brief, scope, and next steps."}
-            </p>
-          </Panel>
-        ) : null}
+      <div className="mt-6 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div role="tabpanel" className="min-w-0">
+          {tab === "overview" ? (
+            <div className="flex flex-col gap-7">
+              <section
+                aria-label="Project brief"
+                className="tile px-6 pt-5 pb-6"
+              >
+                <div className="flex flex-wrap items-baseline gap-2.5 pb-3">
+                  <h2 className="text-base font-semibold">Project brief</h2>
+                  {brief ? (
+                    <span className="font-mono text-xs text-ink-3">
+                      {brief.owner} · updated{" "}
+                      {brief.updatedAt.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  ) : null}
+                  <span className="flex-1" />
+                  {brief?.editHref ? (
+                    <Link
+                      href={brief.editHref}
+                      className="rounded-xs text-[13px] text-signal hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      Edit
+                    </Link>
+                  ) : null}
+                </div>
+                {description ? (
+                  <div className="flex flex-col gap-3 text-[15px] leading-6 whitespace-pre-line">
+                    {description}
+                  </div>
+                ) : (
+                  <p className="text-[15px] leading-6 text-ink-3">
+                    No brief yet. Write the goal, what is in and out of scope,
+                    and when this project is done.
+                  </p>
+                )}
+              </section>
+              {brief?.contributors}
+            </div>
+          ) : null}
 
-        {tab === "tasks" ? (
-          <ProjectTasks tasks={tasks} projectSlug={projectSlug} />
-        ) : null}
+          {tab === "tasks" ? (
+            <ProjectTasks tasks={tasks} projectSlug={projectSlug} />
+          ) : null}
 
-        {tab === "docs" ? <ProjectDocsList projectId={projectId} /> : null}
+          {tab === "docs" ? <ProjectDocsList projectId={projectId} /> : null}
 
-        {tab === "activity" ? (
-          <Panel title="Activity">
-            <ActivityFeed
-              selector={{ projectId }}
-              emptyText="Nothing has happened in this project yet."
-            />
-          </Panel>
+          {tab === "activity" ? (
+            <Panel title="Activity">
+              <ActivityFeed
+                selector={{ projectId }}
+                emptyText="Nothing has happened in this project yet."
+              />
+            </Panel>
+          ) : null}
+        </div>
+        {aside ? (
+          <aside className="flex min-w-0 flex-col gap-4">{aside}</aside>
         ) : null}
       </div>
     </div>

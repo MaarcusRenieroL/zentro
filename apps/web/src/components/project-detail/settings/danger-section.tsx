@@ -13,17 +13,11 @@ import {
   AlertDialogTitle,
 } from "@zentro/ui/components/shadcn/alert-dialog";
 import { Button } from "@zentro/ui/components/shadcn/button";
-import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
 import { Input } from "@zentro/ui/components/shadcn/input";
 import { toastError, toastSuccess } from "@zentro/ui/index";
-import {
-  AlertTriangleIcon,
-  ArchiveIcon,
-  RotateCcwIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { ArchiveIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 
 type ProjectStatus = "active" | "archived";
 
@@ -57,8 +51,35 @@ export const DangerSection: FC<Props> = ({ project }) => {
 
   const trpc = useTrpcClient();
   const router = useRouter();
+  const [counts, setCounts] = useState<{
+    tasks: number;
+    open: number;
+    docs: number;
+  } | null>(null);
 
-  const deleteConfirmation = project.slug;
+  useEffect(() => {
+    let live = true;
+
+    trpc.project.getProjectBySlug
+      .query({ slug: project.slug })
+      .then((data) => {
+        if (live) {
+          setCounts({
+            tasks: data.totalTasks,
+            open: data.openTasks,
+            docs: data.totalDocs,
+          });
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+  }, [project.slug, trpc]);
+
+  // Typing the name, not the slug: the name is what people recognise.
+  const deleteConfirmation = project.name;
   const isArchived = projectStatus === "archived";
   const isDeleteConfirmed = typedConfirmation === deleteConfirmation;
 
@@ -119,85 +140,64 @@ export const DangerSection: FC<Props> = ({ project }) => {
     }
   };
 
+  const row =
+    "flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-6";
+
   return (
-    <div className="space-y-6">
-      <Card className="rounded-xl py-0">
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sunken">
-              {isArchived ? (
-                <RotateCcwIcon className="size-5 text-primary" />
-              ) : (
-                <ArchiveIcon className="size-5 text-primary" />
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <h2 className="font-display text-2xl text-ink">
-                {isArchived ? "Restore project" : "Archive project"}
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                {isArchived
-                  ? "Restoring makes this project active again and available for normal work."
-                  : "Archived projects stay available for reference, but new work should happen in active projects."}
-              </p>
-
-              <Button
-                type="button"
-                variant="secondary"
-                className="mt-5 w-full sm:w-auto"
-                onClick={() => setIsArchiveDialogOpen(true)}
-                disabled={isArchiving || isDeleting}
-              >
-                {isArchived ? (
-                  <RotateCcwIcon className="size-4" />
-                ) : (
-                  <ArchiveIcon className="size-4" />
-                )}
-
-                {isArchiving
-                  ? isArchived
-                    ? "Restoring..."
-                    : "Archiving..."
-                  : isArchived
-                    ? "Restore project"
-                    : "Archive project"}
-              </Button>
-            </div>
+    <div className="flex max-w-[860px] flex-col">
+      <section
+        aria-label="Danger zone"
+        className="overflow-hidden rounded-xl border border-danger/40 bg-surface"
+      >
+        <div className={row}>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <h2 className="text-[15px] font-semibold">
+              {isArchived ? "Restore project" : "Archive project"}
+            </h2>
+            <p className="text-[13px] text-ink-2">
+              {isArchived
+                ? `Brings ${project.name} back to Projects and makes its tasks editable again.`
+                : `Hides ${project.name} from active Projects. You can restore it any time.`}
+            </p>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-md border-destructive/30 bg-destructive/5 py-0 shadow-sm">
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10">
-              <Trash2Icon className="size-5 text-destructive" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <h2 className="font-display text-2xl text-ink">Delete project</h2>
-
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                Delete this project when it is no longer needed. This action
-                permanently removes the project and cannot be undone.
-              </p>
-
-              <Button
-                type="button"
-                variant="destructive"
-                className="mt-5 w-full sm:w-auto"
-                onClick={() => setIsDeleteDialogOpen(true)}
-                disabled={isArchiving || isDeleting}
-              >
-                <Trash2Icon className="size-4" />
-                {isDeleting ? "Deleting..." : "Delete project"}
-              </Button>
-            </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 shrink-0 border-hairline bg-transparent px-3"
+            onClick={() => setIsArchiveDialogOpen(true)}
+            disabled={isArchiving || isDeleting}
+          >
+            {isArchived ? (
+              <RotateCcwIcon className="size-4" />
+            ) : (
+              <ArchiveIcon className="size-4" />
+            )}
+            {isArchived ? "Restore project" : "Archive project"}
+          </Button>
+        </div>
+        <div className={`${row} border-t border-hairline`}>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <h2 className="text-[15px] font-semibold">Delete project</h2>
+            <p className="text-[13px] text-ink-2">
+              Deletes {project.name}
+              {counts
+                ? `, its ${counts.tasks} ${counts.tasks === 1 ? "task" : "tasks"} and ${counts.docs} ${counts.docs === 1 ? "doc" : "docs"}`
+                : ""}{" "}
+              for everyone. This can’t be undone.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 shrink-0 border-danger/50 bg-transparent px-3 text-danger-text hover:bg-danger-subtle"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            disabled={isArchiving || isDeleting}
+          >
+            <Trash2Icon className="size-4" />
+            Delete project
+          </Button>
+        </div>
+      </section>
 
       <AlertDialog
         open={isArchiveDialogOpen}
@@ -208,30 +208,20 @@ export const DangerSection: FC<Props> = ({ project }) => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <div className="flex items-center gap-3 text-left">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-sunken">
-                {isArchived ? (
-                  <RotateCcwIcon className="size-5 text-primary" />
-                ) : (
-                  <ArchiveIcon className="size-5 text-primary" />
-                )}
-              </div>
-
-              <AlertDialogTitle>
-                {isArchived ? "Restore project?" : "Archive project?"}
-              </AlertDialogTitle>
-            </div>
-
+            <AlertDialogTitle>
+              {isArchived
+                ? `Restore ${project.name}?`
+                : `Archive ${project.name}?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {isArchived
-                ? `${project.name} will become active again.`
-                : `${project.name} will be moved out of active work.`}
+                ? `${project.name} will be active again.`
+                : `${project.name} moves out of active work. Nothing is deleted.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isArchiving}>Cancel</AlertDialogCancel>
-
             <AlertDialogAction
               onClick={handleArchiveToggle}
               disabled={isArchiving}
@@ -262,38 +252,45 @@ export const DangerSection: FC<Props> = ({ project }) => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <div className="flex items-center gap-3 text-left">
-              <div className="flex size-9 items-center justify-center rounded-md bg-destructive/10">
-                <AlertTriangleIcon className="size-5 text-destructive" />
-              </div>
-
-              <AlertDialogTitle>Delete project?</AlertDialogTitle>
-            </div>
-
+            <AlertDialogTitle>Delete {project.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {project.name}.
+              This deletes the project for everyone. It can’t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <p className="mt-4 text-sm text-muted-foreground">
-            Type{" "}
-            <span className="rounded bg-secondary px-1.5 py-1 font-mono text-xs text-foreground">
-              {deleteConfirmation}
-            </span>{" "}
-            to confirm.
-          </p>
+          {counts ? (
+            <ul className="flex flex-col gap-1.5 rounded-md border border-hairline px-4 py-3 text-sm">
+              <li className="flex gap-3">
+                <span className="w-8 text-right font-mono">{counts.tasks}</span>
+                tasks, including {counts.open} open
+              </li>
+              <li className="flex gap-3">
+                <span className="w-8 text-right font-mono">{counts.docs}</span>
+                docs and their comments
+              </li>
+            </ul>
+          ) : null}
 
-          <Input
-            value={typedConfirmation}
-            onChange={(event) => setTypedConfirmation(event.target.value)}
-            placeholder="Type project slug"
-            className="mt-3"
-            disabled={isDeleting}
-          />
+          <label className="flex flex-col gap-1.5 text-[13px]">
+            <span>
+              Type{" "}
+              <span className="font-mono font-semibold text-ink">
+                {deleteConfirmation}
+              </span>{" "}
+              to confirm
+            </span>
+            <Input
+              value={typedConfirmation}
+              onChange={(event) => setTypedConfirmation(event.target.value)}
+              aria-label={`Type ${deleteConfirmation} to confirm`}
+              autoComplete="off"
+              className="h-11 rounded-md border-hairline text-[15px]"
+              disabled={isDeleting}
+            />
+          </label>
 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={!isDeleteConfirmed || isDeleting}

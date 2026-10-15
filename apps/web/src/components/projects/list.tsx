@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { FolderKanbanIcon, StarIcon } from "lucide-react";
 
-import { EmptyState } from "@zentro/ui/components/empty-state";
 import { cn } from "@zentro/ui/lib/utils";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
+import { ActorAvatar } from "~/src/components/actor-avatar";
 import { paths } from "~/src/lib/paths";
 
 export type ProjectListItem = {
@@ -21,6 +21,10 @@ export type ProjectListItem = {
   taskKeyPrefix?: string | null;
   totalTasks?: number | null;
   doneTasks?: number | null;
+  overdueTasks?: number | null;
+  startedTasks?: number | null;
+  /** Up to three people most recently given work here. */
+  contributors?: string[];
   updatedAt: Date;
 };
 
@@ -63,19 +67,83 @@ function formatUpdated(updatedAt: Date) {
   });
 }
 
-function StatusPill({ status }: { status: string }) {
-  const archived = status === "archived";
+type Health = "archived" | "risk" | "planning" | "track" | "active";
+
+/** Where a project stands, read from its tasks rather than typed in. */
+export function projectHealth(project: ProjectListItem): Health {
+  if (project.status === "archived") return "archived";
+  if (project.totalTasks == null) return "active";
+  if ((project.overdueTasks ?? 0) > 0) return "risk";
+  if (!project.totalTasks || !project.startedTasks) return "planning";
+
+  return "track";
+}
+
+const healthLabel: Record<Health, string> = {
+  archived: "Archived",
+  risk: "At risk",
+  planning: "Planning",
+  track: "On track",
+  active: "Active",
+};
+
+export function StatusPill({ project }: { project: ProjectListItem }) {
+  const health = projectHealth(project);
 
   return (
-    <span className="flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-tint-chip px-2 text-xs">
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-1.5 rounded-full",
-          archived ? "border border-ink-3" : "bg-status-done",
-        )}
-      />
-      {archived ? "Archived" : "Active"}
+    <span
+      title={
+        health === "risk"
+          ? `${project.overdueTasks} overdue ${project.overdueTasks === 1 ? "task" : "tasks"}`
+          : undefined
+      }
+      className={cn(
+        "inline-flex h-[22px] w-fit items-center gap-1.5 rounded-sm border bg-tint-chip px-2 text-xs",
+        health === "risk"
+          ? "border-danger/40 text-danger-text"
+          : health === "planning"
+            ? "border-dashed border-line-strong text-ink-2"
+            : "border-hairline",
+      )}
+    >
+      {health === "risk" ? (
+        <span
+          aria-hidden="true"
+          className="size-1.5 rotate-45 rounded-[1px] bg-current"
+        />
+      ) : (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "size-1.5 rounded-full",
+            health === "track" || health === "active"
+              ? "bg-status-done"
+              : "border border-ink-3",
+          )}
+        />
+      )}
+      {healthLabel[health]}
+    </span>
+  );
+}
+
+function Contributors({ names }: { names: string[] }) {
+  if (!names.length) return null;
+
+  return (
+    <span className="flex" aria-label={`Working here: ${names.join(", ")}`}>
+      {names.map((name, index) => (
+        <span
+          key={name}
+          title={name}
+          className={cn(
+            "rounded-full ring-2 ring-surface",
+            index > 0 && "-ml-1.5",
+          )}
+        >
+          <ActorAvatar name={name} size={22} />
+        </span>
+      ))}
     </span>
   );
 }
@@ -124,16 +192,16 @@ function Tile({
 
   return (
     <article className="tile group relative flex flex-col overflow-hidden transition-colors hover:border-ink-3">
-      <header
-        className={cn(
-          "flex h-[52px] items-center gap-2.5 px-4",
-          tintFor(project.id),
-        )}
-      >
-        <span className="flex size-6 items-center justify-center rounded-md bg-tint-chip font-mono text-[11px]">
+      <header className="flex h-14 items-center gap-2.5 bg-tint-projects px-3.5">
+        <span
+          className={cn(
+            "flex size-[30px] items-center justify-center rounded-sm border border-hairline font-mono text-xs",
+            tintFor(project.id),
+          )}
+        >
           {project.name.charAt(0).toUpperCase()}
         </span>
-        <StatusPill status={project.status} />
+        <StatusPill project={project} />
         <span className="flex-1" />
         <Star project={project} active={favorite} onToggle={onToggleFavorite} />
       </header>
@@ -174,13 +242,14 @@ function Tile({
           </span>
         </div>
 
-        <div className="mt-auto flex items-center gap-2 text-[13px] text-ink-2">
+        <div className="mt-auto flex items-center gap-2 border-t border-hairline pt-3.5 text-[13px] text-ink-2">
           <span
             aria-hidden="true"
             className="size-2 rounded-[3px] border border-hairline bg-tint-teams"
           />
           {project.teamName ?? "Workspace level"}
           <span className="flex-1" />
+          <Contributors names={project.contributors ?? []} />
           <span className="font-mono text-xs text-ink-3">
             {formatUpdated(project.updatedAt)}
           </span>
@@ -230,7 +299,7 @@ function Row({
       <span className="hidden w-24 shrink-0 font-mono text-xs text-ink-2 md:block">
         {done}/{total} done
       </span>
-      <StatusPill status={project.status} />
+      <StatusPill project={project} />
       <span className="hidden w-32 truncate text-xs text-ink-2 lg:block">
         {project.teamName ?? "Workspace level"}
       </span>
@@ -270,15 +339,19 @@ export const ProjectList = ({
 
   if (projects.length === 0) {
     return (
-      <EmptyState
-        icon={<FolderKanbanIcon className="size-4" aria-hidden="true" />}
-        title={hasFilters ? "No matching projects" : "No projects yet"}
-        description={
-          hasFilters
-            ? "Try a different project name, slug, team, or description."
-            : "Create a project to start organizing and tracking work across your team."
-        }
-      />
+      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line-strong px-6 py-16 text-center">
+        <p className="font-serif-italic text-[2.5rem] leading-none text-balance">
+          {hasFilters ? "No projects match these filters." : "No projects yet."}
+        </p>
+        <p className="max-w-[460px] text-[15px] text-ink-2">
+          {hasFilters
+            ? "Try a different name, team or the Favorites filter."
+            : "A project groups tasks and docs under one key, like ZEN. Tasks you create inside it are numbered ZEN-1, ZEN-2 and so on."}
+        </p>
+        {hasFilters ? null : (
+          <p className="text-[13px] text-ink-3">Use New project above.</p>
+        )}
+      </div>
     );
   }
 

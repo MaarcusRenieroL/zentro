@@ -3,9 +3,7 @@
 import { paths } from "~/src/lib/paths";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTrpcClient } from "@zentro/api/react";
-import { Badge } from "@zentro/ui/components/shadcn/badge";
 import { Button } from "@zentro/ui/components/shadcn/button";
-import { Card, CardContent } from "@zentro/ui/components/shadcn/card";
 import { Input } from "@zentro/ui/components/shadcn/input";
 import { Label } from "@zentro/ui/components/shadcn/label";
 import {
@@ -16,16 +14,8 @@ import {
   SelectValue,
 } from "@zentro/ui/components/shadcn/select";
 import { Textarea } from "@zentro/ui/components/shadcn/textarea";
-import { toastError, toastSuccess } from "@zentro/ui/index";
-import {
-  CheckCircle2Icon,
-  ClockIcon,
-  EyeIcon,
-  RotateCcwIcon,
-  RocketIcon,
-  UsersIcon,
-  UserIcon,
-} from "lucide-react";
+import { cn, toastError, toastSuccess } from "@zentro/ui/index";
+import { CheckCircle2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FC, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -45,6 +35,7 @@ type Props = {
     teamColor: string | null;
     status: string;
     owner: string;
+    taskKeyPrefix?: string | null;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -82,7 +73,7 @@ export const GeneralSection: FC<Props> = ({ project }) => {
     handleSubmit,
     reset,
     watch,
-    formState: { errors, isDirty, isSubmitting },
+    formState: { errors, isDirty, isSubmitting, dirtyFields },
   } = useForm<ProjectGeneralSectionFormValues>({
     resolver: zodResolver(projectGeneralSectionSchema),
     defaultValues: {
@@ -174,127 +165,168 @@ export const GeneralSection: FC<Props> = ({ project }) => {
     }
   };
 
+  const changed = (
+    [
+      ["name", "the name"],
+      ["slug", "the URL"],
+      ["description", "the description"],
+      ["teamId", "the team"],
+    ] as const
+  )
+    .filter(([key]) => dirtyFields[key])
+    .map(([, label]) => label);
+  const changedText =
+    changed.length > 1
+      ? `${changed.slice(0, -1).join(", ")} and ${changed[changed.length - 1]}`
+      : changed[0];
+  const fieldBox = (invalid: boolean) =>
+    cn(
+      "h-11 rounded-md border-hairline bg-surface text-[15px] shadow-none",
+      invalid && "border-danger",
+    );
+  const descriptionLength = (preview.description ?? "").length;
+
   return (
     <form
       noValidate
-      className="space-y-6 pb-24"
+      className="flex flex-col gap-6 pb-6"
       onSubmit={handleSubmit(handleSave)}
     >
       {saveState === "saved" ? (
-        <div className="flex items-center gap-3 rounded-md border border-success/30 bg-success-subtle px-4 py-3 text-sm text-foreground">
+        <div
+          role="status"
+          className="flex items-center gap-3 rounded-md border border-success/30 bg-success-subtle px-4 py-3 text-sm"
+        >
           <CheckCircle2Icon className="size-4 text-success" />
           Project settings saved.
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div>
-          <div className="max-w-xl space-y-5">
-            <Controller
-              name="name"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="project-name">Project name</Label>
-                  <Input
-                    id="project-name"
+      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="flex max-w-[620px] flex-col gap-5">
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="project-name" className="text-[13px]">
+                  Name
+                </Label>
+                <Input
+                  id="project-name"
+                  autoComplete="off"
+                  aria-invalid={Boolean(errors.name)}
+                  className={fieldBox(Boolean(errors.name))}
+                  {...field}
+                  onChange={(event) => {
+                    field.onChange(event);
+                    setSaveState("idle");
+                  }}
+                />
+                <FieldError message={errors.name?.message} />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="slug"
+            control={control}
+            render={({ field }) => (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="project-slug" className="text-[13px]">
+                  URL
+                </Label>
+                <div
+                  className={cn(
+                    "flex h-11 items-center rounded-md border bg-surface pl-3 focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/22",
+                    errors.slug ? "border-danger" : "border-hairline",
+                  )}
+                >
+                  <span className="shrink-0 font-mono text-[13px] text-ink-3">
+                    /projects/
+                  </span>
+                  <input
+                    id="project-slug"
                     autoComplete="off"
-                    aria-invalid={Boolean(errors.name)}
+                    aria-invalid={Boolean(errors.slug)}
+                    className="h-full min-w-0 flex-1 bg-transparent pr-3 pl-1 font-mono text-sm outline-none"
                     {...field}
                     onChange={(event) => {
                       field.onChange(event);
                       setSaveState("idle");
                     }}
                   />
-                  {errors.name ? (
-                    <p className="text-sm text-destructive">
-                      {errors.name.message}
-                    </p>
-                  ) : null}
                 </div>
-              )}
-            />
+                {errors.slug ? (
+                  <FieldError message={errors.slug.message} />
+                ) : (
+                  <p className="text-[13px] text-ink-3">
+                    Lowercase letters, numbers and hyphens. Changing it changes
+                    the project’s address.
+                  </p>
+                )}
+              </div>
+            )}
+          />
 
-            <Controller
-              name="slug"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="project-slug">Slug</Label>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <span className="text-sm text-muted-foreground">
-                      /projects/
-                    </span>
-                    <Input
-                      id="project-slug"
-                      autoComplete="off"
-                      aria-invalid={Boolean(errors.slug)}
-                      className="sm:max-w-sm"
-                      {...field}
-                      onChange={(event) => {
-                        field.onChange(event);
-                        setSaveState("idle");
-                      }}
-                    />
-                  </div>
-                  {errors.slug ? (
-                    <p className="text-sm text-destructive">
-                      {errors.slug.message}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Lowercase letters, numbers, and hyphens only.
-                    </p>
-                  )}
-                </div>
-              )}
-            />
+          <Controller
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="project-description" className="text-[13px]">
+                  Description
+                </Label>
+                <Textarea
+                  id="project-description"
+                  rows={3}
+                  aria-invalid={Boolean(errors.description)}
+                  placeholder="What is this project for?"
+                  className="min-h-20 rounded-md border-hairline bg-surface text-[15px] shadow-none"
+                  {...field}
+                  onChange={(event) => {
+                    field.onChange(event);
+                    setSaveState("idle");
+                  }}
+                />
+                {errors.description ? (
+                  <FieldError message={errors.description.message} />
+                ) : (
+                  <p className="text-[13px] text-ink-3">
+                    Shown on the project tile and overview.{" "}
+                    {descriptionLength.toLocaleString()} characters.
+                  </p>
+                )}
+              </div>
+            )}
+          />
 
-            <Controller
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="project-description">Description</Label>
-                  <Textarea
-                    id="project-description"
-                    rows={5}
-                    aria-invalid={Boolean(errors.description)}
-                    placeholder="What is this project for?"
-                    {...field}
-                    onChange={(event) => {
-                      field.onChange(event);
-                      setSaveState("idle");
-                    }}
-                  />
-                  {errors.description ? (
-                    <p className="text-sm text-destructive">
-                      {errors.description.message}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Keep it short. This appears on the project overview.
-                    </p>
-                  )}
-                </div>
-              )}
-            />
-
+          <div className="grid gap-3 sm:grid-cols-2">
             <Controller
               name="teamId"
               control={control}
               render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="project-team">Team</Label>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="project-team" className="text-[13px]">
+                    Team
+                  </Label>
                   <Select
                     value={field.value ?? "workspace"}
                     onValueChange={(value) => {
+                      if (value === "") return;
                       field.onChange(value === "workspace" ? null : value);
                       setSaveState("idle");
                     }}
                     disabled={isLoadingTeams}
                   >
-                    <SelectTrigger id="project-team" className="sm:max-w-sm">
+                    <SelectTrigger
+                      id="project-team"
+                      className="h-11 w-full justify-start gap-2.5 rounded-md border-hairline bg-surface text-[15px] shadow-none data-[size=default]:h-11 [&>svg:last-child]:ml-auto"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="size-2.5 rounded-[3px] border border-hairline bg-tint-teams"
+                      />
                       <SelectValue
                         placeholder={
                           isLoadingTeams ? "Loading teams..." : "Select team"
@@ -310,135 +342,117 @@ export const GeneralSection: FC<Props> = ({ project }) => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Tasks and docs created under this project inherit this team.
-                  </p>
                 </div>
               )}
             />
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[13px] font-medium">Key prefix</span>
+              <span className="flex h-11 items-center rounded-md border border-hairline bg-sunken px-3 font-mono text-sm text-ink-2">
+                {project.taskKeyPrefix ?? "None"}
+              </span>
+            </div>
           </div>
+          <p className="-mt-2 text-[13px] text-ink-3">
+            Tasks and docs created here inherit the team. The key prefix is set
+            when the project is created, so task keys never change.
+          </p>
         </div>
 
-        <aside className="space-y-6">
-          <Card className="rounded-xl py-0">
-            <CardContent className="p-4 sm:p-5">
-              <div className="mb-4 flex items-center gap-2">
-                <EyeIcon className="size-4 text-muted-foreground" />
-                <h2 className="text-base font-semibold text-foreground">
-                  Preview
-                </h2>
-              </div>
-
-              <div className="rounded-xl border border-hairline/60 bg-surface/50 p-4">
-                <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-sunken">
-                  <RocketIcon className="size-5 text-primary" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <h3 className="truncate font-display text-2xl text-ink">
-                    {preview.name || "Untitled project"}
-                  </h3>
-                  <Badge
-                    variant={
-                      project.status === "active" ? "default" : "secondary"
-                    }
-                  >
-                    {project.status === "active" ? "Active" : "Archived"}
-                  </Badge>
-                </div>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {preview.slug || "project-slug"}
-                </p>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {preview.description || "No description provided."}
-                </p>
-                <Badge variant="outline" className="mt-3">
-                  {previewTeam?.name ?? project.teamName ?? "Workspace level"}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-xl py-0">
-            <CardContent className="space-y-4 p-4 sm:p-5">
-              <h2 className="text-base font-semibold text-foreground">
-                Metadata
-              </h2>
-
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start gap-3">
-                  <UserIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <p className="text-muted-foreground">Owner</p>
-                    <p className="truncate font-medium text-foreground">
-                      {project.owner}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <ClockIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-muted-foreground">Created</p>
-                    <p className="font-medium text-foreground">
-                      {formatDate(project.createdAt)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <UsersIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0">
-                    <p className="text-muted-foreground">Team</p>
-                    <p className="truncate font-medium text-foreground">
-                      {project.teamName ?? "Workspace level"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <ClockIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-muted-foreground">Updated</p>
-                    <p className="font-medium text-foreground">
-                      {formatDate(project.updatedAt)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <aside className="flex flex-col gap-3">
+          <span className="eyebrow">Preview</span>
+          <div className="tile overflow-hidden">
+            <div className="flex h-14 items-center gap-2.5 bg-tint-projects px-3.5">
+              <span className="flex size-[30px] items-center justify-center rounded-sm border border-hairline bg-tint-chip font-mono text-xs">
+                {(preview.name || "?").charAt(0).toUpperCase()}
+              </span>
+              <span className="inline-flex h-[22px] items-center gap-1.5 rounded-sm border border-hairline bg-tint-chip px-2 text-xs">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    project.status === "archived"
+                      ? "border border-ink-3"
+                      : "bg-status-done",
+                  )}
+                />
+                {project.status === "archived" ? "Archived" : "Active"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-1.5 px-4 pt-3.5 pb-4">
+              <h3 className="flex items-baseline gap-2 text-base font-semibold">
+                <span className="truncate">
+                  {preview.name || "Untitled project"}
+                </span>
+                <span className="font-mono text-xs font-normal text-ink-3">
+                  {project.taskKeyPrefix ?? preview.slug}
+                </span>
+              </h3>
+              <p className="line-clamp-3 text-[13px] leading-5 text-ink-2">
+                {preview.description || "No description provided."}
+              </p>
+              <p className="flex items-center gap-2 pt-1 text-[13px] text-ink-2">
+                <span
+                  aria-hidden="true"
+                  className="size-2 rounded-[3px] border border-hairline bg-tint-teams"
+                />
+                {previewTeam?.name ??
+                  (preview.teamId ? project.teamName : null) ??
+                  "Workspace level"}
+              </p>
+            </div>
+          </div>
+          <p className="text-[13px] text-ink-3">
+            How the project appears on the projects list. Created{" "}
+            {formatDate(project.createdAt)} by {project.owner}.
+          </p>
         </aside>
       </div>
 
       {isDirty ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-10">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              You have unsaved changes.
-            </p>
-            <div className="grid gap-2 sm:flex">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                <RotateCcwIcon className="size-4" />
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting}
-              >
-                <CheckCircle2Icon className="size-4" />
-                {isSubmitting ? "Saving..." : "Save changes"}
-              </Button>
-            </div>
-          </div>
+        <div
+          role="status"
+          className="sticky bottom-4 z-(--z-sticky) flex max-w-[620px] flex-wrap items-center gap-2.5 rounded-xl border border-hairline bg-overlay py-2.5 pr-2.5 pl-4 shadow-lg motion-safe:animate-fade-up"
+        >
+          <span
+            aria-hidden="true"
+            className="size-2 rounded-full bg-status-progress"
+          />
+          <span className="text-sm">
+            You changed {changedText ?? "this project"}.
+          </span>
+          <span className="flex-1" />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+            className="h-9 border-hairline bg-transparent px-3"
+          >
+            Discard
+          </Button>
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+            className="h-9 px-3 font-semibold"
+          >
+            Save changes
+          </Button>
         </div>
       ) : null}
     </form>
   );
 };
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+
+  return (
+    <p role="alert" className="flex gap-1.5 text-[13px] text-danger-text">
+      <span aria-hidden="true" className="font-mono font-medium">
+        !
+      </span>
+      {message}
+    </p>
+  );
+}

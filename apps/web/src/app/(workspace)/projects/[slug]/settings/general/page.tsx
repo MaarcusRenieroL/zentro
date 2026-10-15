@@ -29,6 +29,7 @@ export default async function GeneralSettingsPage({
       name: projects.name,
       description: projects.description,
       slug: projects.slug,
+      taskKeyPrefix: projects.taskKeyPrefix,
       teamId: projects.teamId,
       teamName: teams.name,
       teamColor: teams.color,
@@ -82,6 +83,7 @@ export default async function GeneralSettingsPage({
           teamColor: project.teamColor,
           status: project.status,
           owner: project.owner ?? "Unknown owner",
+          taskKeyPrefix: project.taskKeyPrefix,
           createdAt: project.createdAt,
           updatedAt: project.updatedAt,
         }}

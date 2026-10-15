@@ -22,7 +22,16 @@ import {
   teams,
   users,
 } from "@zentro/db/schema";
-import { and, asc, count, eq, inArray, isNull, sql } from "@zentro/db/drizzle";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  sql,
+} from "@zentro/db/drizzle";
 
 const createTaskKeyPrefixBase = (slug: string) => {
   const parts = slug.split("-").filter(Boolean);
@@ -231,6 +240,15 @@ export const projectRouter = router({
               done: sql<number>`count(*) filter (where ${tasks.status} = 'done')`.mapWith(
                 Number,
               ),
+              // Open work past its due date, and work that has begun.
+              overdue:
+                sql<number>`count(*) filter (where ${tasks.status} <> 'done' and ${tasks.dueAt} < now())`.mapWith(
+                  Number,
+                ),
+              started:
+                sql<number>`count(*) filter (where ${tasks.status} in ('in-progress', 'review', 'done'))`.mapWith(
+                  Number,
+                ),
             })
             .from(tasks)
             .where(
@@ -246,6 +264,35 @@ export const projectRouter = router({
       const byProject = new Map(
         progress.map((row) => [row.projectId, row] as const),
       );
+      // The people most recently given work in each project, newest first.
+      const assignees = countable.length
+        ? await db
+            .select({
+              projectId: tasks.projectId,
+              name: users.name,
+              last: sql<Date>`max(${tasks.updatedAt})`,
+            })
+            .from(tasks)
+            .innerJoin(members, eq(members.id, tasks.assignedToMemberId))
+            .innerJoin(users, eq(users.id, members.userId))
+            .where(
+              and(
+                eq(tasks.organizationId, activeOrganization.id),
+                inArray(tasks.projectId, countable),
+                isNull(tasks.deletedAt),
+              ),
+            )
+            .groupBy(tasks.projectId, users.id, users.name)
+            .orderBy(desc(sql`max(${tasks.updatedAt})`))
+        : [];
+      const contributors = new Map<string, string[]>();
+
+      for (const row of assignees) {
+        const list = contributors.get(row.projectId) ?? [];
+
+        if (list.length < 3) list.push(row.name);
+        contributors.set(row.projectId, list);
+      }
 
       return projectList.map((project) => ({
         ...project,
@@ -256,6 +303,13 @@ export const projectRouter = router({
         doneTasks: taskProjectIds.has(project.id)
           ? (byProject.get(project.id)?.done ?? 0)
           : null,
+        overdueTasks: taskProjectIds.has(project.id)
+          ? (byProject.get(project.id)?.overdue ?? 0)
+          : null,
+        startedTasks: taskProjectIds.has(project.id)
+          ? (byProject.get(project.id)?.started ?? 0)
+          : null,
+        contributors: contributors.get(project.id) ?? [],
       }));
     },
   ),
