@@ -11,6 +11,7 @@ import {
   RichTextPreview,
 } from "@zentro/ui/components/rich-text-editor";
 
+import { StarButton } from "~/src/components/favorites/star-button";
 import { LinkedWork } from "~/src/components/links/linked-work";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
@@ -198,6 +199,13 @@ function TaskDetailHeader({ task }: { task: TaskDetail }) {
         <LinkIcon />
         Copy link
       </Button>
+      <StarButton
+        type="task"
+        id={task.id}
+        title={task.name}
+        href={`/tasks/${task.key}`}
+        className="size-[26px]"
+      />
     </div>
   );
 }

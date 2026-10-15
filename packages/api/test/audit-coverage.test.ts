@@ -19,6 +19,7 @@ const mutations = procedures.filter(({ def }) => def.type === "mutation");
 // Mutations that legitimately record no event, each with the reason. A new
 // mutation must declare `meta.audit` or be added here on purpose.
 const recordsNothing: Record<string, string> = {
+  "favorite.toggle": "A personal star; it changes nothing anyone else sees.",
   "notification.markRead":
     "A personal read mark on your own inbox; it changes nothing anyone else sees.",
   "notification.markAllRead":

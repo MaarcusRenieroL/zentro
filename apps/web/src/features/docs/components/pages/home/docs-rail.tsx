@@ -6,12 +6,14 @@ import {
   ClockIcon,
   FileTextIcon,
   FolderIcon,
+  StarIcon,
   Trash2Icon,
   UserIcon,
 } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
 
+import { useFavorites } from "~/src/components/projects/favorites";
 import { paths } from "~/src/lib/paths";
 
 import type { DocsListItem } from "../../../lib/docs";
@@ -28,6 +30,7 @@ const item =
 
 /** The left column of Docs home: docs by project, then the other lists. */
 export const DocsRail: FC<Props> = ({ docs, project, onProject }) => {
+  const favorites = useFavorites();
   const byProject = new Map<string, number>();
 
   for (const doc of docs) {
@@ -41,8 +44,30 @@ export const DocsRail: FC<Props> = ({ docs, project, onProject }) => {
     .sort(([a], [b]) => a.localeCompare(b));
   const loose = byProject.get("") ?? 0;
 
+  const starred = (favorites.items ?? []).filter(
+    (entry) => entry.type === "doc",
+  );
+
   return (
     <nav aria-label="Docs" className="flex flex-col gap-5">
+      {starred.length ? (
+        <div className="flex flex-col gap-0.5">
+          <h2 className="eyebrow px-2 pb-1.5">Favorites</h2>
+          {starred.map((entry) => (
+            <Link
+              key={entry.id}
+              href={entry.href}
+              className={cn(item, "text-ink-2 hover:bg-hover hover:text-ink")}
+            >
+              <StarIcon
+                className="size-4 fill-signal text-signal"
+                aria-hidden="true"
+              />
+              <span className="flex-1 truncate">{entry.title}</span>
+            </Link>
+          ))}
+        </div>
+      ) : null}
       <div className="flex flex-col gap-0.5">
         <h2 className="eyebrow px-2 pb-1.5">By project</h2>
         <button

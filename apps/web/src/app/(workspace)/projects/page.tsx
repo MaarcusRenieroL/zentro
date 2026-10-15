@@ -8,6 +8,7 @@ import { useTrpcClient } from "@zentro/api/react";
 import { ErrorState } from "@zentro/ui/components/error-state";
 import { cn } from "@zentro/ui/lib/utils";
 
+import { paths } from "~/src/lib/paths";
 import { useFavoriteProjects } from "~/src/components/projects/favorites";
 import {
   ProjectList,
@@ -200,7 +201,15 @@ export default function ProjectsPage() {
             searchQuery.trim() || teamFilter !== "all" || favoritesOnly,
           )}
           favoriteIds={favorites.ids}
-          onToggleFavorite={favorites.toggle}
+          onToggleFavorite={(id) => {
+            const starred = projects.find((entry) => entry.id === id);
+
+            favorites.toggle(
+              id,
+              starred?.name ?? "",
+              starred ? paths.project(starred.slug) : "",
+            );
+          }}
           groupLabel={
             status === "active"
               ? "All active projects"

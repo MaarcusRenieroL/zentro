@@ -72,6 +72,7 @@ import {
   getDocTitle,
 } from "../../../lib/docs";
 import { ActorAvatar } from "~/src/components/actor-avatar";
+import { StarButton } from "~/src/components/favorites/star-button";
 import { LinkedWork } from "~/src/components/links/linked-work";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import {
@@ -1014,6 +1015,12 @@ export function NotionEditorPage({ slug }: { slug: string }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
+            <StarButton
+              type="doc"
+              id={doc.id}
+              title={getDocTitle(title)}
+              href={`/docs/${doc.slug}`}
+            />
             <Button
               variant="outline"
               size="sm"

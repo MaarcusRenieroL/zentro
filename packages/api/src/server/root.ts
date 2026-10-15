@@ -7,6 +7,7 @@ import { auditRouter } from "./routers/audit";
 import { commentRouter } from "./routers/comment";
 import { docsRouter } from "./routers/doc";
 import { fileRouter } from "./routers/file";
+import { favoriteRouter } from "./routers/favorite";
 import { invitationRouter } from "./routers/invitation";
 import { linkRouter } from "./routers/link";
 import { notificationRouter } from "./routers/notification";
@@ -29,6 +30,7 @@ export const appRouter = router({
   comment: commentRouter,
   docs: docsRouter,
   file: fileRouter,
+  favorite: favoriteRouter,
   invitation: invitationRouter,
   link: linkRouter,
   member: memberRouter,

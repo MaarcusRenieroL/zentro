@@ -26,6 +26,10 @@ const unmanaged: Record<string, string> = {
     "Signed-in members read their own permissions; nothing about anyone else.",
   "permissions.check":
     "Signed-in members read their own permissions for one project or team.",
+  "favorite.list":
+    "Signed-in members read their own stars; each one is filtered by the view permission it needs.",
+  "favorite.toggle":
+    "Signed-in members star what they can already view; the handler checks that view permission.",
   "notification.list":
     "Signed-in members read their own inbox; each source is filtered by the task and doc permissions they already hold.",
   "notification.markRead": "Signed-in members mark their own inbox items read.",

@@ -11,3 +11,4 @@ export * from "./permissions";
 export * from "./activity";
 export * from "./notification";
 export * from "./link";
+export * from "./favorite";

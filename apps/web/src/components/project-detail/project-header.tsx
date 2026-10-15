@@ -66,7 +66,9 @@ export const ProjectHeader: FC<Props> = ({
                 ? `Remove ${title} from favorites`
                 : `Add ${title} to favorites`
             }
-            onClick={() => favorites.toggle(projectId)}
+            onClick={() =>
+              favorites.toggle(projectId, title, paths.project(slug))
+            }
             className="flex size-7 items-center justify-center rounded-sm text-ink-2 outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
           >
             <StarIcon
