@@ -72,6 +72,7 @@ export function SiteTemplate({ v }: { v: any }) {
     resetForm,
     rmGroups,
     roleNames,
+    rootClass,
     rootRef,
     rootStyle,
     rv,
@@ -110,7 +111,7 @@ export function SiteTemplate({ v }: { v: any }) {
   } = v;
 
   return (
-    <div ref={rootRef} style={rootStyle}>
+    <div ref={rootRef} className={rootClass} style={rootStyle}>
       {showNav ? (
         <>
           <header
@@ -123,7 +124,7 @@ export function SiteTemplate({ v }: { v: any }) {
               alignItems: "center",
               gap: "24px",
               padding: "0 var(--pr) 0 var(--navPL)",
-              background: "var(--navBg)",
+              background: "var(--nav-bg)",
               backdropFilter: "blur(16px)",
               borderBottom: "1px solid var(--line2)",
             }}
@@ -390,7 +391,7 @@ export function SiteTemplate({ v }: { v: any }) {
                   height: "52px",
                   borderRadius: "999px",
                   background: "var(--btn)",
-                  color: "var(--btnInk)",
+                  color: "var(--btn-ink)",
                   fontSize: "16px",
                   fontWeight: "500",
                   textDecoration: "none",
@@ -609,7 +610,7 @@ export function SiteTemplate({ v }: { v: any }) {
                               padding: "0 24px",
                               borderRadius: "999px",
                               background: "var(--btn)",
-                              color: "var(--btnInk)",
+                              color: "var(--btn-ink)",
                               fontSize: "15px",
                               fontWeight: "500",
                               textDecoration: "none",
@@ -1655,7 +1656,7 @@ export function SiteTemplate({ v }: { v: any }) {
                               padding: "0 24px",
                               borderRadius: "999px",
                               background: "var(--btn)",
-                              color: "var(--btnInk)",
+                              color: "var(--btn-ink)",
                               fontSize: "15px",
                               fontWeight: "500",
                               textDecoration: "none",
@@ -2069,7 +2070,7 @@ export function SiteTemplate({ v }: { v: any }) {
                               padding: "0 24px",
                               borderRadius: "999px",
                               background: "var(--btn)",
-                              color: "var(--btnInk)",
+                              color: "var(--btn-ink)",
                               fontSize: "15px",
                               fontWeight: "500",
                               textDecoration: "none",
@@ -4124,7 +4125,7 @@ export function SiteTemplate({ v }: { v: any }) {
                               padding: "0 24px",
                               borderRadius: "999px",
                               background: "var(--btn)",
-                              color: "var(--btnInk)",
+                              color: "var(--btn-ink)",
                               fontSize: "15px",
                               fontWeight: "500",
                               textDecoration: "none",
@@ -4396,9 +4397,9 @@ export function SiteTemplate({ v }: { v: any }) {
                                         pointerEvents: "none",
                                         opacity: ".42",
                                         WebkitMaskImage:
-                                          "linear-gradient(180deg, #000 45%, transparent)",
+                                          "linear-gradient(180deg, black 45%, transparent)",
                                         maskImage:
-                                          "linear-gradient(180deg, #000 45%, transparent)",
+                                          "linear-gradient(180deg, black 45%, transparent)",
                                       }}
                                     >
                                       <div
@@ -4629,7 +4630,7 @@ export function SiteTemplate({ v }: { v: any }) {
                               padding: "0 24px",
                               borderRadius: "999px",
                               background: "var(--btn)",
-                              color: "var(--btnInk)",
+                              color: "var(--btn-ink)",
                               fontSize: "15px",
                               fontWeight: "500",
                               textDecoration: "none",
@@ -5417,7 +5418,7 @@ export function SiteTemplate({ v }: { v: any }) {
                               padding: "0 24px",
                               borderRadius: "999px",
                               background: "var(--btn)",
-                              color: "var(--btnInk)",
+                              color: "var(--btn-ink)",
                               fontSize: "15px",
                               fontWeight: "500",
                               textDecoration: "none",
@@ -5940,7 +5941,7 @@ export function SiteTemplate({ v }: { v: any }) {
                               padding: "0 24px",
                               borderRadius: "999px",
                               background: "var(--btn)",
-                              color: "var(--btnInk)",
+                              color: "var(--btn-ink)",
                               fontSize: "15px",
                               fontWeight: "500",
                               textDecoration: "none",
@@ -6576,7 +6577,7 @@ export function SiteTemplate({ v }: { v: any }) {
                                     borderRadius: "999px",
                                     border: "none",
                                     background: "var(--btn)",
-                                    color: "var(--btnInk)",
+                                    color: "var(--btn-ink)",
                                     fontSize: "15px",
                                     fontWeight: "500",
                                     cursor: "pointer",
@@ -6825,7 +6826,7 @@ export function SiteTemplate({ v }: { v: any }) {
                             padding: "0 24px",
                             borderRadius: "999px",
                             background: "var(--btn)",
-                            color: "var(--btnInk)",
+                            color: "var(--btn-ink)",
                             fontSize: "15px",
                             fontWeight: "500",
                             textDecoration: "none",
@@ -7400,7 +7401,7 @@ export function SiteTemplate({ v }: { v: any }) {
                       padding: "0 30px",
                       borderRadius: "999px",
                       background: "var(--btn)",
-                      color: "var(--btnInk)",
+                      color: "var(--btn-ink)",
                       fontSize: "16px",
                       fontWeight: "500",
                       textDecoration: "none",
