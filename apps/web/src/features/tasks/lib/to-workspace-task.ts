@@ -16,6 +16,7 @@ type ApiTask = {
   status: string;
   priority: string;
   assignee?: string | null;
+  assigneeUserId?: string | null;
   due?: Date | null;
 };
 
@@ -38,6 +39,7 @@ export function toWorkspaceTask(task: ApiTask): WorkspaceTask {
       ? task.priority
       : "medium") as TaskPriority,
     assignee: task.assignee ?? "Unassigned",
+    assigneeUserId: task.assigneeUserId ?? null,
     dueDate: task.due ? task.due.toDateString() : "",
     dueAt: task.due ? task.due.toISOString() : null,
   };

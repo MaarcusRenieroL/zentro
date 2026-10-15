@@ -2,8 +2,8 @@ import type { TaskPriority, TaskStatus } from "./types";
 
 export const statusLabels: Record<TaskStatus, string> = {
   backlog: "Backlog",
-  todo: "To Do",
-  "in-progress": "In Progress",
+  todo: "To do",
+  "in-progress": "In progress",
   review: "Review",
   done: "Done",
 };

@@ -14,10 +14,22 @@ export type WorkspaceTask = {
   status: TaskStatus;
   priority: TaskPriority;
   assignee: string;
+  /** The assignee's user, to tell "my" tasks apart; null when unassigned. */
+  assigneeUserId: string | null;
   dueDate: string;
   // ISO timestamp of the due date; null when the task has none.
   dueAt: string | null;
 };
+
+/** A change made to several tasks at once from the selection bar. */
+export type BulkChange =
+  | { status: TaskStatus }
+  | {
+      assignedToMemberId: string | null;
+      assignee: string;
+      assigneeUserId: string | null;
+    }
+  | { dueAt: string | null };
 
 export type ActivityEvent = {
   id: string;

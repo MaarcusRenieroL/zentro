@@ -1,7 +1,19 @@
-import { ArrowDownUpIcon, LayersIcon, SearchIcon } from "lucide-react";
+import {
+  ArrowDownUpIcon,
+  ChevronDownIcon,
+  LayersIcon,
+  SearchIcon,
+} from "lucide-react";
 import { FC, type ReactNode } from "react";
 
 import { cn } from "@zentro/ui/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@zentro/ui/shadcn/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -21,6 +33,13 @@ const allValue = "__all__";
 export type TaskGroup = "state" | "priority" | "project" | "assignee" | "none";
 export type TaskSort = "due" | "priority" | "key" | "title";
 export type TaskView = "list" | "board" | "calendar";
+export type SavedView = "all" | "mine" | "week";
+
+export const savedViewLabels: Record<SavedView, string> = {
+  all: "All tasks",
+  mine: "My open tasks",
+  week: "Due this week",
+};
 
 export const groupLabels: Record<TaskGroup, string> = {
   state: "State",
@@ -62,6 +81,10 @@ type Props = {
   sort: TaskSort;
   view: TaskView;
   viewControl: ReactNode;
+  savedView: SavedView;
+  onSavedViewChange: (value: SavedView) => void;
+  /** Phones: no grouping, sorting or view switch, and the filters scroll. */
+  compact?: boolean;
   onSearchQueryChange: (value: string) => void;
   onStatusFilterChange: (value: TaskStatus | "all") => void;
   onPriorityFilterChange: (value: TaskPriority | "all") => void;
@@ -101,7 +124,7 @@ function FilterChip({
         aria-label={ariaLabel ?? label}
         className={cn(
           "h-8 shrink-0 gap-1.5 rounded-xl border-hairline bg-transparent px-2.5 text-[13px] shadow-none data-[size=default]:h-8",
-          active && "border-signal/40 bg-signal-subtle",
+          active && "bg-surface",
         )}
       >
         {icon}
@@ -134,6 +157,9 @@ export const TaskWorkspaceHeader: FC<Props> = ({
   group,
   sort,
   viewControl,
+  savedView,
+  onSavedViewChange,
+  compact = false,
   onSearchQueryChange,
   onStatusFilterChange,
   onPriorityFilterChange,
@@ -155,17 +181,48 @@ export const TaskWorkspaceHeader: FC<Props> = ({
     <div className="flex flex-col">
       <div className="flex flex-wrap items-center gap-3">
         {projectScoped ? <p className="eyebrow w-full">Project tasks</p> : null}
-        <h1 className="font-display text-[length:var(--title-size)] leading-[1.1]">
+        <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
           {title}
         </h1>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex h-8 items-center gap-2 rounded-md border border-hairline px-2.5 text-[13px] outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring aria-expanded:bg-hover">
+            <span className="font-mono text-[10px] tracking-[0.08em] text-ink-3">
+              VIEW
+            </span>
+            {savedViewLabels[savedView]}
+            <ChevronDownIcon className="size-3.5" aria-hidden="true" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 min-w-48">
+            <DropdownMenuRadioGroup
+              value={savedView}
+              onValueChange={(value) => onSavedViewChange(value as SavedView)}
+            >
+              {Object.entries(savedViewLabels).map(([value, label]) => (
+                <DropdownMenuRadioItem key={value} value={value}>
+                  {label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <span className="flex-1" />
         <CreateTaskModal onTaskCreated={onTaskCreated} />
       </div>
 
       <ModuleTabs className="mt-4" counts={{ [paths.tasks()]: totalCount }} />
 
-      <div className="mt-3.5 mb-3 flex flex-wrap items-center gap-2">
-        <div className="relative h-8 w-full min-w-0 sm:w-60">
+      <div
+        className={cn(
+          "mt-3.5 mb-3 flex items-center gap-2",
+          compact ? "hide-scrollbar -mx-4 overflow-x-auto px-4" : "flex-wrap",
+        )}
+      >
+        <div
+          className={cn(
+            "relative h-8 min-w-0 shrink-0",
+            compact ? "w-[200px]" : "w-60",
+          )}
+        >
           <SearchIcon
             aria-hidden="true"
             className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3"
@@ -257,45 +314,50 @@ export const TaskWorkspaceHeader: FC<Props> = ({
             Clear
           </button>
         ) : null}
-        <span className="font-mono text-xs text-ink-3">
-          {taskCount} {taskCount === 1 ? "task" : "tasks"}
+        <span className="shrink-0 font-mono text-xs whitespace-nowrap text-ink-3">
+          {filtersActive && taskCount !== totalCount
+            ? `${taskCount} of ${totalCount}`
+            : `${taskCount} ${taskCount === 1 ? "task" : "tasks"}`}
         </span>
 
         <span className="flex-1" />
+        {compact ? null : (
+          <>
+            <FilterChip
+              label="Group"
+              icon={<LayersIcon className="size-3.5" aria-hidden="true" />}
+              showValue
+              active={false}
+              value={group}
+              display={groupLabels[group]}
+              onValueChange={(value) => onGroupChange(value as TaskGroup)}
+            >
+              {Object.entries(groupLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </FilterChip>
 
-        <FilterChip
-          label="Group"
-          icon={<LayersIcon className="size-3.5" aria-hidden="true" />}
-          showValue
-          active={false}
-          value={group}
-          display={groupLabels[group]}
-          onValueChange={(value) => onGroupChange(value as TaskGroup)}
-        >
-          {Object.entries(groupLabels).map(([value, label]) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </FilterChip>
+            <FilterChip
+              label="Sort"
+              icon={<ArrowDownUpIcon className="size-3.5" aria-hidden="true" />}
+              showValue
+              active={false}
+              value={sort}
+              display={sortLabels[sort]}
+              onValueChange={(value) => onSortChange(value as TaskSort)}
+            >
+              {Object.entries(sortLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </FilterChip>
 
-        <FilterChip
-          label="Sort"
-          icon={<ArrowDownUpIcon className="size-3.5" aria-hidden="true" />}
-          showValue
-          active={false}
-          value={sort}
-          display={sortLabels[sort]}
-          onValueChange={(value) => onSortChange(value as TaskSort)}
-        >
-          {Object.entries(sortLabels).map(([value, label]) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </FilterChip>
-
-        {viewControl}
+            {viewControl}
+          </>
+        )}
       </div>
     </div>
   );

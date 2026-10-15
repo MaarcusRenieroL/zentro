@@ -2,15 +2,16 @@
 
 import { useTrpcClient } from "@zentro/api/react";
 import { ErrorState } from "@zentro/ui/components/error-state";
-import { BoardSkeleton, PageSkeleton } from "@zentro/ui/components/skeletons";
+import { ListSkeleton, PageSkeleton } from "@zentro/ui/components/skeletons";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { TaskWorkspace } from "~/src/features/tasks/components/workspace/task-workspace";
+import { toWorkspaceTask } from "~/src/features/tasks/lib/to-workspace-task";
 import {
-  TaskPriority,
   TaskStatus,
+  type BulkChange,
   type WorkspaceTask,
 } from "~/src/features/tasks/lib/types";
 
@@ -21,24 +22,15 @@ const taskStatuses = [
   "review",
   "done",
 ] as const;
-const taskPriorities = ["low", "medium", "high"] as const;
-
-function toTaskStatus(value: string): TaskStatus {
-  return taskStatuses.includes(value as TaskStatus)
-    ? (value as TaskStatus)
-    : "todo";
-}
-
-function toTaskPriority(value: string): TaskPriority {
-  return taskPriorities.includes(value as TaskPriority)
-    ? (value as TaskPriority)
-    : "medium";
-}
 
 function toInitialStatus(value: string | null): TaskStatus | "all" {
   return taskStatuses.includes(value as TaskStatus)
     ? (value as TaskStatus)
     : "all";
+}
+
+function plural(count: number, one: string, many: string) {
+  return count === 1 ? one : `${count} ${many}`;
 }
 
 export default function TasksPage() {
@@ -89,67 +81,103 @@ export default function TasksPage() {
     }
   }
 
-  async function updateTasksStatus(
-    selected: WorkspaceTask[],
-    status: TaskStatus,
-  ) {
-    const targets = selected.filter((task) => task.status !== status);
+  // One change applied to every selected task, optimistically; whatever the
+  // server refuses is reloaded from the server.
+  async function updateTasks(selected: WorkspaceTask[], change: BulkChange) {
+    const targets = selected.filter((task) =>
+      "status" in change
+        ? task.status !== change.status
+        : "dueAt" in change
+          ? task.dueAt !== change.dueAt
+          : task.assigneeUserId !== change.assigneeUserId,
+    );
 
     if (!targets.length) return;
 
     const ids = new Set(targets.map((task) => task.id));
+    const patch: Partial<WorkspaceTask> =
+      "status" in change
+        ? { status: change.status }
+        : "dueAt" in change
+          ? {
+              dueAt: change.dueAt,
+              dueDate: change.dueAt
+                ? new Date(change.dueAt).toDateString()
+                : "",
+            }
+          : {
+              assignee: change.assignee,
+              assigneeUserId: change.assigneeUserId,
+            };
 
     setTasks(
       (current) =>
         current?.map((task) =>
-          ids.has(task.id) ? { ...task, status } : task,
+          ids.has(task.id) ? { ...task, ...patch } : task,
         ) ?? null,
     );
 
+    const input =
+      "status" in change
+        ? { status: change.status }
+        : "dueAt" in change
+          ? { dueAt: change.dueAt ? new Date(change.dueAt) : null }
+          : { assignedToMemberId: change.assignedToMemberId };
     const results = await Promise.allSettled(
       targets.map((task) =>
-        trpc.task.updateTaskByKey.mutate({ key: task.key, status }),
+        trpc.task.updateTaskByKey.mutate({ key: task.key, ...input }),
       ),
     );
-    const failed = results.filter((result) => result.status === "rejected");
+    const rejected = results.filter((result) => result.status === "rejected");
 
-    if (failed.length) {
+    if (rejected.length) {
       toastError(
-        "Some tasks did not move",
-        `${failed.length} of ${targets.length} could not be updated.`,
+        "Some tasks did not change",
+        `${rejected.length} of ${targets.length} could not be updated.`,
       );
       setRefreshToken((token) => token + 1);
     } else {
       toastSuccess(
-        targets.length === 1 ? "Task moved" : `${targets.length} tasks moved`,
+        `${plural(targets.length, "Task", "tasks")} ${
+          "status" in change
+            ? "moved"
+            : "dueAt" in change
+              ? "rescheduled"
+              : "reassigned"
+        }`,
       );
+    }
+  }
+
+  async function deleteTasks(selected: WorkspaceTask[]) {
+    if (!selected.length) return;
+
+    const ids = new Set(selected.map((task) => task.id));
+
+    setTasks((current) => current?.filter((task) => !ids.has(task.id)) ?? null);
+
+    const results = await Promise.allSettled(
+      selected.map((task) =>
+        trpc.task.deleteTaskByKey.mutate({ key: task.key }),
+      ),
+    );
+    const rejected = results.filter((result) => result.status === "rejected");
+
+    if (rejected.length) {
+      toastError(
+        "Some tasks were not deleted",
+        `${rejected.length} of ${selected.length} could not be deleted.`,
+      );
+      setRefreshToken((token) => token + 1);
+    } else {
+      toastSuccess(`${plural(selected.length, "Task", "tasks")} deleted`);
     }
   }
 
   const fetchTasks = useCallback(async () => {
     const data = await trpc.task.getTasksByOrgId.query({});
 
-    return data.map((task) => ({
-      id: task.id,
-      key: task.key,
-
-      title: task.name,
-      description: task.description ?? "",
-
-      projectSlug: task.projectSlug,
-      projectName: task.project,
-      teamId: task.teamId,
-      teamName: task.teamName,
-      teamColor: task.teamColor,
-
-      status: toTaskStatus(task.status),
-      priority: toTaskPriority(task.priority),
-
-      assignee: task.assignee ?? "Unassigned",
-
-      dueDate: task.due ? task.due.toDateString() : "",
-      dueAt: task.due ? task.due.toISOString() : null,
-    }));
+    return data.map(toWorkspaceTask);
   }, [trpc]);
 
   useEffect(() => {
@@ -179,9 +207,9 @@ export default function TasksPage() {
   if (failed && !tasks) {
     return (
       <ErrorState
-        className="mt-10"
-        title="Tasks could not be loaded"
-        message="We could not read your tasks. They are safe; try again."
+        className="mt-10 rounded-xl"
+        title="We couldn’t load your tasks."
+        message="Your tasks are safe. Try again, and if it keeps happening, tell us when it started."
         onRetry={() => {
           setFailed(false);
           setRefreshToken((token) => token + 1);
@@ -193,7 +221,10 @@ export default function TasksPage() {
   if (!tasks) {
     return (
       <PageSkeleton toolbar>
-        <BoardSkeleton />
+        <ListSkeleton
+          rows={10}
+          className="divide-y-0 rounded-none border-0 bg-transparent"
+        />
       </PageSkeleton>
     );
   }
@@ -210,7 +241,8 @@ export default function TasksPage() {
       projectSlug={projectSlug}
       initialStatus={initialStatus}
       onTaskStatusChange={updateTaskStatus}
-      onTasksStatusChange={updateTasksStatus}
+      onTasksChange={updateTasks}
+      onTasksDelete={deleteTasks}
       onTaskCreated={() => setRefreshToken((token) => token + 1)}
     />
   );

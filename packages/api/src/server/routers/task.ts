@@ -237,6 +237,7 @@ export const taskRouter = router({
           status: tasks.status,
           priority: tasks.priority,
           assignee: users.name,
+          assigneeUserId: users.id,
           due: tasks.dueAt,
           createdAt: tasks.createdAt,
         })

@@ -21,8 +21,8 @@ export const TaskCard: FC<Props> = ({ task }) => {
     <Link
       href={paths.task(task.key)}
       className={cn(
-        "group flex flex-col gap-2 rounded-xl border border-hairline bg-surface p-3 outline-none hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring",
-        done && "opacity-70",
+        "group flex flex-col gap-2 rounded-md border border-hairline bg-surface px-3 pt-3 pb-2.5 shadow-xs outline-none hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring",
+        done && "opacity-60",
       )}
     >
       <div className="flex items-center gap-2">
@@ -30,19 +30,24 @@ export const TaskCard: FC<Props> = ({ task }) => {
         <span className="flex-1" />
         {assigned ? (
           <span title={task.assignee}>
-            <ActorAvatar name={task.assignee} size={20} />
+            <ActorAvatar name={task.assignee} size={22} />
           </span>
-        ) : null}
+        ) : (
+          <span
+            aria-label="Unassigned"
+            className="size-[22px] rounded-full border-[1.5px] border-dashed border-line-strong"
+          />
+        )}
       </div>
 
       <p className="line-clamp-2 text-sm leading-5 font-medium text-ink">
         {task.title}
       </p>
 
-      <div className="mt-1 flex items-center gap-2 text-xs text-ink-2">
+      <div className="flex items-center gap-2.5 text-xs text-ink-2">
         <PriorityMeter priority={task.priority} />
         <span className="flex-1" />
-        <DueDate value={task.dueAt} done={done} />
+        <DueDate value={task.dueAt} done={done} className="text-[13px]" />
       </div>
     </Link>
   );

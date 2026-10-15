@@ -1,26 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FC } from "react";
-import { ChevronDownIcon, ChevronRightIcon, PlusIcon } from "lucide-react";
+import { useMemo, useState, type FC, type ReactNode } from "react";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  PlusIcon,
+} from "lucide-react";
 
 import { StatusGlyph, PriorityMeter } from "@zentro/ui/components/status-glyph";
 import { cn } from "@zentro/ui/lib/utils";
-import { Button } from "@zentro/ui/shadcn/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@zentro/ui/shadcn/select";
 
 import { ActorAvatar } from "~/src/components/actor-avatar";
 import { DueDate } from "~/src/components/due-date";
 import { statusLabels } from "~/src/features/tasks/lib/constants";
-import type { TaskStatus, WorkspaceTask } from "~/src/features/tasks/lib/types";
+import type {
+  BulkChange,
+  TaskStatus,
+  WorkspaceTask,
+} from "~/src/features/tasks/lib/types";
 import { paths } from "~/src/lib/paths";
 
+import { CreateTaskModal } from "../create-task-modal";
+import { BulkBar } from "./bulk-bar";
 import { EmptyTasks } from "./empty-tasks";
 import type { TaskGroup, TaskSort } from "./task-workspace-header";
 
@@ -39,7 +42,11 @@ type Props = {
   tasks: WorkspaceTask[];
   group?: TaskGroup;
   sort?: TaskSort;
-  onTasksStatusChange?: (tasks: WorkspaceTask[], status: TaskStatus) => void;
+  onTasksChange?: (tasks: WorkspaceTask[], change: BulkChange) => void;
+  onTasksDelete?: (tasks: WorkspaceTask[]) => void;
+  onTaskCreated?: () => void | Promise<void>;
+  /** Shown instead of the default empty state, e.g. when filters hide all. */
+  empty?: ReactNode;
 };
 
 function sortTasks(tasks: WorkspaceTask[], sort: TaskSort) {
@@ -123,11 +130,55 @@ function buildSections(tasks: WorkspaceTask[], group: TaskGroup): Section[] {
   );
 }
 
+function Checkbox({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <span className="relative flex size-4 shrink-0">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        aria-label={label}
+        className="peer size-4 cursor-pointer appearance-none rounded-[5px] border-[1.5px] border-line-strong outline-none checked:border-ink checked:bg-ink focus-visible:ring-2 focus-visible:ring-ring"
+      />
+      <CheckIcon
+        aria-hidden="true"
+        strokeWidth={3}
+        className="pointer-events-none absolute inset-0 m-auto size-3 text-ink-inverse opacity-0 peer-checked:opacity-100"
+      />
+    </span>
+  );
+}
+
+function Assignee({ task, size }: { task: WorkspaceTask; size: number }) {
+  return task.assignee !== "Unassigned" ? (
+    <span title={task.assignee}>
+      <ActorAvatar name={task.assignee} size={size} />
+    </span>
+  ) : (
+    <span
+      aria-label="Unassigned"
+      style={{ width: size, height: size }}
+      className="shrink-0 rounded-full border-[1.5px] border-dashed border-line-strong"
+    />
+  );
+}
+
 export const ListView: FC<Props> = ({
   tasks,
   group = "state",
   sort = "due",
-  onTasksStatusChange,
+  onTasksChange,
+  onTasksDelete,
+  onTaskCreated,
+  empty,
 }) => {
   const [closed, setClosed] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -137,9 +188,10 @@ export const ListView: FC<Props> = ({
     [tasks, sort, group],
   );
 
-  if (!tasks.length) return <EmptyTasks />;
+  if (!tasks.length) return empty ?? <EmptyTasks />;
 
   const chosen = tasks.filter((task) => selected.has(task.id));
+  const selectable = Boolean(onTasksChange || onTasksDelete);
   const toggle = (id: string) =>
     setSelected((current) => {
       const next = new Set(current);
@@ -152,50 +204,12 @@ export const ListView: FC<Props> = ({
 
   return (
     <div className="flex flex-col gap-1.5" data-testid="task-list">
-      {chosen.length > 0 ? (
-        <div
-          role="toolbar"
-          aria-label="Bulk actions"
-          className="sticky top-14 z-(--z-sticky) flex flex-wrap items-center gap-2 rounded-xl border border-hairline bg-surface px-3 py-2 shadow-sm"
-        >
-          <span className="text-sm font-medium">{chosen.length} selected</span>
-          <Select
-            onValueChange={(status) => {
-              onTasksStatusChange?.(chosen, status as TaskStatus);
-              setSelected(new Set());
-            }}
-          >
-            <SelectTrigger
-              aria-label="Move selected to"
-              className="h-8 rounded-xl border-hairline bg-transparent text-[13px] shadow-none data-[size=default]:h-8"
-            >
-              <SelectValue placeholder="Move to…" />
-            </SelectTrigger>
-            <SelectContent>
-              {stateOrder.map(({ status }) => (
-                <SelectItem key={status} value={status}>
-                  {statusLabels[status]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="flex-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelected(new Set())}
-          >
-            Clear selection
-          </Button>
-        </div>
-      ) : null}
-
       {sections.map((section) => {
         const isClosed = closed[section.id] ?? section.collapsed;
 
         return (
           <section key={section.id} aria-label={section.label}>
-            <h3 className="m-0">
+            <h3 className="m-0 flex h-9 items-center rounded-md pr-1 hover:bg-hover sm:pr-2">
               <button
                 type="button"
                 aria-expanded={!isClosed}
@@ -205,7 +219,7 @@ export const ListView: FC<Props> = ({
                     [section.id]: !isClosed,
                   }))
                 }
-                className="flex h-9 w-full items-center gap-2.5 rounded-xl px-3 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-full min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
               >
                 {isClosed ? (
                   <ChevronRightIcon
@@ -219,78 +233,105 @@ export const ListView: FC<Props> = ({
                   />
                 )}
                 {section.status ? (
-                  <StatusGlyph status={section.status} size={14} decorative />
+                  <StatusGlyph status={section.status} size={12} decorative />
                 ) : null}
                 <span className="font-semibold">{section.label}</span>
                 <span className="font-mono text-xs text-ink-3">
                   {section.rows.length}
                 </span>
-                <span className="flex-1" />
-                <PlusIcon aria-hidden="true" className="size-3.5 text-ink-3" />
               </button>
+              {section.status && onTaskCreated ? (
+                <CreateTaskModal
+                  defaultStatus={section.status}
+                  onTaskCreated={onTaskCreated}
+                  trigger={
+                    <button
+                      type="button"
+                      aria-label={`Create a task in ${section.label}`}
+                      className="hidden size-7 items-center justify-center rounded-sm text-ink-3 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-ring sm:flex"
+                    >
+                      <PlusIcon aria-hidden="true" className="size-4" />
+                    </button>
+                  }
+                />
+              ) : null}
             </h3>
             {isClosed ? null : (
               <ul>
                 {section.rows.map((task) => {
-                  const assigned = task.assignee !== "Unassigned";
                   const isSelected = selected.has(task.id);
+                  const done = task.status === "done";
 
                   return (
                     <li
                       key={task.id}
                       className={cn(
-                        "group/row flex h-(--row-list) items-center gap-3 rounded-xl border-t border-hairline/60 px-3 first:border-t-0 hover:bg-hover",
-                        isSelected && "bg-signal-subtle",
+                        "border-b border-hairline/70 sm:rounded-md sm:hover:bg-hover",
+                        isSelected && "bg-selected sm:hover:bg-selected",
                       )}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggle(task.id)}
-                        aria-label={`Select ${task.key}`}
-                        className={cn(
-                          "size-4 shrink-0 cursor-pointer rounded-[5px] border-[1.5px] border-ink-3 accent-[var(--ink)] opacity-0 outline-none group-hover/row:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring",
-                          isSelected && "opacity-100",
-                        )}
-                      />
-                      <StatusGlyph status={task.status} size={14} />
-                      <span className="w-16 shrink-0 font-mono text-xs text-ink-3">
-                        {task.key}
-                      </span>
-                      <Link
-                        href={paths.task(task.key)}
-                        className={cn(
-                          "min-w-0 flex-1 truncate text-[length:var(--density-body)] outline-none after:absolute focus-visible:underline",
-                          task.status === "done" && "text-ink-3",
-                        )}
-                      >
-                        {task.title}
-                      </Link>
-                      <span
-                        title={task.projectName}
-                        className="hidden shrink-0 rounded-xs border border-hairline px-1.5 font-mono text-[11px] text-ink-2 md:block"
-                      >
-                        {task.key.split("-")[0]}
-                      </span>
-                      <PriorityMeter priority={task.priority} />
-                      <span className="flex w-6 shrink-0 justify-center">
-                        {assigned ? (
-                          <span title={task.assignee}>
-                            <ActorAvatar name={task.assignee} size={24} />
-                          </span>
-                        ) : (
-                          <span
-                            aria-label="Unassigned"
-                            className="size-6 rounded-full border border-dashed border-line-strong"
+                      <div className="hidden h-(--row-list) items-center gap-3 px-3 sm:flex">
+                        {selectable ? (
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => toggle(task.id)}
+                            label={`Select ${task.key}`}
                           />
-                        )}
-                      </span>
-                      <span className="hidden w-[88px] shrink-0 justify-end sm:flex">
-                        <DueDate
-                          value={task.dueAt}
-                          done={task.status === "done"}
-                        />
-                      </span>
+                        ) : null}
+                        <StatusGlyph status={task.status} size={12} />
+                        <span className="w-[58px] shrink-0 font-mono text-[13px] text-ink-3 [[data-density=compact]_&]:text-xs">
+                          {task.key}
+                        </span>
+                        <Link
+                          href={paths.task(task.key)}
+                          className={cn(
+                            "min-w-0 flex-1 truncate text-[length:var(--density-body)] outline-none focus-visible:underline",
+                            done && "text-ink-3",
+                          )}
+                        >
+                          {task.title}
+                        </Link>
+                        <span
+                          title={task.projectName}
+                          className="hidden shrink-0 rounded-sm border border-hairline px-1.5 py-px font-mono text-[11px] text-ink-3 md:block [[data-density=compact]_&]:hidden"
+                        >
+                          {task.key.split("-")[0]}
+                        </span>
+                        <span className="flex w-[18px] shrink-0">
+                          <PriorityMeter priority={task.priority} />
+                        </span>
+                        <span className="flex w-6 shrink-0 justify-center">
+                          <Assignee task={task} size={24} />
+                        </span>
+                        <span className="flex w-[88px] shrink-0 justify-end">
+                          <DueDate
+                            value={task.dueAt}
+                            done={done}
+                            className="text-[13px]"
+                          />
+                        </span>
+                      </div>
+                      {/* Phones: two lines, the title gets the full width. */}
+                      <div className="flex flex-col gap-1 px-2 py-2.5 sm:hidden">
+                        <div className="flex items-center gap-2">
+                          <StatusGlyph status={task.status} size={12} />
+                          <span className="font-mono text-xs text-ink-3">
+                            {task.key}
+                          </span>
+                          <span className="flex-1" />
+                          <DueDate value={task.dueAt} done={done} />
+                          <Assignee task={task} size={22} />
+                        </div>
+                        <Link
+                          href={paths.task(task.key)}
+                          className={cn(
+                            "pl-5 text-[15px] leading-[22px] outline-none focus-visible:underline",
+                            done && "text-ink-3",
+                          )}
+                        >
+                          {task.title}
+                        </Link>
+                      </div>
                     </li>
                   );
                 })}
@@ -299,6 +340,15 @@ export const ListView: FC<Props> = ({
           </section>
         );
       })}
+
+      {chosen.length > 0 ? (
+        <BulkBar
+          selected={chosen}
+          onChange={onTasksChange}
+          onDelete={onTasksDelete}
+          onClear={() => setSelected(new Set())}
+        />
+      ) : null}
     </div>
   );
 };
