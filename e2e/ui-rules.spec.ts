@@ -14,7 +14,10 @@ import {
 // 3. landing sections are never left invisible
 // 4. at most one filled primary button per screen
 
-const dangerText = "p.text-danger-text, [role='alert']:not(:empty)";
+// The route announcer is a live region the framework fills with the page
+// title; it is not an error.
+const dangerText =
+  "p.text-danger-text, [role='alert']:not(:empty):not(#__next-route-announcer__)";
 
 async function noErrorsVisible(page: Page, where: string) {
   await expect(page.locator(dangerText), where).toHaveCount(0);
@@ -231,7 +234,7 @@ test("Today: an empty workspace asks for a task, then start and finish work", as
 
   // A task nobody owns can be pulled in, started, and finished.
   await page.goto("/dashboard");
-  await page.getByRole("button", { name: /pull in/i }).click();
+  await page.getByRole("button", { name: /pull .* into today/i }).click();
   await expect(page.getByRole("button", { name: /^start/i })).toBeVisible();
   await page.getByRole("button", { name: /^start/i }).click();
   await expect(page.getByRole("button", { name: /mark done/i })).toBeVisible();

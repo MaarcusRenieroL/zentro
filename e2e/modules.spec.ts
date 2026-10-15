@@ -35,12 +35,15 @@ test("an admin turns Tasks off and on; dependencies are enforced", async ({
   const projectsSwitch = page.getByRole("switch", { name: "Projects module" });
   const docsSwitch = page.getByRole("switch", { name: "Docs module" });
 
-  // Defaults: everything is on, and Projects is locked while Tasks needs it.
+  // Defaults: everything is on. Turning Projects off while Tasks needs it
+  // asks first instead of failing.
   await expect(tasksSwitch).toBeChecked();
   await expect(docsSwitch).toBeChecked();
   await expect(projectsSwitch).toBeChecked();
-  await expect(projectsSwitch).toBeDisabled();
-  await expect(page.getByText("Turn off Tasks first.")).toBeVisible();
+  await projectsSwitch.click();
+  await expect(page.getByText("Tasks needs Projects.")).toBeVisible();
+  await page.getByRole("button", { name: "Keep Projects on" }).click();
+  await expect(projectsSwitch).toBeChecked();
   await expect(sidebarTasks).toBeVisible();
 
   // Turn Tasks off.
@@ -53,7 +56,7 @@ test("an admin turns Tasks off and on; dependencies are enforced", async ({
     await page.goto(path);
     await expect(page).toHaveURL(/\/module-disabled\?module=tasks/);
     await expect(
-      page.getByText("This module is turned off. Ask an admin to enable it."),
+      page.getByRole("heading", { name: "Tasks is turned off." }),
     ).toBeVisible();
   }
 

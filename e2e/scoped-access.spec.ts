@@ -105,7 +105,7 @@ test("a user whose only access is a project role sees that module and only that 
 
   // Without a role on any project there is nothing to open.
   await worker.page.goto("/projects");
-  await expect(worker.page.getByText("You do not have access")).toBeVisible();
+  await expect(worker.page.getByText(/You don.t have access/)).toBeVisible();
   await expect(
     worker.page.getByRole("link", { name: "Projects", exact: true }),
   ).toHaveCount(0);

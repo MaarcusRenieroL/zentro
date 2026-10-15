@@ -84,6 +84,7 @@ export async function signUp(
   await page.getByLabel("Full name").fill(name);
   await page.getByLabel("Work email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel(/I agree to the Terms of Service/).check();
   await page.getByRole("button", { name: /create account/i }).click();
   await expect(page).toHaveURL(/\/auth\/verify-email/);
 }
@@ -97,11 +98,13 @@ export async function verifyEmail(page: Page, email: string) {
 }
 
 export async function createOrganization(page: Page, name: string) {
-  await page.getByLabel("Organization name").fill(name);
-  await expect(
-    page.getByRole("button", { name: /create workspace/i }),
-  ).toBeEnabled();
-  await page.getByRole("button", { name: /create workspace/i }).click();
+  await page.getByLabel("Workspace name").fill(name);
+  await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  // Step 2 (teammates) and step 3 (modules) are optional; take the defaults.
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await page.getByRole("button", { name: "Finish setup" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 }
 

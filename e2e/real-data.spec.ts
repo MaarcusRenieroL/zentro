@@ -162,12 +162,12 @@ test("the sidebar has one level and exactly one active item per route", async ({
   const routes: Array<[string, string, string | null]> = [
     ["/dashboard", "Today", null],
     ["/overview", "Overview", null],
-    ["/projects", "Projects", "All projects"],
-    ["/projects?status=active", "Projects", "Active projects"],
+    ["/projects", "Projects", "All"],
+    ["/projects?status=active", "Projects", "Active"],
     ["/tasks", "Tasks", "All tasks"],
     ["/tasks/overview", "Tasks", "Overview"],
     ["/tasks?status=done", "Tasks", "Completed"],
-    ["/docs", "Docs", "All docs"],
+    ["/docs", "Docs", null],
     ["/docs/recent", "Docs", "Recent"],
     ["/settings/organization/modules", "Settings", null],
   ];
@@ -225,7 +225,7 @@ test("the calendar opens on the current month and places tasks by due date", asy
   });
 
   await page.goto("/tasks");
-  await page.getByRole("tab", { name: "Calendar" }).click();
+  await page.getByRole("radio", { name: "Calendar" }).click();
 
   const monthLabel = today.toLocaleDateString("en-US", {
     month: "long",
@@ -300,7 +300,7 @@ test("every page of a fresh account shows empty states without sample data", asy
 
   // The bell opens an honest empty state.
   await page.getByRole("button", { name: "Notifications" }).click();
-  await expect(page.getByText("No notifications yet")).toBeVisible();
+  await expect(page.getByText("You’re all caught up.")).toBeVisible();
 
   // Task detail of a task that does not exist.
   await page.goto("/tasks/NOPE-1");

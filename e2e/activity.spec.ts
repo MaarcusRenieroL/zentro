@@ -93,8 +93,8 @@ test("actions show up in the feeds and the audit log, and exports download", asy
     page.getByText(`moved ${task.key} from To do to In progress`),
   ).toBeVisible();
 
+  // Filters apply as you type.
   await page.getByLabel("Search").fill("Feed role");
-  await page.getByRole("button", { name: "Apply filters" }).click();
   await expect(page.getByText(`moved ${task.key}`)).toHaveCount(0);
   await page.getByText("created the role Feed role").click();
   await expect(
@@ -104,7 +104,8 @@ test("actions show up in the feeds and the audit log, and exports download", asy
 
   // CSV export.
   await page.getByLabel("Search").fill("");
-  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page.getByText("created the role Feed role")).toBeVisible();
+  await expect(page.getByText(`moved ${task.key}`)).toBeVisible();
 
   const download = page.waitForEvent("download");
 
@@ -154,7 +155,7 @@ test("a plain member has no audit log, and a private project's events stay hidde
   const member = await joinAsMember(browser, orgName, "hidemember");
 
   await member.page.goto("/settings/organization/audit-log");
-  await expect(member.page.getByText("You do not have access")).toBeVisible();
+  await expect(member.page.getByText(/You don.t have access/)).toBeVisible();
   await expect(
     member.page.getByRole("link", { name: "Audit log" }),
   ).toHaveCount(0);
