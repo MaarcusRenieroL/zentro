@@ -18,9 +18,11 @@ import { cn } from "@zentro/ui/lib/utils";
 import { describeFocusReason, formatDueDate, rankTasks } from "@zentro/utils";
 
 import { ActorAvatar } from "~/src/components/actor-avatar";
+import { DueDate } from "~/src/components/due-date";
 import { CreateTaskModal } from "~/src/features/tasks/components/create-task-modal";
 import { useReachable } from "~/src/components/permissions/permission-provider";
 import type { DashboardWorkItem } from "~/src/lib/dashboard-data";
+import { paths } from "~/src/lib/paths";
 import type { TodayData, TodayTask } from "~/src/lib/today-data";
 
 type Props = {
@@ -88,6 +90,8 @@ function RunningTimer({ since }: { since: string }) {
     <span
       role="timer"
       aria-label="Time on this task"
+      // The server and the browser read the clock a moment apart.
+      suppressHydrationWarning
       className="font-mono text-[34px] leading-none tracking-[-0.03em] text-ink tabular-nums sm:text-[44px]"
     >
       {clock(now - new Date(since).getTime())}
@@ -106,6 +110,7 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
   const router = useRouter();
   const canAssign = useReachable("tasks.assign");
   const canCreateTask = useReachable("tasks.create");
+  const canInvite = useReachable("members.invite");
   const [tasks, setTasks] = useState<TodayTask[]>(data.tasks);
   const [done, setDone] = useState(data.doneToday);
   const [celebrating, setCelebrating] = useState<string | null>(null);
@@ -182,6 +187,9 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
         (item.dueAt && new Date(item.dueAt).getTime() < today + dayMs),
     ).length;
   const running = task?.status === "in-progress";
+  const inProgress = tasks.filter(
+    (item) => item.status === "in-progress",
+  ).length;
 
   const pulse: PulseItem[] = useMemo(
     () => [
@@ -259,6 +267,34 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
     }
   }, [task, busy, tasks, announce, setStatus]);
 
+  const pause = useCallback(async () => {
+    if (!task || busy || task.status !== "in-progress") return;
+
+    setBusy(true);
+
+    const previous = tasks;
+
+    setTasks((current) =>
+      current.map((item) =>
+        item.key === task.key
+          ? { ...item, status: "todo", startedAt: null }
+          : item,
+      ),
+    );
+
+    try {
+      await trpc.task.updateTaskByKey.mutate({ key: task.key, status: "todo" });
+    } catch {
+      setTasks(previous);
+      toastError(
+        "Could not pause the task",
+        "Your change was not saved. Try again in a moment.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [task, busy, tasks, trpc]);
+
   const finish = useCallback(async () => {
     if (!task || busy || celebrating) return;
 
@@ -311,14 +347,14 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
         return;
       }
 
-      if (event.key.toLowerCase() === "s" && !running) void start();
-      if (event.key.toLowerCase() === "d" && running) void finish();
+      if (event.key.toLowerCase() === "s") void (running ? pause() : start());
+      if (event.key.toLowerCase() === "d") void finish();
     };
 
     window.addEventListener("keydown", onKey);
 
     return () => window.removeEventListener("keydown", onKey);
-  }, [running, start, finish]);
+  }, [running, start, pause, finish]);
 
   const pullNext = async () => {
     const item = data.unassignedNext;
@@ -452,7 +488,12 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
                     "text-ink-3 line-through decoration-status-done decoration-2",
                 )}
               >
-                {task.name}
+                <Link
+                  href={task.href}
+                  className="rounded-md outline-none hover:underline hover:decoration-2 hover:underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {task.name}
+                </Link>
               </h2>
               <p className="relative max-w-[560px] text-[15px] leading-[22px] text-ink-2">
                 {reason}
@@ -473,49 +514,50 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
                   <span className="flex items-center gap-1.5 text-[13px] text-ink-3">
                     {running && startedMs ? (
                       <>
-                        <span
-                          aria-hidden="true"
-                          className="size-2 rounded-full border-[1.5px] border-status-progress"
+                        <StatusGlyph
+                          status="in-progress"
+                          size={10}
+                          decorative
                         />
-                        Running since{" "}
-                        {new Date(startedMs).toLocaleTimeString("en-GB", {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: false,
-                        })}
+                        <span suppressHydrationWarning>
+                          Running since{" "}
+                          {new Date(startedMs).toLocaleTimeString("en-GB", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: false,
+                          })}
+                        </span>
                       </>
                     ) : (
-                      "Not started"
+                      <>
+                        <StatusGlyph status="todo" size={10} decorative />
+                        Not started
+                      </>
                     )}
                   </span>
                 </div>
+                {/* Running: pause or finish. Not started: finish or start. */}
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="lg" asChild>
-                    <Link href={task.href}>
-                      Open task
-                      <ArrowRightIcon />
-                    </Link>
+                  <Button
+                    variant="outline"
+                    onClick={running ? pause : finish}
+                    disabled={busy}
+                    className="h-11 border-hairline bg-transparent px-3.5 text-sm"
+                  >
+                    {running ? "Pause" : "Mark done"}
+                    <Kbd className="ml-1">{running ? "S" : "D"}</Kbd>
                   </Button>
-                  {running ? (
-                    <Button
-                      size="lg"
-                      onClick={finish}
-                      loading={busy && celebrating === task.key}
-                      disabled={busy}
-                    >
-                      Mark done
-                      <Kbd className="ml-1 border-transparent bg-on-signal/20 text-on-signal">
-                        D
-                      </Kbd>
-                    </Button>
-                  ) : (
-                    <Button size="lg" onClick={start} disabled={busy}>
-                      Start
-                      <Kbd className="ml-1 border-transparent bg-on-signal/20 text-on-signal">
-                        S
-                      </Kbd>
-                    </Button>
-                  )}
+                  <Button
+                    onClick={running ? finish : start}
+                    loading={running && busy && celebrating === task.key}
+                    disabled={busy}
+                    className="h-11 px-4 text-sm font-semibold"
+                  >
+                    {running ? "Mark done" : "Start"}
+                    <Kbd className="ml-1 border-transparent bg-on-signal/20 text-on-signal">
+                      {running ? "D" : "S"}
+                    </Kbd>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -581,8 +623,8 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
           className="tile col-span-2 flex items-center gap-5 p-5 lg:col-span-4"
         >
           {total === 0 ? (
-            <div className="flex size-[120px] shrink-0 items-center justify-center rounded-full border-2 border-dashed border-line-strong px-6 text-center font-mono text-[11px] text-ink-3">
-              Nothing planned
+            <div className="flex size-[120px] shrink-0 items-center justify-center rounded-full border-2 border-dashed border-line-strong">
+              <span className="sr-only">Nothing planned</span>
             </div>
           ) : (
             <div
@@ -610,10 +652,10 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
             </span>
             <span className="text-[13px] leading-5 text-ink-2">
               {total === 0
-                ? "Plan your day by starting a task."
+                ? "Nothing planned. Tasks due today or picked for today count here."
                 : done >= total
-                  ? "Everything planned is done."
-                  : `${Math.max(total - done, 0)} left on the plan`}
+                  ? "Everything planned is done. Nothing in progress."
+                  : `${inProgress} in progress · ${Math.max(total - done - inProgress, 0)} to do`}
             </span>
           </div>
         </section>
@@ -636,8 +678,6 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
           {next.length ? (
             <ul>
               {next.map(({ task: item }) => {
-                const itemDue = dueLabel(item.dueAt);
-
                 return (
                   <li key={item.key}>
                     <Link
@@ -651,16 +691,8 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
                       <span className="min-w-0 flex-1 truncate text-sm">
                         {item.name}
                       </span>
-                      {itemDue ? (
-                        <span
-                          className={cn(
-                            "font-mono text-xs whitespace-nowrap",
-                            itemDue.late ? "text-danger-text" : "text-ink-2",
-                          )}
-                          title={itemDue.full}
-                        >
-                          {itemDue.text}
-                        </span>
+                      {item.dueAt ? (
+                        <DueDate value={item.dueAt} className="text-[13px]" />
                       ) : null}
                     </Link>
                   </li>
@@ -737,7 +769,17 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
             </ul>
           ) : (
             <div className="flex flex-col gap-2 px-2.5 pt-3.5 pb-2.5 text-sm text-ink-2">
-              Nobody has moved work yet today.
+              {data.hasAnyTasks
+                ? "Nobody has moved work yet today. Starts, moves and finishes show up here as they happen."
+                : "You’re the only one here so far. Invite teammates to see who started, moved and finished work."}
+              {!data.hasAnyTasks && canInvite ? (
+                <Link
+                  href={paths.invitationsSettings()}
+                  className="self-start rounded-xs text-signal hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                  Invite people
+                </Link>
+              ) : null}
             </div>
           )}
         </section>
@@ -787,17 +829,22 @@ export function TodayView({ firstName, data, recentWork, links }: Props) {
           </div>
         </section>
 
+        <div className="col-span-2 mt-2 flex flex-wrap items-baseline justify-between gap-2 lg:col-span-12">
+          <h2 className="eyebrow">Recent work</h2>
+          {recentWork.length ? null : (
+            <span className="text-[13px] text-ink-3">
+              Docs, projects and tasks you open will appear here.
+            </span>
+          )}
+        </div>
         {recentWork.length ? (
           <>
-            <div className="col-span-2 mt-2 flex items-baseline justify-between lg:col-span-12">
-              <h2 className="eyebrow">Recent work</h2>
-            </div>
             {recentWork.slice(0, 4).map((item) => (
               <Link
                 key={`${item.kind}-${item.id}`}
                 href={item.href}
                 className={cn(
-                  "tile col-span-2 flex min-h-32 flex-col gap-1.5 p-[18px] outline-none hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring sm:col-span-1 lg:col-span-3",
+                  "tile col-span-1 flex min-h-32 flex-col gap-1.5 p-[18px] outline-none hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring lg:col-span-3",
                   workTint[item.kind],
                 )}
               >
