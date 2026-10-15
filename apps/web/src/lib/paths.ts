@@ -40,6 +40,13 @@ export const paths = {
   trashedDocs: () => "/docs/trash",
   searchDocs: (query?: string) => withQuery("/docs/search", { q: query }),
 
+  inbox: () => "/inbox",
+  statusPage: "https://status.zentro.app",
+  supportEmail: "support@zentro.app",
+  files: () => "/files",
+  chat: () => "/chat",
+  maintenance: () => "/maintenance",
+
   moduleDisabled: (moduleId: string) =>
     withQuery("/module-disabled", { module: moduleId }),
 

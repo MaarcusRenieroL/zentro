@@ -35,11 +35,22 @@ export function DueDate({ value, done = false, className }: Props) {
           title={due.full}
           aria-label={due.full}
           className={cn(
-            "font-mono text-xs whitespace-nowrap",
+            "inline-flex items-center gap-1.5 font-mono text-xs whitespace-nowrap",
             tones[tone],
             className,
           )}
         >
+          {tone === "overdue" ? (
+            <span
+              aria-hidden="true"
+              className="size-1.5 rotate-45 rounded-[1px] bg-current"
+            />
+          ) : tone === "soon" ? (
+            <span
+              aria-hidden="true"
+              className="size-[7px] rounded-full border-[1.5px] border-current"
+            />
+          ) : null}
           {due.text}
         </time>
       </TooltipTrigger>

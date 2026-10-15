@@ -13,6 +13,9 @@ import { SidebarInset, SidebarProvider } from "@zentro/ui/shadcn/sidebar";
 import { TooltipProvider } from "@zentro/ui/shadcn/tooltip";
 
 import { AppSidebar, type ShellModule } from "./app-sidebar";
+import { OfflineBanner } from "./offline-banner";
+import { NotificationsProvider } from "~/src/components/notifications/notifications-provider";
+
 import { BreadcrumbProvider } from "./breadcrumb-context";
 import { RouteProgress } from "./route-progress";
 import { ShellContext } from "./shell-context";
@@ -26,6 +29,8 @@ type Props = {
   user: { name: string; email: string };
   links: { settingsHref: string | null; membersHref: string | null };
   sidebarOpen: boolean;
+  orgSubtitle?: string;
+  taskCount?: number;
   children: ReactNode;
 };
 
@@ -41,6 +46,8 @@ export function AppShell({
   user,
   links,
   sidebarOpen,
+  orgSubtitle,
+  taskCount,
   children,
 }: Props) {
   const pathname = usePathname();
@@ -50,40 +57,45 @@ export function AppShell({
 
   return (
     <ShellContext.Provider value={shell}>
-      <BreadcrumbProvider>
-        <TooltipProvider delayDuration={300}>
-          <SidebarProvider defaultOpen={sidebarOpen}>
-            <Suspense fallback={null}>
-              <RouteProgress />
-            </Suspense>
-            <AppSidebar
-              modules={modules}
-              organizations={organizations}
-              activeOrgSlug={activeOrgSlug}
-            />
-            <SidebarInset className="bg-canvas">
-              <TopBar
-                enabledModules={enabledModules}
+      <NotificationsProvider>
+        <BreadcrumbProvider>
+          <TooltipProvider delayDuration={300}>
+            <SidebarProvider defaultOpen={sidebarOpen}>
+              <Suspense fallback={null}>
+                <RouteProgress />
+              </Suspense>
+              <AppSidebar
                 modules={modules}
-                user={user}
-                links={links}
+                organizations={organizations}
+                activeOrgSlug={activeOrgSlug}
+                orgSubtitle={orgSubtitle}
+                taskCount={taskCount}
               />
-              <main
-                id="main"
-                tabIndex={-1}
-                className="mx-auto w-full max-w-[1440px] min-w-0 flex-1 overflow-x-clip px-(--gutter) py-6 outline-none"
-              >
-                <div
-                  key={`${pathname}:${version}`}
-                  className="animate-fade-up motion-reduce:animate-none"
+              <SidebarInset className="bg-canvas">
+                <TopBar
+                  enabledModules={enabledModules}
+                  modules={modules}
+                  user={user}
+                  links={links}
+                />
+                <main
+                  id="main"
+                  tabIndex={-1}
+                  className="mx-auto w-full max-w-[1440px] min-w-0 flex-1 overflow-x-clip px-(--gutter) py-6 outline-none"
                 >
-                  {children}
-                </div>
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
-        </TooltipProvider>
-      </BreadcrumbProvider>
+                  <OfflineBanner />
+                  <div
+                    key={`${pathname}:${version}`}
+                    className="animate-fade-up motion-reduce:animate-none"
+                  >
+                    {children}
+                  </div>
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+          </TooltipProvider>
+        </BreadcrumbProvider>
+      </NotificationsProvider>
     </ShellContext.Provider>
   );
 }

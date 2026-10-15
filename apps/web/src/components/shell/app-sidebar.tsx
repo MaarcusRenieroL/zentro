@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { useRef } from "react";
 
 import { authClient } from "@zentro/auth/client";
-import { Logo, LogoMark } from "@zentro/ui/components/logo";
 import { OrgSwitcher } from "@zentro/ui/components/org-switcher";
 import { toastError } from "@zentro/ui/index";
 import { useActiveBox } from "@zentro/ui/lib/use-active-box";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -37,6 +37,10 @@ type Props = {
   modules: ShellModule[];
   organizations: Array<{ id: string; name: string; slug: string }>;
   activeOrgSlug: string;
+  /** "Admin · 18 people" under the organization name. */
+  orgSubtitle?: string;
+  /** Open tasks assigned to the user, shown on the Tasks item. */
+  taskCount?: number;
 };
 
 /** The module a path belongs to: the longest matching base wins. */
@@ -52,7 +56,13 @@ export function findActiveModule(modules: ShellModule[], pathname: string) {
   return best;
 }
 
-export function AppSidebar({ modules, organizations, activeOrgSlug }: Props) {
+export function AppSidebar({
+  modules,
+  organizations,
+  activeOrgSlug,
+  orgSubtitle,
+  taskCount,
+}: Props) {
   const pathname = usePathname();
   const active = findActiveModule(modules, pathname);
   const listRef = useRef<HTMLUListElement>(null);
@@ -74,37 +84,33 @@ export function AppSidebar({ modules, organizations, activeOrgSlug }: Props) {
 
   return (
     <Sidebar collapsible="icon" variant="sidebar" aria-label="Main">
-      <SidebarHeader className="gap-3 px-2.5 py-2.5">
-        <Link
-          href={paths.dashboard()}
-          aria-label="Zentro home"
-          className="flex h-8 items-center rounded-md px-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-        >
-          <span className="group-data-[collapsible=icon]:hidden">
-            <Logo />
-          </span>
-          <LogoMark
-            aria-hidden="true"
-            title=""
-            className="hidden size-6 text-signal group-data-[collapsible=icon]:block"
-          />
-        </Link>
+      <SidebarHeader className="px-3 pt-3 pb-0">
         <OrgSwitcher
           organizations={organizations}
           activeOrgSlug={activeOrgSlug}
           createOrganizationHref={paths.auth.createOrganization()}
           onSwitchOrganization={switchOrganization}
+          subtitle={orgSubtitle}
+          mark={
+            <span
+              aria-hidden="true"
+              className="flex size-[26px] shrink-0 items-center justify-center rounded-lg bg-ink"
+            >
+              <span className="h-[13px] w-0.5 rounded-xs bg-signal" />
+            </span>
+          }
+          className="h-12 rounded-xl border border-hairline bg-surface px-2"
         />
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-2">
+      <SidebarContent className="gap-0 px-3 pt-3.5 pb-3">
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
             <SidebarMenu ref={listRef} className="relative gap-0.5">
               {box ? (
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-0 left-0 rounded-md bg-selected transition-[transform,width,height] duration-[var(--duration-base)] ease-[var(--ease-out)]"
+                  className="pointer-events-none absolute top-0 left-0 rounded-xl bg-selected transition-[transform,width,height] duration-[var(--duration-base)] ease-[var(--ease-out)]"
                   style={{
                     width: box.width,
                     height: box.height,
@@ -112,17 +118,64 @@ export function AppSidebar({ modules, organizations, activeOrgSlug }: Props) {
                   }}
                 />
               ) : null}
-              {modules.map((item) => {
-                const Icon = getModuleIcon(item.icon);
-                const isActive = item.id === active?.id;
+              {modules
+                .filter((item) => item.id !== "settings")
+                .map((item) => {
+                  const Icon = getModuleIcon(item.icon);
+                  const isActive = item.id === active?.id;
 
-                return (
-                  <SidebarMenuItem key={item.id} className="relative z-[1]">
+                  return (
+                    <SidebarMenuItem key={item.id} className="relative z-[1]">
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.label}
+                        className="h-9 rounded-xl text-ink-2 hover:bg-hover hover:text-ink data-active:bg-transparent data-active:font-medium data-active:text-ink"
+                      >
+                        <Link
+                          href={item.href}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          <Icon
+                            className={isActive ? "text-signal" : undefined}
+                          />
+                          <span className="flex-1">{item.label}</span>
+                          {item.id === "tasks" && taskCount ? (
+                            <span className="font-mono text-xs text-ink-3 group-data-[collapsible=icon]:hidden">
+                              {taskCount}
+                            </span>
+                          ) : null}
+                          {item.id === "overview" ? (
+                            <span className="rounded-sm border border-hairline px-1.5 font-mono text-[10px] tracking-[0.06em] text-ink-2 group-data-[collapsible=icon]:hidden">
+                              ADMIN
+                            </span>
+                          ) : null}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {modules.some((item) => item.id === "settings") ? (
+        <SidebarFooter className="px-3 pt-0 pb-3">
+          {modules
+            .filter((item) => item.id === "settings")
+            .map((item) => {
+              const Icon = getModuleIcon(item.icon);
+              const isActive = item.id === active?.id;
+
+              return (
+                <SidebarMenu key={item.id}>
+                  <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       tooltip={item.label}
-                      className="h-(--nav-item) text-ink-2 hover:bg-hover hover:text-ink data-active:bg-transparent data-active:font-medium data-active:text-signal"
+                      className="h-9 rounded-xl text-ink-2 hover:bg-hover hover:text-ink data-active:bg-selected data-active:font-medium data-active:text-ink"
                     >
                       <Link
                         href={item.href}
@@ -135,12 +188,11 @@ export function AppSidebar({ modules, organizations, activeOrgSlug }: Props) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+                </SidebarMenu>
+              );
+            })}
+        </SidebarFooter>
+      ) : null}
 
       <SidebarRail />
     </Sidebar>

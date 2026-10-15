@@ -4,6 +4,9 @@ type Crumb = { label: string; mono?: boolean };
 
 const labels: Record<string, string> = {
   dashboard: "Today",
+  inbox: "Notifications",
+  files: "Files",
+  chat: "Chat",
   projects: "Projects",
   tasks: "Tasks",
   docs: "Docs",

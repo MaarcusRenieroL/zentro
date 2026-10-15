@@ -1,12 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
 
-import { ErrorState } from "@zentro/ui/components/error-state";
-import { Button } from "@zentro/ui/shadcn/button";
-
-import { paths } from "~/src/lib/paths";
+import { ServerErrorContent } from "~/src/components/system/server-error-content";
 
 type Props = {
   error: Error & { digest?: string };
@@ -18,18 +14,5 @@ export default function WorkspaceError({ error, reset }: Props) {
     console.error(error);
   }, [error]);
 
-  return (
-    <ErrorState
-      className="mt-10"
-      title="This page could not be loaded"
-      message="Something went wrong while loading it. Try again, or go back to the dashboard."
-      requestId={error.digest}
-      onRetry={reset}
-      action={
-        <Button variant="ghost" asChild>
-          <Link href={paths.dashboard()}>Dashboard</Link>
-        </Button>
-      }
-    />
-  );
+  return <ServerErrorContent requestId={error.digest} onRetry={reset} />;
 }

@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
-import { ErrorState } from "@zentro/ui/components/error-state";
 import { Logo } from "@zentro/ui/components/logo";
-import { Button } from "@zentro/ui/shadcn/button";
+
+import { ServerErrorContent } from "~/src/components/system/server-error-content";
 
 type Props = {
   error: Error & { digest?: string };
@@ -22,16 +22,8 @@ export default function RootError({ error, reset }: Props) {
       <Link href="/" aria-label="Zentro home" className="w-fit">
         <Logo />
       </Link>
-      <div className="mx-auto my-auto w-full max-w-md">
-        <ErrorState
-          requestId={error.digest}
-          onRetry={reset}
-          action={
-            <Button variant="ghost" asChild>
-              <Link href="/">Home</Link>
-            </Button>
-          }
-        />
+      <div className="my-auto">
+        <ServerErrorContent requestId={error.digest} onRetry={reset} />
       </div>
     </main>
   );

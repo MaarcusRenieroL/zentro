@@ -133,19 +133,19 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             icon: "Folder",
             children: [
               {
-                label: "All projects",
+                label: "All",
                 href: "/projects",
                 permission: "projects.view",
                 icon: "Gauge",
               },
               {
-                label: "Active projects",
+                label: "Active",
                 href: "/projects?status=active",
                 permission: "projects.view",
                 icon: "CheckCircle2",
               },
               {
-                label: "Archived projects",
+                label: "Archived",
                 href: "/projects?status=archived",
                 permission: "projects.view",
                 icon: "Archive",

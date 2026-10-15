@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDownIcon, PlusIcon, SearchIcon } from "lucide-react";
 
 import { Breadcrumbs } from "@zentro/ui/components/breadcrumbs";
-import { NotificationPopover } from "@zentro/ui/components/notification-popover";
 import { Kbd } from "@zentro/ui/components/kbd";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
@@ -17,6 +16,7 @@ import {
 } from "@zentro/ui/shadcn/dropdown-menu";
 import { SidebarTrigger } from "@zentro/ui/shadcn/sidebar";
 
+import { NotificationBell } from "~/src/components/notifications/notification-bell";
 import {
   usePermission,
   useReachable,
@@ -30,6 +30,8 @@ import { paths } from "~/src/lib/paths";
 import type { ShellModule } from "./app-sidebar";
 import { useCrumbs } from "./breadcrumb-context";
 import { CommandPalette } from "./command-palette";
+import { isRecentPath, useRecent } from "./use-recent";
+import { OPEN_PALETTE_EVENT } from "~/src/components/system/open-palette-button";
 import { useShell } from "./shell-context";
 import { UserMenu } from "./user-menu";
 
@@ -44,6 +46,26 @@ export function TopBar({ enabledModules, modules, user, links }: Props) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const pathname = usePathname();
   const crumbs = useCrumbs();
+
+  const { record } = useRecent();
+  const entries = getBreadcrumbs(pathname, crumbs);
+  const current = entries[entries.length - 1];
+
+  // Remember tasks, docs and projects once their real name has loaded.
+  useEffect(() => {
+    if (isRecentPath(pathname) && current && !current.loading) {
+      record({ href: pathname, label: current.label });
+    }
+  }, [pathname, current?.label, current?.loading, record]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pages without access to this state (404) open the palette by event.
+  useEffect(() => {
+    const open = () => setPaletteOpen(true);
+
+    window.addEventListener(OPEN_PALETTE_EVENT, open);
+
+    return () => window.removeEventListener(OPEN_PALETTE_EVENT, open);
+  }, []);
   const { refreshPage } = useShell();
   const [creating, setCreating] = useState<"task" | "project" | "doc" | null>(
     null,
@@ -62,10 +84,7 @@ export function TopBar({ enabledModules, modules, user, links }: Props) {
     >
       <SidebarTrigger />
       <div className="hidden min-w-0 flex-1 sm:block">
-        <Breadcrumbs
-          LinkComponent={Link}
-          items={getBreadcrumbs(pathname, crumbs)}
-        />
+        <Breadcrumbs LinkComponent={Link} items={entries} />
       </div>
       <div className="ml-auto flex items-center gap-2">
         <button
@@ -111,7 +130,7 @@ export function TopBar({ enabledModules, modules, user, links }: Props) {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
-        <NotificationPopover />
+        <NotificationBell />
         <UserMenu user={user} links={links} />
       </div>
 
@@ -125,18 +144,27 @@ export function TopBar({ enabledModules, modules, user, links }: Props) {
                 {
                   id: "task",
                   label: "New task",
+                  key: "C",
                   run: () => setCreating("task"),
                 },
               ]
             : []),
           ...(canDoc
-            ? [{ id: "doc", label: "New doc", run: () => setCreating("doc") }]
+            ? [
+                {
+                  id: "doc",
+                  label: "New doc",
+                  key: "D",
+                  run: () => setCreating("doc"),
+                },
+              ]
             : []),
           ...(canProject
             ? [
                 {
                   id: "project",
                   label: "New project",
+                  key: "P",
                   run: () => setCreating("project"),
                 },
               ]
