@@ -1,15 +1,20 @@
-import { paths } from "~/src/lib/paths";
-import { Badge } from "@zentro/ui/shadcn/badge";
-import { Button } from "@zentro/ui/shadcn/button";
-import { ArchiveIcon, PlusIcon, RocketIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
-import { Can } from "~/src/components/permissions/permission-provider";
 import { FC } from "react";
+import { SettingsIcon } from "lucide-react";
+
+import { Button } from "@zentro/ui/shadcn/button";
+
+import { Can } from "~/src/components/permissions/permission-provider";
+import { CreateTaskModal } from "~/src/features/tasks/components/create-task-modal";
+import { paths } from "~/src/lib/paths";
 
 type Props = {
   title: string;
   slug: string;
   projectId: string;
+  /** The task key prefix, such as ZEN. */
+  keyPrefix?: string | null;
+  teamName?: string | null;
   description?: string | null;
   status: string;
 };
@@ -18,67 +23,67 @@ export const ProjectHeader: FC<Props> = ({
   title,
   slug,
   projectId,
-  description,
+  keyPrefix,
+  teamName,
   status = "active",
 }) => {
-  const isArchived = status === "archived";
+  const archived = status === "archived";
 
   return (
-    <div className="flex w-full flex-col gap-5 tile p-5 sm:flex-row sm:items-start sm:justify-between">
-      <div className="flex min-w-0 items-start gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-sunken">
-          <RocketIcon className="size-5 text-primary" />
+    <header className="flex flex-wrap items-center gap-4">
+      <span
+        aria-hidden="true"
+        className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-tint-tasks font-mono text-sm"
+      >
+        {title.charAt(0).toUpperCase()}
+      </span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
+            {title}
+          </h1>
+          <span className="flex h-[22px] items-center gap-1.5 rounded-full border border-hairline px-2 text-xs">
+            <span
+              aria-hidden="true"
+              className={
+                archived
+                  ? "size-1.5 rounded-full border border-ink-3"
+                  : "size-1.5 rounded-full bg-status-done"
+              }
+            />
+            {archived ? "Archived" : "Active"}
+          </span>
         </div>
-
-        <div className="flex min-w-0 flex-col items-start gap-1.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="truncate text-2xl font-bold text-foreground">
-              {title}
-            </h1>
-
-            <Badge variant={status === "active" ? "default" : "secondary"}>
-              {status === "active" ? "Active" : "Archived"}
-            </Badge>
-          </div>
-
-          <p className="text-sm text-muted-foreground">{slug}</p>
-
-          {description ? (
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              {description}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No description provided.
-            </p>
-          )}
-        </div>
+        <p className="font-mono text-xs text-ink-3">
+          {keyPrefix ?? slug}
+          {teamName ? ` · ${teamName} team` : " · Workspace level"}
+        </p>
       </div>
+
+      <span className="flex-1" />
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <Can
           permission={["projects.settings.manage", "projects.update"]}
           resource={{ projectId }}
         >
-          <Link href={paths.projectSettings(slug)}>
-            <Button size="sm" variant="secondary" className="gap-2">
-              <SettingsIcon className="size-4" />
+          <Button variant="outline" asChild>
+            <Link href={paths.projectSettings(slug)}>
+              <SettingsIcon />
               Settings
-            </Button>
-          </Link>
-        </Can>
-
-        <Can permission="tasks.create" resource={{ projectId }}>
-          <Button size="sm" className="gap-2" disabled={isArchived}>
-            {isArchived ? (
-              <ArchiveIcon className="size-4" />
-            ) : (
-              <PlusIcon className="size-4" />
-            )}
-            <span>{isArchived ? "Archived" : "New task"}</span>
+            </Link>
           </Button>
         </Can>
+
+        {archived ? null : (
+          <Can permission="tasks.create" resource={{ projectId }}>
+            <CreateTaskModal
+              defaultProjectId={projectId}
+              trigger={<Button>New task</Button>}
+            />
+          </Can>
+        )}
       </div>
-    </div>
+    </header>
   );
 };

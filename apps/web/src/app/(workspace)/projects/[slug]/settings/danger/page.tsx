@@ -68,6 +68,7 @@ export default async function DangerSettingsPage({
   return (
     <AuthorizationBoundary
       isAllowed={authorization.isAllowed}
+      permission="projects.delete"
       title="Project management restricted"
       description="Only organization admins and owners can archive, restore, or delete projects."
     >

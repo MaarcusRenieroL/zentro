@@ -68,6 +68,7 @@ export default async function GeneralSettingsPage({
   return (
     <AuthorizationBoundary
       isAllowed={authorization.isAllowed}
+      permission="projects.update"
       title="Project settings restricted"
       description="Only organization admins and owners can update project settings."
     >

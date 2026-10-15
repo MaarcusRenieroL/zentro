@@ -1,49 +1,24 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@zentro/ui/shadcn/card";
-import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
 import { FC } from "react";
+
+import { ActorAvatar } from "~/src/components/actor-avatar";
 
 type Props = {
   totalMembers: number;
   owner: string;
 };
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
-export const ProjectContributors: FC<Props> = ({ totalMembers, owner }) => {
-  return (
-    <Card className="bg-card/50">
-      <CardHeader>
-        <CardTitle className="text-base font-semibold">Contributors</CardTitle>
-      </CardHeader>
-      <CardContent className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarFallback>{getInitials(owner) || "UO"}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">
-              {owner}
-            </p>
-            <p className="text-xs text-muted-foreground">Project owner</p>
-          </div>
-        </div>
-        <div className="rounded-xl bg-sunken px-2.5 py-1 text-xs font-medium text-secondary-foreground">
-          {totalMembers} total
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+export const ProjectContributors: FC<Props> = ({ totalMembers, owner }) => (
+  <section aria-label="Contributors" className="tile px-4 py-3.5">
+    <h2 className="pb-2.5 text-[15px] font-semibold">Contributors</h2>
+    <div className="flex items-center gap-3">
+      <ActorAvatar name={owner} size={32} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{owner}</p>
+        <p className="text-xs text-ink-3">Project owner</p>
+      </div>
+      <span className="font-mono text-xs text-ink-2">
+        {totalMembers} in org
+      </span>
+    </div>
+  </section>
+);

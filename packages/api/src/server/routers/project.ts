@@ -284,6 +284,7 @@ export const projectRouter = router({
           createdAt: projects.createdAt,
           updatedAt: projects.updatedAt,
           status: projects.status,
+          taskKeyPrefix: projects.taskKeyPrefix,
           owner: users.name,
         })
         .from(projects)

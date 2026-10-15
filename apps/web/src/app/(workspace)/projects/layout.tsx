@@ -1,7 +1,10 @@
 import { ReactNode, Suspense } from "react";
 
 import { AuthorizationBoundary } from "~/src/components/workspace/authorization/authorization-boundary";
-import { ModuleSectionNav } from "~/src/components/shell/module-section-nav";
+import {
+  ModuleNavProvider,
+  ModuleSectionNav,
+} from "~/src/components/shell/module-section-nav";
 import {
   getDashboardContext,
   getModuleAccess,
@@ -24,11 +27,13 @@ export default async function ProjectsLayout({
     buildShell(enabledModules, reachable).moduleNav["projects"] ?? [];
 
   return (
-    <AuthorizationBoundary isAllowed={allowed}>
-      <Suspense fallback={null}>
-        <ModuleSectionNav items={items} label="Projects" />
-      </Suspense>
-      {children}
+    <AuthorizationBoundary isAllowed={allowed} permission="projects.view">
+      <ModuleNavProvider items={items} label="Projects">
+        <Suspense fallback={null}>
+          <ModuleSectionNav />
+        </Suspense>
+        {children}
+      </ModuleNavProvider>
     </AuthorizationBoundary>
   );
 }

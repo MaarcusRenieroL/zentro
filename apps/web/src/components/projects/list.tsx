@@ -1,36 +1,13 @@
 "use client";
 
-import { paths } from "~/src/lib/paths";
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  EyeIcon,
-  FolderKanbanIcon,
-  MoreHorizontalIcon,
-  SettingsIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { FolderKanbanIcon, StarIcon } from "lucide-react";
 
-import { Badge } from "@zentro/ui/shadcn/badge";
-import { Progress } from "@zentro/ui/shadcn/progress";
-import { Button } from "@zentro/ui/shadcn/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@zentro/ui/shadcn/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@zentro/ui/shadcn/select";
 import { EmptyState } from "@zentro/ui/components/empty-state";
-import { Skeleton } from "@zentro/ui/components/shadcn/skeleton";
+import { cn } from "@zentro/ui/lib/utils";
+import { Skeleton } from "@zentro/ui/shadcn/skeleton";
+
+import { paths } from "~/src/lib/paths";
 
 export type ProjectListItem = {
   id: string;
@@ -50,256 +27,306 @@ export type ProjectListItem = {
 type ProjectListProps = {
   isLoading: boolean;
   projects: ProjectListItem[];
-  searchQuery: string;
-  sortBy: "updated" | "name" | "status";
-  initialStatus: "all" | "active" | "archived";
+  view: "grid" | "list";
+  hasFilters: boolean;
+  favoriteIds: string[];
+  onToggleFavorite: (id: string) => void;
+  /** Heading of the non-favorite group, such as "All active projects". */
+  groupLabel: string;
 };
 
-function formatProjectStatus(status: string) {
-  return status === "archived" ? "Archived" : "Active";
+const tints = [
+  "bg-tint-tasks",
+  "bg-tint-projects",
+  "bg-tint-docs",
+  "bg-tint-teams",
+  "bg-tint-audit",
+] as const;
+
+function tintFor(seed: string) {
+  let hash = 0;
+
+  for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+
+  return tints[hash % tints.length];
 }
 
-function formatUpdatedAt(updatedAt: Date) {
-  return `Updated ${updatedAt.toLocaleDateString(undefined, {
+function formatUpdated(updatedAt: Date) {
+  const days = Math.floor((Date.now() - updatedAt.getTime()) / 86_400_000);
+
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+
+  return updatedAt.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year:
-      updatedAt.getFullYear() === new Date().getFullYear()
-        ? undefined
-        : "numeric",
-  })}`;
+  });
+}
+
+function StatusPill({ status }: { status: string }) {
+  const archived = status === "archived";
+
+  return (
+    <span className="flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-tint-chip px-2 text-xs">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-1.5 rounded-full",
+          archived ? "border border-ink-3" : "bg-status-done",
+        )}
+      />
+      {archived ? "Archived" : "Active"}
+    </span>
+  );
+}
+
+function Star({
+  project,
+  active,
+  onToggle,
+}: {
+  project: ProjectListItem;
+  active: boolean;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      aria-label={
+        active
+          ? `Remove ${project.name} from favorites`
+          : `Add ${project.name} to favorites`
+      }
+      onClick={() => onToggle(project.id)}
+      className="relative z-[1] flex size-7 items-center justify-center rounded-md text-ink-2 outline-none hover:bg-tint-chip focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <StarIcon
+        className={cn("size-4", active && "fill-ink text-ink")}
+        aria-hidden="true"
+      />
+    </button>
+  );
+}
+
+function Tile({
+  project,
+  favorite,
+  onToggleFavorite,
+}: {
+  project: ProjectListItem;
+  favorite: boolean;
+  onToggleFavorite: (id: string) => void;
+}) {
+  const total = project.totalTasks ?? 0;
+  const done = project.doneTasks ?? 0;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+
+  return (
+    <article className="tile group relative flex flex-col overflow-hidden transition-colors hover:border-ink-3">
+      <header
+        className={cn(
+          "flex h-[52px] items-center gap-2.5 px-4",
+          tintFor(project.id),
+        )}
+      >
+        <span className="flex size-6 items-center justify-center rounded-md bg-tint-chip font-mono text-[11px]">
+          {project.name.charAt(0).toUpperCase()}
+        </span>
+        <StatusPill status={project.status} />
+        <span className="flex-1" />
+        <Star project={project} active={favorite} onToggle={onToggleFavorite} />
+      </header>
+      <div className="flex flex-1 flex-col gap-3 px-[18px] pt-3.5 pb-4">
+        <div className="flex flex-col gap-1.5">
+          <h3 className="flex items-baseline gap-2 text-[17px] font-semibold">
+            <Link
+              href={paths.project(project.slug)}
+              className="outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+            >
+              {project.name}
+            </Link>
+            <span className="font-mono text-xs font-normal text-ink-3">
+              {project.taskKeyPrefix ?? project.slug}
+            </span>
+          </h3>
+          <p className="line-clamp-2 min-h-10 text-sm leading-5 text-ink-2">
+            {project.description || "No description provided."}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <span
+            role="progressbar"
+            aria-label={`${done} of ${total} tasks done`}
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="h-1 flex-1 overflow-hidden rounded-full bg-sunken"
+          >
+            <span
+              className="block h-full bg-status-done"
+              style={{ width: `${pct}%` }}
+            />
+          </span>
+          <span className="font-mono text-xs text-ink-2">
+            {done}/{total}
+          </span>
+        </div>
+
+        <div className="mt-auto flex items-center gap-2 text-[13px] text-ink-2">
+          <span
+            aria-hidden="true"
+            className="size-2 rounded-[3px] border border-hairline bg-tint-teams"
+          />
+          {project.teamName ?? "Workspace level"}
+          <span className="flex-1" />
+          <span className="font-mono text-xs text-ink-3">
+            {formatUpdated(project.updatedAt)}
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Row({
+  project,
+  favorite,
+  onToggleFavorite,
+}: {
+  project: ProjectListItem;
+  favorite: boolean;
+  onToggleFavorite: (id: string) => void;
+}) {
+  const total = project.totalTasks ?? 0;
+  const done = project.doneTasks ?? 0;
+
+  return (
+    <li className="relative flex min-h-16 items-center gap-3 rounded-xl border-t border-hairline/60 px-3 py-2 first:border-t-0 hover:bg-hover">
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-lg text-ink",
+          tintFor(project.id),
+        )}
+      >
+        <FolderKanbanIcon className="size-4" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <Link
+          href={paths.project(project.slug)}
+          className="block truncate text-[15px] font-medium outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+        >
+          {project.name}
+        </Link>
+        <p className="truncate font-mono text-xs text-ink-3">
+          {project.taskKeyPrefix ?? project.slug}
+          <span className="hidden sm:inline">
+            {" · "}
+            {project.description || "No description provided."}
+          </span>
+        </p>
+      </div>
+      <span className="hidden w-24 shrink-0 font-mono text-xs text-ink-2 md:block">
+        {done}/{total} done
+      </span>
+      <StatusPill status={project.status} />
+      <span className="hidden w-32 truncate text-xs text-ink-2 lg:block">
+        {project.teamName ?? "Workspace level"}
+      </span>
+      <span className="hidden w-20 text-right font-mono text-xs text-ink-3 sm:block">
+        {formatUpdated(project.updatedAt)}
+      </span>
+      <Star project={project} active={favorite} onToggle={onToggleFavorite} />
+    </li>
+  );
 }
 
 export const ProjectList = ({
   isLoading,
   projects,
-  searchQuery,
-  sortBy,
-  initialStatus,
+  view,
+  hasFilters,
+  favoriteIds,
+  onToggleFavorite,
+  groupLabel,
 }: ProjectListProps) => {
-  const router = useRouter();
-  const [status, setStatus] = useState(initialStatus);
-  const [teamFilter, setTeamFilter] = useState("all");
-
-  useEffect(() => {
-    setStatus(initialStatus);
-  }, [initialStatus]);
-
-  const teamOptions = useMemo(() => {
-    const options = new Map<string, string>();
-
-    projects.forEach((project) => {
-      if (project.teamId && project.teamName) {
-        options.set(project.teamId, project.teamName);
-      }
-    });
-
-    return Array.from(options, ([id, name]) => ({ id, name })).sort((a, b) =>
-      a.name.localeCompare(b.name),
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="tile overflow-hidden">
+            <Skeleton className="h-[52px] rounded-none" />
+            <div className="flex flex-col gap-3 p-[18px]">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-1 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
     );
-  }, [projects]);
+  }
 
-  const filteredProjects = useMemo(() => {
-    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
-
-    return projects
-      .filter((project) => {
-        const matchesStatus = status === "all" || project.status === status;
-        const matchesTeam =
-          teamFilter === "all" ||
-          (teamFilter === "workspace" && !project.teamId) ||
-          project.teamId === teamFilter;
-        const matchesSearch =
-          normalizedSearchQuery.length === 0 ||
-          project.name.toLowerCase().includes(normalizedSearchQuery) ||
-          project.slug.toLowerCase().includes(normalizedSearchQuery) ||
-          (project.teamName ?? "")
-            .toLowerCase()
-            .includes(normalizedSearchQuery) ||
-          (project.description ?? "")
-            .toLowerCase()
-            .includes(normalizedSearchQuery);
-
-        return matchesStatus && matchesTeam && matchesSearch;
-      })
-      .sort((a, b) => {
-        if (sortBy === "name") {
-          return a.name.localeCompare(b.name);
+  if (projects.length === 0) {
+    return (
+      <EmptyState
+        icon={<FolderKanbanIcon className="size-4" aria-hidden="true" />}
+        title={hasFilters ? "No matching projects" : "No projects yet"}
+        description={
+          hasFilters
+            ? "Try a different project name, slug, team, or description."
+            : "Create a project to start organizing and tracking work across your team."
         }
+      />
+    );
+  }
 
-        if (sortBy === "status") {
-          return (
-            a.status.localeCompare(b.status) || a.name.localeCompare(b.name)
-          );
-        }
-
-        return b.updatedAt.getTime() - a.updatedAt.getTime();
-      });
-  }, [projects, searchQuery, sortBy, status, teamFilter]);
-
-  const hasFilters = searchQuery.trim() || teamFilter !== "all";
-  const emptyTitle = hasFilters ? "No matching projects" : "No projects yet";
-
-  const emptyDescription = hasFilters
-    ? "Try a different project name, slug, team, or description."
-    : "Create a project to start organizing and tracking work across your team.";
+  const favorites = projects.filter((project) =>
+    favoriteIds.includes(project.id),
+  );
+  const rest = projects.filter((project) => !favoriteIds.includes(project.id));
+  const render = (items: ProjectListItem[]) =>
+    view === "list" ? (
+      <ul aria-label="Projects" className="flex flex-col">
+        {items.map((project) => (
+          <Row
+            key={project.id}
+            project={project}
+            favorite={favoriteIds.includes(project.id)}
+            onToggleFavorite={onToggleFavorite}
+          />
+        ))}
+      </ul>
+    ) : (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((project) => (
+          <Tile
+            key={project.id}
+            project={project}
+            favorite={favoriteIds.includes(project.id)}
+            onToggleFavorite={onToggleFavorite}
+          />
+        ))}
+      </div>
+    );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Select value={teamFilter} onValueChange={setTeamFilter}>
-          <SelectTrigger className="h-(--control-h) w-full rounded-full border-transparent bg-sunken shadow-none hover:bg-hover sm:w-56">
-            <SelectValue placeholder="Filter by team" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All teams</SelectItem>
-            <SelectItem value="workspace">Workspace level</SelectItem>
-            {teamOptions.map((team) => (
-              <SelectItem key={team.id} value={team.id}>
-                {team.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="tile flex flex-col gap-4 p-5">
-              <div className="flex items-center gap-3">
-                <Skeleton className="size-10 shrink-0 rounded-xl" />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Skeleton className="h-4 w-36 max-w-full" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-              </div>
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-5 w-20 rounded-full" />
-            </div>
-          ))}
-        </div>
-      ) : filteredProjects.length === 0 ? (
-        <EmptyState
-          icon={<FolderKanbanIcon className="size-4" aria-hidden="true" />}
-          title={emptyTitle}
-          description={emptyDescription}
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              className="tile group relative flex flex-col gap-4 p-(--pad-tile) transition-colors duration-(--duration-fast) hover:border-line-strong"
-            >
-              <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-tint-projects text-ink">
-                  <FolderKanbanIcon className="size-5" />
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-semibold text-ink">
-                    <Link
-                      href={paths.project(project.slug)}
-                      className="outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
-                    >
-                      {project.name}
-                    </Link>
-                  </h3>
-                  <p className="truncate font-mono text-xs text-ink-3">
-                    {project.taskKeyPrefix ?? project.slug}
-                  </p>
-                </div>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="relative z-[1] -mt-1 -mr-1.5 rounded-full text-ink-2"
-                    >
-                      <MoreHorizontalIcon className="size-4" />
-                      <span className="sr-only">Open project actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        router.push(paths.project(project.slug));
-                      }}
-                    >
-                      <EyeIcon className="size-4" />
-                      View
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        router.push(paths.projectSettings(project.slug));
-                      }}
-                    >
-                      <SettingsIcon className="size-4" />
-                      Settings
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        router.push(paths.projectDangerSettings(project.slug));
-                      }}
-                    >
-                      <Trash2Icon className="size-4" />
-                      Danger zone
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <p className="line-clamp-2 min-h-10 text-sm text-ink-2">
-                {project.description || "No description provided."}
-              </p>
-
-              {project.totalTasks ? (
-                <div className="flex flex-col gap-1.5">
-                  <Progress
-                    value={
-                      project.totalTasks
-                        ? Math.round(
-                            ((project.doneTasks ?? 0) / project.totalTasks) *
-                              100,
-                          )
-                        : 0
-                    }
-                    aria-label={`${project.doneTasks ?? 0} of ${project.totalTasks} tasks done`}
-                  />
-                  <p className="font-mono text-[11px] text-ink-3">
-                    {project.doneTasks ?? 0} / {project.totalTasks} done
-                  </p>
-                </div>
-              ) : null}
-
-              <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
-                <Badge
-                  variant={
-                    project.status === "active" ? "success" : "secondary"
-                  }
-                >
-                  {formatProjectStatus(project.status)}
-                </Badge>
-                <span>{project.teamName ?? "Workspace level"}</span>
-                <span className="ml-auto text-ink-3">
-                  {formatUpdatedAt(project.updatedAt)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    <div className="flex flex-col gap-7">
+      {favorites.length > 0 ? (
+        <section aria-label="Favorites" className="flex flex-col gap-3">
+          <h2 className="eyebrow">Favorites</h2>
+          {render(favorites)}
+        </section>
+      ) : null}
+      {rest.length > 0 ? (
+        <section aria-label={groupLabel} className="flex flex-col gap-3">
+          {favorites.length > 0 ? (
+            <h2 className="eyebrow">{groupLabel}</h2>
+          ) : null}
+          {render(rest)}
+        </section>
+      ) : null}
     </div>
   );
 };

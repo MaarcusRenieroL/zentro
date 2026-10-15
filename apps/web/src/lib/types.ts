@@ -21,6 +21,8 @@ export type ProjectDetail = {
   createdAt: Date;
   updatedAt: Date;
   owner: string;
+  taskKeyPrefix?: string | null;
+  teamName?: string | null;
   openTasks: number;
   totalTasks: number;
   totalDocs: number;
