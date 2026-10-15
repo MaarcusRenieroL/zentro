@@ -35,6 +35,7 @@ import {
 } from "../../types/zod-schema";
 import type { TRPCContext } from "../../types";
 import { hasRecentDocEdit, visibleDocsCondition } from "../access";
+import { syncMentions } from "../mentions";
 import { buildChanges } from "@zentro/audit";
 import { listProcedure, permissionProcedure, router } from "../trpc";
 import {
@@ -397,6 +398,14 @@ export const docsRouter = router({
           teamId: doc.teamId,
           metadata: { slug: doc.slug },
         });
+        await syncMentions(tx, {
+          organizationId: activeOrganization.id,
+          memberId: member.id,
+          source: { type: "doc", id: doc.id },
+          text: doc.content,
+          via: "content",
+          mode: "replace",
+        });
 
         return doc;
       });
@@ -478,6 +487,7 @@ export const docsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
       const { id, content } = input;
+      const member = await getCurrentMember(ctx);
 
       return db.transaction(async (tx) => {
         const [updatedDoc] = await tx
@@ -519,6 +529,16 @@ export const docsRouter = router({
             metadata: { slug: updatedDoc.slug, fields: ["content"] },
           });
         }
+
+        // Task keys named in the doc link the doc to those tasks.
+        await syncMentions(tx, {
+          organizationId: activeOrganization.id,
+          memberId: member.id,
+          source: { type: "doc", id: updatedDoc.id },
+          text: content,
+          via: "content",
+          mode: "replace",
+        });
 
         return updatedDoc;
       });
@@ -687,6 +707,14 @@ export const docsRouter = router({
           projectId: doc.projectId,
           teamId: doc.teamId,
           metadata: { commentId: row.id, slug: doc.slug },
+        });
+        await syncMentions(tx, {
+          organizationId: activeOrganization.id,
+          memberId: member.id,
+          source: { type: "doc", id: doc.id },
+          text: input.body,
+          via: "comment",
+          mode: "append",
         });
 
         return row;

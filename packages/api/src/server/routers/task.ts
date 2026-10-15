@@ -38,9 +38,11 @@ import {
   permissionProcedure,
   router,
 } from "../trpc";
+import { syncMentions } from "../mentions";
 import { loadProjectById, projectFromInput, taskByKey } from "../resources";
 import {
   getChangedTaskFields,
+  getCurrentMember,
   getTaskForActiveOrganization,
   recordTaskChanges,
 } from "./task-helpers";
@@ -185,6 +187,14 @@ export const taskRouter = router({
               name: task.name,
               ...(assignedToMemberId ? { assignedToMemberId } : {}),
             },
+          });
+          await syncMentions(tx, {
+            organizationId: activeOrganization.id,
+            memberId: member.id,
+            source: { type: "task", id: task.id },
+            text: task.description,
+            via: "description",
+            mode: "replace",
           });
 
           return task;
@@ -643,6 +653,18 @@ export const taskRouter = router({
         } else {
           // Nothing changed, so there is nothing to record.
           ctx.audit.skipped("task.updated");
+        }
+
+        // Task keys named in the description link this task to them.
+        if (values.description !== undefined) {
+          await syncMentions(tx, {
+            organizationId: activeOrganization.id,
+            memberId: (await getCurrentMember(ctx)).id,
+            source: { type: "task", id: row.id },
+            text: values.description,
+            via: "description",
+            mode: "replace",
+          });
         }
 
         return row;

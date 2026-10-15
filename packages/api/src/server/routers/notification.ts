@@ -19,6 +19,7 @@ import {
   taskComments,
   tasks,
   users,
+  workLinks,
 } from "@zentro/db/schema";
 import { z } from "zod";
 
@@ -252,6 +253,102 @@ export const notificationRouter = router({
         quote: excerpt(row.body),
         createdAt: row.createdAt,
         href: `/tasks/${row.key}`,
+      });
+    }
+
+    // Your tasks named in someone else's doc or task text.
+    const mentionLinks = taskProjects.length
+      ? await db
+          .select({
+            id: workLinks.id,
+            createdAt: workLinks.createdAt,
+            sourceType: workLinks.sourceType,
+            sourceId: workLinks.sourceId,
+            actor: users.name,
+            key: tasks.key,
+          })
+          .from(workLinks)
+          .innerJoin(tasks, eq(tasks.id, workLinks.targetId))
+          .leftJoin(members, eq(members.id, workLinks.createdByMemberId))
+          .leftJoin(users, eq(users.id, members.userId))
+          .where(
+            and(
+              eq(workLinks.organizationId, activeOrganization.id),
+              eq(workLinks.kind, "mentions"),
+              inArray(workLinks.via, ["content", "description"]),
+              ne(workLinks.createdByMemberId, me.id),
+              gte(workLinks.createdAt, since),
+              isNull(tasks.deletedAt),
+              inArray(tasks.projectId, taskProjects),
+              or(
+                eq(tasks.assignedToMemberId, me.id),
+                eq(tasks.createdByMemberId, me.id),
+              ),
+            ),
+          )
+          .orderBy(desc(workLinks.createdAt))
+          .limit(LIMIT)
+      : [];
+    const sourceDocIds = mentionLinks
+      .filter((row) => row.sourceType === "doc")
+      .map((row) => row.sourceId);
+    const sourceTaskIds = mentionLinks
+      .filter((row) => row.sourceType === "task")
+      .map((row) => row.sourceId);
+    const [sourceDocs, sourceTasks] = await Promise.all([
+      sourceDocIds.length && docsVisible
+        ? db
+            .select({ id: docs.id, title: docs.title, slug: docs.slug })
+            .from(docs)
+            .where(
+              and(
+                inArray(docs.id, sourceDocIds),
+                isNull(docs.deletedAt),
+                docsVisible,
+              ),
+            )
+        : [],
+      sourceTaskIds.length
+        ? db
+            .select({ id: tasks.id, key: tasks.key })
+            .from(tasks)
+            .where(
+              and(
+                inArray(tasks.id, sourceTaskIds),
+                isNull(tasks.deletedAt),
+                inArray(tasks.projectId, taskProjects),
+              ),
+            )
+        : [],
+    ]);
+
+    for (const row of mentionLinks) {
+      const doc = sourceDocs.find((entry) => entry.id === row.sourceId);
+      const task = sourceTasks.find((entry) => entry.id === row.sourceId);
+      const where = doc
+        ? {
+            object: doc.title || "Untitled",
+            isKey: false,
+            href: `/docs/${doc.slug}`,
+          }
+        : task
+          ? { object: task.key, isKey: true, href: `/tasks/${task.key}` }
+          : null;
+
+      // A source the caller cannot see stays out of the inbox.
+      if (!where) continue;
+
+      items.push({
+        id: `link:${row.id}`,
+        kind: "mention",
+        actor: row.actor ?? "Someone",
+        verb: `linked ${row.key} in`,
+        object: where.object,
+        objectIsKey: where.isKey,
+        title: null,
+        quote: null,
+        createdAt: row.createdAt,
+        href: where.href,
       });
     }
 

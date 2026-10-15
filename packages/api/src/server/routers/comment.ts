@@ -8,6 +8,7 @@ import {
 } from "../../types/zod-schema";
 import { permissionProcedure, router } from "../trpc";
 import { taskByKey } from "../resources";
+import { syncMentions } from "../mentions";
 import { getCurrentMember, getTaskForActiveOrganization } from "./task-helpers";
 
 export const commentRouter = router({
@@ -77,6 +78,14 @@ export const commentRouter = router({
           projectId: task.projectId,
           teamId: task.teamId,
           metadata: { commentId: row.id, name: task.name },
+        });
+        await syncMentions(tx, {
+          organizationId: activeOrganization.id,
+          memberId: member.id,
+          source: { type: "task", id: task.id },
+          text: input.body,
+          via: "comment",
+          mode: "append",
         });
 
         return row;
