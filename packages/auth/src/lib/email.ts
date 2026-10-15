@@ -14,7 +14,7 @@ function getAppUrl() {
 
 export async function sendVerificationEmail(email: string, otp: string) {
   await resend.emails.send({
-    from: "Zentro <onboarding@resend.dev>",
+    from: authEnv.EMAIL_FROM,
     to: email,
     subject: "Verify your email",
     html: `
@@ -54,7 +54,7 @@ export async function sendVerificationEmail(email: string, otp: string) {
 
 export async function sendForgotPasswordEmail(email: string, resetUrl: string) {
   await resend.emails.send({
-    from: "Zentro <onboarding@resend.dev>",
+    from: authEnv.EMAIL_FROM,
     to: email,
     subject: "Reset your password",
     html: `
@@ -140,7 +140,7 @@ export async function sendOrgInviteEmail(
     : "Member";
 
   await resend.emails.send({
-    from: "Zentro <onboarding@resend.dev>",
+    from: authEnv.EMAIL_FROM,
     to: invitation.email,
     subject: `You're invited to join ${organizationName} on Zentro`,
     html: `

@@ -32,8 +32,15 @@ export function validateProductionEnv() {
   }
 }
 
+// Resend only delivers from its own address to the account owner. Set
+// EMAIL_FROM to a sender on a domain verified in Resend to reach everyone.
+const defaultEmailFrom = "Zentro <onboarding@resend.dev>";
+
 export const authEnv = {
   get RESEND_API_KEY() {
     return readRequiredEnv("RESEND_API_KEY");
+  },
+  get EMAIL_FROM() {
+    return process.env.EMAIL_FROM || defaultEmailFrom;
   },
 };
