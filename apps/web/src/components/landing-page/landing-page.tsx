@@ -473,21 +473,28 @@ export function LandingPage() {
           >
             {[
               ["Product", "#product"],
-              ["Modules", "#modules"],
-              ["Control", "#control"],
-            ].map(([name, href]) => (
-              <a
-                key={href}
-                href={href}
-                style={{
-                  color: "var(--ink2)",
-                  fontSize: 14,
-                  textDecoration: "none",
-                }}
-              >
-                {name}
-              </a>
-            ))}
+              ["Modules", "/modules"],
+              ["Pricing", "/pricing"],
+              ["Roadmap", "/roadmap"],
+              ["Security", "/security"],
+              ["Changelog", "/changelog"],
+            ].map(([name, href]) => {
+              const style = {
+                color: "var(--ink2)",
+                fontSize: 14,
+                textDecoration: "none",
+              } as const;
+
+              return href!.startsWith("/") ? (
+                <Link key={href} href={href!} style={style}>
+                  {name}
+                </Link>
+              ) : (
+                <a key={href} href={href} style={style}>
+                  {name}
+                </a>
+              );
+            })}
           </nav>
         ) : null}
         <div className="l-rise" style={{ flex: 1 }} />
