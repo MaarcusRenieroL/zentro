@@ -6,7 +6,7 @@ import { CalendarIcon, DownloadIcon, SearchIcon } from "lucide-react";
 
 import { auditCatalog, getAuditEvent } from "@zentro/audit";
 import { useTrpcClient } from "@zentro/api/react";
-import { toastError } from "@zentro/ui/index";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import { Button } from "@zentro/ui/shadcn/button";
 import { EmptyState } from "@zentro/ui/components/empty-state";
 import {
@@ -28,6 +28,7 @@ import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 import { ActorAvatar } from "~/src/components/actor-avatar";
 import { usePermission } from "~/src/components/permissions/permission-provider";
 import { sentenceFor } from "~/src/components/workspace/activity/activity-feed";
+import { useFrameAction } from "~/src/components/workspace/settings/frames";
 import { trpcResult } from "~/src/lib/trpc-result";
 
 type Row = Parameters<typeof sentenceFor>[0] & {
@@ -55,33 +56,35 @@ function Diff({ metadata }: { metadata: Record<string, unknown> }) {
   );
 
   return (
-    <div className="space-y-3 text-sm">
+    <div className="flex flex-col gap-3 text-sm">
       {changes.length ? (
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="text-muted-foreground">
-              <th className="pr-2">Field</th>
-              <th className="pr-2">Before</th>
-              <th>After</th>
-            </tr>
-          </thead>
-          <tbody>
-            {changes.map((change) => (
-              <tr key={change.field} className="align-top">
-                <td className="pr-2 font-medium">{change.field}</td>
-                <td className="pr-2 text-destructive break-all">
-                  {change.from ?? "none"}
-                </td>
-                <td className="break-all text-success-text">
-                  {change.to ?? "none"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+          {(["from", "to"] as const).map((side) => (
+            <div
+              key={side}
+              className="flex min-w-0 flex-col gap-1 rounded-md border border-hairline p-2.5"
+            >
+              <span className="font-sans text-[11px] text-ink-3">
+                {side === "from" ? "Before" : "After"}
+              </span>
+              {changes.map((change) => (
+                <span
+                  key={change.field}
+                  className={
+                    side === "from"
+                      ? "break-all text-ink-3 line-through"
+                      : "rounded-xs bg-selected px-1 break-all"
+                  }
+                >
+                  {change.field}: {change[side] ?? "none"}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
       ) : null}
       {Object.keys(rest).length ? (
-        <pre className="max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
+        <pre className="max-h-64 overflow-auto rounded-md border border-hairline bg-sunken p-2.5 text-xs">
           {JSON.stringify(rest, null, 2)}
         </pre>
       ) : null}
@@ -251,24 +254,29 @@ export const AuditLog: FC = () => {
     return days;
   }, [rows]);
 
+  const framedExport = useFrameAction(
+    canExport ? "Export CSV" : null,
+    () => void exportCsv(),
+    "export",
+  );
+
   const filtering =
     actor !== allValue || prefix !== allValue || from || to || debounced.trim();
 
   return (
     <div className="flex flex-col gap-4" data-testid="audit-log">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-[22px] leading-7 font-semibold">Audit log</h2>
-        <span className="rounded-full border border-hairline px-2 py-px font-mono text-[10px] tracking-[0.06em] text-ink-2">
-          OWNERS AND ADMINS
-        </span>
-        <span className="flex-1" />
-        {canExport ? (
-          <Button variant="outline" onClick={exportCsv}>
-            <DownloadIcon />
-            Export CSV
-          </Button>
-        ) : null}
-      </div>
+      {framedExport ? null : (
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-[22px] leading-7 font-semibold">Audit log</h2>
+          <span className="flex-1" />
+          {canExport ? (
+            <Button variant="outline" onClick={exportCsv}>
+              <DownloadIcon />
+              Export CSV
+            </Button>
+          ) : null}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative h-8 w-full sm:w-60">
@@ -355,7 +363,7 @@ export const AuditLog: FC = () => {
         </span>
         <span className="flex-1" />
         <span className="font-mono text-xs text-ink-3">
-          Every recorded event is kept
+          Every event is kept
         </span>
       </div>
 
@@ -441,32 +449,73 @@ export const AuditLog: FC = () => {
           {selected ? (
             <>
               <SheetHeader>
-                <SheetTitle>
+                <span className="eyebrow">
+                  {moduleOf(selected.action)} ·{" "}
                   {getAuditEvent(selected.action)?.label ?? selected.action}
+                </span>
+                <SheetTitle className="text-lg leading-6">
+                  {sentenceFor(selected)}
                 </SheetTitle>
-                <SheetDescription>{sentenceFor(selected)}</SheetDescription>
+                <SheetDescription className="sr-only">
+                  Details of this event
+                </SheetDescription>
               </SheetHeader>
-              <div className="space-y-4 px-4 pb-6 text-sm">
-                <dl className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-1 text-xs">
-                  <dt className="text-muted-foreground">Time</dt>
-                  <dd>{formatEventTime(selected.createdAt)}</dd>
-                  <dt className="text-muted-foreground">Action</dt>
-                  <dd className="break-all">{selected.action}</dd>
-                  <dt className="text-muted-foreground">Target</dt>
-                  <dd className="break-all">
-                    {selected.targetType} {selected.targetLabel ?? ""} (
-                    {selected.targetId})
+              <div className="flex flex-col gap-5 px-4 pb-6 text-sm">
+                <dl className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-[13px]">
+                  <dt className="text-ink-3">Actor</dt>
+                  <dd className="flex items-center gap-2">
+                    <ActorAvatar
+                      name={
+                        selected.actorName ?? selected.actorEmail ?? "System"
+                      }
+                      size={20}
+                    />
+                    {selected.actorName ?? selected.actorEmail ?? "System"}
                   </dd>
-                  <dt className="text-muted-foreground">IP</dt>
-                  <dd>{selected.ip ?? "unknown"}</dd>
-                  <dt className="text-muted-foreground">User agent</dt>
+                  <dt className="text-ink-3">Time</dt>
+                  <dd className="font-mono text-xs">
+                    {formatEventTime(selected.createdAt)}
+                  </dd>
+                  <dt className="text-ink-3">Action</dt>
+                  <dd className="font-mono text-xs break-all">
+                    {selected.action}
+                  </dd>
+                  <dt className="text-ink-3">Target</dt>
                   <dd className="break-all">
+                    {selected.targetType} {selected.targetLabel ?? ""}
+                  </dd>
+                  <dt className="text-ink-3">IP address</dt>
+                  <dd className="font-mono text-xs">
+                    {selected.ip ?? "unknown"}
+                  </dd>
+                  <dt className="text-ink-3">User agent</dt>
+                  <dd className="font-mono text-xs break-all">
                     {selected.userAgent ?? "unknown"}
                   </dd>
-                  <dt className="text-muted-foreground">Request</dt>
-                  <dd className="break-all">{selected.requestId ?? "none"}</dd>
+                  <dt className="text-ink-3">Request ID</dt>
+                  <dd className="font-mono text-xs break-all">
+                    {selected.requestId ?? "none"}
+                  </dd>
+                  <dt className="text-ink-3">Event ID</dt>
+                  <dd className="font-mono text-xs break-all">{selected.id}</dd>
                 </dl>
-                <Diff metadata={selected.metadata} />
+                <div className="flex flex-col gap-2">
+                  <span className="eyebrow">Change</span>
+                  <Diff metadata={selected.metadata} />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      void navigator.clipboard
+                        ?.writeText(JSON.stringify(selected, null, 2))
+                        .then(() => toastSuccess("Event copied"));
+                    }}
+                  >
+                    Copy event JSON
+                  </Button>
+                </div>
               </div>
             </>
           ) : null}

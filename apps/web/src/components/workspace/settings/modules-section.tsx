@@ -202,7 +202,7 @@ export const ModulesSection: FC = () => {
         description={`Turn modules on or off for everyone in your organization. Turning one off hides it but keeps its data, so you can turn it back on later.${data.canManage ? "" : " Only owners and admins can change modules."}`}
       />
 
-      <div className="grid items-start gap-4 sm:grid-cols-2">
+      <div className="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {data.modules.map((module) => {
           const Icon = getModuleIcon(module.icon);
           const isSaving = savingId === module.id;
@@ -275,7 +275,7 @@ export const ModulesSection: FC = () => {
               {showWarn ? (
                 <div
                   role="alert"
-                  className="flex gap-3 rounded-xl border border-warning/50 bg-warning-subtle/60 p-3.5 sm:col-span-2"
+                  className="flex gap-3 rounded-xl border border-warning/50 bg-warning-subtle/60 p-3.5 sm:col-span-2 xl:col-span-3"
                 >
                   <span
                     aria-hidden="true"
