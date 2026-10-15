@@ -1,13 +1,11 @@
-import { getInitials } from "./task-detail-utils";
+import { ActorAvatar } from "~/src/components/actor-avatar";
 
 type Props = {
   value: string | null | undefined;
+  size?: number;
 };
 
-export function AvatarInitials({ value }: Props) {
-  return (
-    <span className="inline-flex size-6 items-center justify-center rounded-full bg-signal-subtle text-[10px] font-semibold text-signal">
-      {getInitials(value)}
-    </span>
-  );
+/** A person as initials on their tint, the same chip used across the app. */
+export function AvatarInitials({ value, size = 24 }: Props) {
+  return <ActorAvatar name={value || "?"} size={size} />;
 }

@@ -1,19 +1,16 @@
 "use client";
 
 import { paths } from "~/src/lib/paths";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeftIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { ErrorState } from "@zentro/ui/components/error-state";
-import { EmptyState } from "@zentro/ui/components/empty-state";
 import { DetailSkeleton } from "@zentro/ui/components/skeletons";
-import { Button } from "@zentro/ui/shadcn/button";
 
+import { NotFoundContent } from "~/src/components/system/not-found-content";
 import { TaskDetailView } from "~/src/features/tasks/components/task-detail/task-detail-view";
 import type {
   MemberOption,
@@ -36,14 +33,6 @@ export default function TaskDetailPage() {
   const router = useRouter();
 
   const trpc = useTrpcClient();
-
-  const selectedAssignee = useMemo(() => {
-    if (!task?.assignedToMemberId) {
-      return null;
-    }
-
-    return members.find((member) => member.id === task.assignedToMemberId);
-  }, [members, task?.assignedToMemberId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -201,14 +190,13 @@ export default function TaskDetailPage() {
   }
 
   if (!task) {
-    return <TaskDetailNotFound />;
+    return <TaskDetailNotFound taskKey={decodeURIComponent(taskKey)} />;
   }
 
   return (
     <TaskDetailView
       task={task}
       members={members}
-      selectedAssignee={selectedAssignee}
       savingField={savingField}
       onSave={saveTask}
       onDelete={deleteTask}
@@ -219,19 +207,11 @@ export default function TaskDetailPage() {
   );
 }
 
-function TaskDetailNotFound() {
+function TaskDetailNotFound({ taskKey }: { taskKey: string }) {
   return (
-    <section className="mx-auto flex w-full max-w-xl flex-col gap-4 py-10">
-      <Button asChild variant="ghost" className="w-fit">
-        <Link href={paths.tasks()}>
-          <ArrowLeftIcon className="size-4" />
-          Back to tasks
-        </Link>
-      </Button>
-      <EmptyState
-        title="Task not found"
-        description="This task may have been moved, deleted, or created in another organization."
-      />
-    </section>
+    <NotFoundContent
+      inShell
+      description={`${taskKey} doesn’t exist, or it was deleted. It may also belong to another organization.`}
+    />
   );
 }

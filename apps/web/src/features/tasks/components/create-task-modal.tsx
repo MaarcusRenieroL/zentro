@@ -1,6 +1,9 @@
 "use client";
 
-import { useReachable } from "~/src/components/permissions/permission-provider";
+import {
+  useCurrentUserId,
+  useReachable,
+} from "~/src/components/permissions/permission-provider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTrpcClient } from "@zentro/api/react";
 import {
@@ -9,17 +12,15 @@ import {
 } from "@zentro/api/types/zod-schema";
 import { Button } from "@zentro/ui/shadcn/button";
 import { RichTextEditor } from "@zentro/ui/components/rich-text-editor";
+import { PriorityMeter, StatusGlyph } from "@zentro/ui/components/status-glyph";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@zentro/ui/shadcn/dialog";
-import { Field, FieldGroup, FieldLabel } from "@zentro/ui/shadcn/field";
-import { Input } from "@zentro/ui/shadcn/input";
 import {
   Select,
   SelectContent,
@@ -27,11 +28,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@zentro/ui/shadcn/select";
+import { cn } from "@zentro/ui/lib/utils";
 import { toastError, toastSuccess } from "@zentro/ui/index";
-import { PlusIcon } from "lucide-react";
+import { CalendarIcon, PlusIcon, XIcon } from "lucide-react";
 import { Kbd } from "@zentro/ui/components/kbd";
-import { type FC, useEffect, useState } from "react";
+import {
+  type FC,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
+
+import { ActorAvatar } from "~/src/components/actor-avatar";
 
 type ProjectOption = {
   id: string;
@@ -42,6 +52,7 @@ type ProjectOption = {
 
 type MemberOption = {
   id: string;
+  userId: string;
   name: string;
   email: string;
   role: string;
@@ -60,6 +71,36 @@ type Props = {
 
 const unassignedValue = "unassigned";
 
+const statusOptions = [
+  ["backlog", "Backlog"],
+  ["todo", "To do"],
+  ["in-progress", "In progress"],
+  ["review", "Review"],
+  ["done", "Done"],
+] as const;
+
+// The form checks what the server checks, plus what only makes sense while
+// creating: a new task is not due in the past.
+const formSchema = createTaskSchema.superRefine((values, ctx) => {
+  if (!values.dueAt) return;
+
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  if (new Date(values.dueAt).getTime() < today.getTime()) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["dueAt"],
+      message: "That date has passed. Pick today or later.",
+    });
+  }
+});
+
+const messages: Partial<Record<keyof CreateTaskFormValues, string>> = {
+  name: "Give the task a name so people know what it’s about.",
+};
+
 const getDateInputValue = (value: unknown) => {
   if (value instanceof Date) {
     return value.toISOString().slice(0, 10);
@@ -72,6 +113,45 @@ const getDateInputValue = (value: unknown) => {
   return "";
 };
 
+/** A 44px field box: rose when it has an error, violet ring on focus. */
+const fieldBox = (invalid: boolean, extra?: string) =>
+  cn(
+    "h-11 w-full justify-start rounded-md border-hairline bg-surface px-3 text-[15px] shadow-none data-[size=default]:h-11 [&>svg:last-child]:ml-auto",
+    extra,
+    invalid &&
+      "border-danger focus-visible:border-danger focus-visible:ring-danger/22",
+  );
+
+function FieldError({ children }: { children?: ReactNode }) {
+  if (!children) return null;
+
+  return (
+    <p
+      role="alert"
+      className="flex gap-1.5 text-[13px] leading-5 text-danger-text"
+    >
+      <span aria-hidden="true" className="font-mono font-medium">
+        !
+      </span>
+      {children}
+    </p>
+  );
+}
+
+function Label({
+  htmlFor,
+  children,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label htmlFor={htmlFor} className="text-[13px] font-medium text-ink">
+      {children}
+    </label>
+  );
+}
+
 const CreateTaskModalInner: FC<Props> = ({
   defaultProjectId = "",
   defaultStatus = "todo",
@@ -82,6 +162,7 @@ const CreateTaskModalInner: FC<Props> = ({
   hideTrigger = false,
 }) => {
   const trpc = useTrpcClient();
+  const userId = useCurrentUserId();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = (value: boolean) => {
@@ -93,30 +174,31 @@ const CreateTaskModalInner: FC<Props> = ({
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
+  const blank = {
+    projectId: defaultProjectId,
+    name: "",
+    description: "",
+    status: defaultStatus,
+    priority: "medium" as const,
+    assignedToMemberId: null,
+    dueAt: null,
+  };
   const {
     control,
     handleSubmit,
     reset,
     setValue,
-    formState: { isSubmitting },
+    getFieldState,
+    formState: { isSubmitting, errors, isSubmitted },
   } = useForm<CreateTaskFormValues>({
-    resolver: zodResolver(createTaskSchema),
-    defaultValues: {
-      projectId: defaultProjectId,
-      name: "",
-      description: "",
-      status: defaultStatus,
-      priority: "medium",
-      assignedToMemberId: null,
-      dueAt: null,
-    },
+    resolver: zodResolver(formSchema),
+    defaultValues: blank,
     mode: "onTouched",
   });
 
   const chosenProject = useWatch({ control, name: "projectId" });
-  const selectedPrefix =
-    projects.find((project) => project.id === chosenProject)?.taskKeyPrefix ??
-    null;
+  const selected = projects.find((project) => project.id === chosenProject);
+  const errorCount = Object.keys(errors).length;
 
   useEffect(() => {
     if (!open) return;
@@ -136,32 +218,31 @@ const CreateTaskModalInner: FC<Props> = ({
 
         if (!isMounted) return;
 
-        const activeProjects = projectList.filter(
-          (project) => project.status === "active",
-        );
-
         setProjects(
-          activeProjects.map((project) => ({
-            id: project.id,
-            name: project.name,
-            taskKeyPrefix: project.taskKeyPrefix,
-            teamName: project.teamName,
-          })),
+          projectList
+            .filter((project) => project.status === "active")
+            .map((project) => ({
+              id: project.id,
+              name: project.name,
+              taskKeyPrefix: project.taskKeyPrefix,
+              teamName: project.teamName,
+            })),
         );
         setMembers(
           memberList.map((member) => ({
             id: member.id,
+            userId: member.userId,
             name: member.name,
             email: member.email,
             role: member.role,
           })),
         );
 
-        if (!defaultProjectId && activeProjects[0]) {
-          setValue("projectId", activeProjects[0].id, {
-            shouldDirty: true,
-            shouldValidate: false,
-          });
+        // New work is yours unless you hand it to someone.
+        const mine = memberList.find((member) => member.userId === userId);
+
+        if (mine && !getFieldState("assignedToMemberId").isDirty) {
+          setValue("assignedToMemberId", mine.id);
         }
       } catch {
         toastError("Could not load projects", "Please try again.");
@@ -178,21 +259,13 @@ const CreateTaskModalInner: FC<Props> = ({
     return () => {
       isMounted = false;
     };
-  }, [defaultProjectId, open, setValue, trpc]);
+  }, [getFieldState, open, setValue, trpc, userId]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
 
     if (!nextOpen) {
-      reset({
-        projectId: defaultProjectId,
-        name: "",
-        description: "",
-        status: defaultStatus,
-        priority: "medium",
-        assignedToMemberId: null,
-        dueAt: null,
-      });
+      reset(blank);
     }
   };
 
@@ -208,7 +281,7 @@ const CreateTaskModalInner: FC<Props> = ({
       toastSuccess("Task created", `${task.key} is ready.`);
 
       await onTaskCreated?.();
-      reset();
+      reset(blank);
       setOpen(false);
     } catch (error) {
       toastError(
@@ -218,12 +291,20 @@ const CreateTaskModalInner: FC<Props> = ({
     }
   };
 
+  const submit = handleSubmit(onSubmit);
+  const onKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      void submit();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {hideTrigger ? null : (
         <DialogTrigger asChild>
           {trigger ?? (
-            <Button className="w-full sm:w-fit">
+            <Button className="h-10 px-3.5 font-semibold">
               <PlusIcon className="size-4" />
               Create task
             </Button>
@@ -231,261 +312,308 @@ const CreateTaskModalInner: FC<Props> = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-[34rem]">
-        <form noValidate onSubmit={handleSubmit(onSubmit)}>
-          <FieldGroup>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2.5">
-                New task
-                <span className="rounded-xs border border-hairline px-1.5 py-px font-mono text-xs font-normal text-ink-3">
-                  {selectedPrefix ? `${selectedPrefix}-…` : "No key yet"}
-                </span>
-              </DialogTitle>
-              <DialogDescription className="sr-only">
-                Add work to a project and get the next project task key.
-              </DialogDescription>
-            </DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="gap-0 p-0 sm:max-w-[600px]"
+      >
+        <form noValidate onSubmit={submit} onKeyDown={onKeyDown}>
+          <div className="flex items-center gap-2.5 pt-4 pr-4 pb-3 pl-6">
+            <DialogTitle className="text-lg font-semibold">
+              New task
+            </DialogTitle>
+            <span className="rounded-sm border border-dashed border-line-strong px-2 py-px font-mono text-xs text-ink-3">
+              {selected ? `${selected.taskKeyPrefix}-…` : "No key yet"}
+            </span>
+            <span className="flex-1" />
+            <DialogClose asChild>
+              <Button variant="ghost" size="icon-sm" className="size-8">
+                <XIcon />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+            <DialogDescription className="sr-only">
+              Add work to a project and get the next project task key.
+            </DialogDescription>
+          </div>
 
-            <div className="grid gap-4">
-              <Controller
-                name="projectId"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel>Project</FieldLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isLoadingProjects || !projects.length}
+          <div className="flex flex-col gap-4 px-6 pt-1 pb-5">
+            <Controller
+              name="projectId"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-1.5">
+                  <Label>Project</Label>
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={(value) => {
+                      if (value !== "") field.onChange(value);
+                    }}
+                    onOpenChange={(isOpen) => {
+                      if (!isOpen) field.onBlur();
+                    }}
+                    disabled={isLoadingProjects || !projects.length}
+                  >
+                    <SelectTrigger
+                      aria-invalid={Boolean(fieldState.error)}
+                      aria-label="Project"
+                      className={fieldBox(Boolean(fieldState.error))}
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={
-                            isLoadingProjects
-                              ? "Loading projects..."
-                              : "Select project"
-                          }
+                      {selected ? (
+                        <span className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] bg-tint-projects font-mono text-[10px] text-ink">
+                          {selected.name.charAt(0).toUpperCase()}
+                        </span>
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className="size-[22px] shrink-0 rounded-[7px] border-[1.5px] border-dashed border-line-strong"
                         />
+                      )}
+                      <SelectValue
+                        placeholder={
+                          isLoadingProjects
+                            ? "Loading projects..."
+                            : "Choose a project"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                          <span className="font-mono text-xs text-ink-3">
+                            {project.taskKeyPrefix}
+                            {project.teamName ? ` · ${project.teamName}` : ""}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!isLoadingProjects && !projects.length ? (
+                    <p className="text-[13px] text-ink-3">
+                      No active projects are available.
+                    </p>
+                  ) : null}
+                  <FieldError>{fieldState.error?.message}</FieldError>
+                </div>
+              )}
+            />
+
+            <Controller
+              name="name"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="task-name">Task name</Label>
+                  <input
+                    id="task-name"
+                    placeholder="What needs to happen?"
+                    aria-invalid={Boolean(fieldState.error)}
+                    className={fieldBox(
+                      Boolean(fieldState.error),
+                      "border outline-none placeholder:text-ink-3 focus-visible:border-signal focus-visible:ring-[3px] focus-visible:ring-ring/22",
+                    )}
+                    {...field}
+                  />
+                  <FieldError>
+                    {fieldState.error
+                      ? (messages.name ?? fieldState.error.message)
+                      : null}
+                  </FieldError>
+                </div>
+              )}
+            />
+
+            <Controller
+              name="description"
+              control={control}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-1.5">
+                  <Label>Description</Label>
+                  <RichTextEditor
+                    value={field.value ?? ""}
+                    showActions={false}
+                    onChange={field.onChange}
+                    onSave={field.onChange}
+                    placeholder="Add details, steps or links."
+                    minHeightClassName="[&_.ProseMirror]:min-h-[60px]"
+                  />
+                  <FieldError>{fieldState.error?.message}</FieldError>
+                </div>
+              )}
+            />
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Status</Label>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger
+                        aria-label="Status"
+                        className={fieldBox(false)}
+                      >
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.taskKeyPrefix} - {project.name}
-                            {project.teamName ? ` · ${project.teamName}` : ""}
+                        {statusOptions.map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            <StatusGlyph status={value} size={12} decorative />
+                            {label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {!isLoadingProjects && !projects.length && (
-                      <p className="text-xs text-muted-foreground">
-                        No active projects are available.
-                      </p>
-                    )}
-                    {fieldState.error && (
-                      <p className="text-xs text-destructive">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </Field>
+                  </div>
                 )}
               />
 
               <Controller
-                name="name"
+                name="priority"
                 control={control}
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel htmlFor="task-name">Task name</FieldLabel>
-                    <Input
-                      id="task-name"
-                      placeholder="e.g., Draft onboarding checklist"
-                      {...field}
-                    />
-                    {fieldState.error && (
-                      <p className="text-xs text-destructive">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name="description"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <Field>
-                    <FieldLabel>Description</FieldLabel>
-                    <RichTextEditor
-                      value={field.value ?? ""}
-                      showActions={false}
-                      onChange={field.onChange}
-                      onSave={field.onChange}
-                      placeholder="Add context, acceptance notes, or links."
-                      minHeightClassName="[&_.ProseMirror]:min-h-28"
-                    />
-                    {fieldState.error && (
-                      <p className="text-xs text-destructive">
-                        {fieldState.error.message}
-                      </p>
-                    )}
-                  </Field>
-                )}
-              />
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Controller
-                  name="status"
-                  control={control}
-                  render={({ field }) => (
-                    <Field>
-                      <FieldLabel>Status</FieldLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
+                render={({ field }) => (
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Priority</Label>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger
+                        aria-label="Priority"
+                        className={fieldBox(false)}
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="backlog">Backlog</SelectItem>
-                          <SelectItem value="todo">To do</SelectItem>
-                          <SelectItem value="in-progress">
-                            In progress
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(["low", "medium", "high"] as const).map((value) => (
+                          <SelectItem key={value} value={value}>
+                            <PriorityMeter priority={value} />
+                            {value.charAt(0).toUpperCase() + value.slice(1)}
                           </SelectItem>
-                          <SelectItem value="review">Review</SelectItem>
-                          <SelectItem value="done">Done</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
-                />
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              />
 
-                <Controller
-                  name="priority"
-                  control={control}
-                  render={({ field }) => (
-                    <Field>
-                      <FieldLabel>Priority</FieldLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
-                />
-
-                <Controller
-                  name="dueAt"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <Field>
-                      <FieldLabel htmlFor="task-due-date">Due date</FieldLabel>
-                      <Input
+              <Controller
+                name="dueAt"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="task-due-date">Due date</Label>
+                    <div className="relative">
+                      <CalendarIcon
+                        aria-hidden="true"
+                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-2"
+                      />
+                      <input
                         id="task-due-date"
                         type="date"
+                        aria-invalid={Boolean(fieldState.error)}
                         value={getDateInputValue(field.value)}
                         onBlur={field.onBlur}
                         onChange={(event) =>
                           field.onChange(event.target.value || null)
                         }
+                        className={fieldBox(
+                          Boolean(fieldState.error),
+                          cn(
+                            "border pl-9 font-mono outline-none focus-visible:border-signal focus-visible:ring-[3px] focus-visible:ring-ring/22",
+                            !field.value && "text-ink-3",
+                          ),
+                        )}
                       />
-                      {fieldState.error && (
-                        <p className="text-xs text-destructive">
-                          {fieldState.error.message}
-                        </p>
-                      )}
-                    </Field>
-                  )}
-                />
-                <Controller
-                  name="assignedToMemberId"
-                  control={control}
-                  render={({ field }) => (
-                    <Field>
-                      <FieldLabel>Assignee</FieldLabel>
-                      <Select
-                        value={field.value ?? unassignedValue}
-                        onValueChange={(value) =>
-                          field.onChange(
-                            value === unassignedValue ? null : value,
-                          )
-                        }
-                        disabled={isLoadingMembers}
+                    </div>
+                    <FieldError>{fieldState.error?.message}</FieldError>
+                  </div>
+                )}
+              />
+              <Controller
+                name="assignedToMemberId"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex flex-col gap-1.5">
+                    <Label>Assignee</Label>
+                    <Select
+                      value={field.value ?? unassignedValue}
+                      onValueChange={(value) => {
+                        // Radix reports "" when the options arrive together
+                        // with the value; no option has an empty value.
+                        if (value === "") return;
+                        field.onChange(
+                          value === unassignedValue ? null : value,
+                        );
+                      }}
+                      disabled={isLoadingMembers}
+                    >
+                      <SelectTrigger
+                        aria-label="Assignee"
+                        className={fieldBox(false)}
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue
-                            placeholder={
-                              isLoadingMembers
-                                ? "Loading members..."
-                                : "Select assignee"
-                            }
+                        <SelectValue
+                          placeholder={
+                            isLoadingMembers
+                              ? "Loading members..."
+                              : "Select assignee"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={unassignedValue}>
+                          <span
+                            aria-hidden="true"
+                            className="size-[22px] rounded-full border-[1.5px] border-dashed border-line-strong"
                           />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={unassignedValue}>
-                            Unassigned
+                          Unassigned
+                        </SelectItem>
+                        {members.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            <ActorAvatar name={member.name} size={22} />
+                            {member.name}
+                            {member.userId === userId ? " (you)" : ""}
                           </SelectItem>
-                          {members.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                              {member.name} - {member.email}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
-                />
-              </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              />
             </div>
+          </div>
 
-            <DialogFooter className="items-center sm:justify-between">
+          <div className="flex items-center gap-2.5 border-t border-hairline py-3.5 pr-4 pl-6">
+            {isSubmitted && errorCount ? (
+              <span role="status" className="text-[13px] text-danger-text">
+                {errorCount === 1
+                  ? "1 field needs a fix before this task can be created."
+                  : `${errorCount} fields need a fix before this task can be created.`}
+              </span>
+            ) : (
               <span className="hidden text-[13px] text-ink-3 sm:block">
                 Press C anywhere to open this.
               </span>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleOpenChange(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={
-                    isSubmitting ||
-                    isLoadingProjects ||
-                    isLoadingMembers ||
-                    !projects.length
-                  }
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center gap-2">
-                      <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                      Creating task...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      Create task
-                      <Kbd className="border-transparent bg-on-signal/20 text-on-signal">
-                        ⏎
-                      </Kbd>
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </DialogFooter>
-          </FieldGroup>
+            )}
+            <span className="flex-1" />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              className="h-10 border-hairline bg-transparent px-3.5"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              loading={isSubmitting}
+              disabled={isSubmitting || isLoadingProjects || !projects.length}
+              className="h-10 px-3.5 font-semibold"
+            >
+              Create task
+              <Kbd className="ml-1 border-transparent bg-on-signal/20 text-on-signal">
+                ⌘↵
+              </Kbd>
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

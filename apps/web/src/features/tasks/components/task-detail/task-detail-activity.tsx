@@ -1,20 +1,14 @@
 "use client";
 
-import { authClient } from "@zentro/auth/client";
-import { useEffect, useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 
-import {
-  CircleDotIcon,
-  HistoryIcon,
-  MessageSquareIcon,
-  SendIcon,
-} from "lucide-react";
+import { CircleDotIcon, HistoryIcon, MessageSquareIcon } from "lucide-react";
 
+import { Kbd } from "@zentro/ui/components/kbd";
 import {
   RichTextEditor,
   RichTextPreview,
 } from "@zentro/ui/components/rich-text-editor";
-import { Badge } from "@zentro/ui/shadcn/badge";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   Tabs,
@@ -36,6 +30,9 @@ type Props = {
   canComment?: boolean;
 };
 
+const tabTrigger =
+  "h-full flex-none rounded-none px-0 text-sm font-normal data-[state=active]:font-medium";
+
 export function TaskDetailActivity({
   members,
   comments,
@@ -49,58 +46,38 @@ export function TaskDetailActivity({
   );
 
   return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold">Activity</h2>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="secondary" className="rounded-md">
-            {comments.length} comments
-          </Badge>
-          <Badge variant="outline" className="rounded-md">
-            {historyEvents.length} updates
-          </Badge>
-        </div>
-      </div>
-
-      <Tabs defaultValue="comments" className="flex-col gap-3">
-        <TabsList className="h-8 w-full justify-start overflow-x-auto rounded-md bg-muted/60 p-1 sm:w-fit">
-          <TabsTrigger value="all" className="gap-2">
-            <CircleDotIcon className="size-3.5" />
-            All
-          </TabsTrigger>
-          <TabsTrigger value="comments" className="gap-2">
-            <MessageSquareIcon className="size-3.5" />
+    <section aria-label="Activity" className="flex flex-col">
+      <Tabs defaultValue="comments" className="flex-col gap-3.5">
+        <TabsList
+          variant="line"
+          className="h-auto w-full justify-start gap-5 group-data-horizontal/tabs:h-9"
+        >
+          <TabsTrigger value="comments" className={tabTrigger}>
             Comments
+            <span className="font-mono text-xs text-ink-3">
+              {comments.length}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
-            <HistoryIcon className="size-3.5" />
+          <TabsTrigger value="history" className={tabTrigger}>
             History
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="comments" className="m-0 min-w-0 space-y-4">
+        <TabsContent
+          value="comments"
+          className="m-0 flex min-w-0 flex-col gap-3.5"
+        >
+          <CommentList comments={comments} />
           {canComment ? (
             <CommentComposer
               disabled={commentDisabled}
               onAddComment={onAddComment}
             />
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-3">
               You do not have permission to comment on this task.
             </p>
           )}
-          <CommentList comments={comments} />
-        </TabsContent>
-
-        <TabsContent value="all" className="m-0 min-w-0">
-          <ActivityList
-            events={activityEvents}
-            members={members}
-            includeComments
-          />
         </TabsContent>
 
         <TabsContent value="history" className="m-0 min-w-0">
@@ -116,60 +93,76 @@ type CommentComposerProps = {
   onAddComment: (body: string) => void;
 };
 
+/** A card at the end of the thread: the editor opens once you start. */
 function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
-  const [currentUserName, setCurrentUserName] = useState("");
-
-  useEffect(() => {
-    void authClient.getSession().then(({ data }) => {
-      setCurrentUserName(data?.user.name ?? data?.user.email ?? "");
-    });
-  }, []);
   const [isComposing, setIsComposing] = useState(false);
+  const [draft, setDraft] = useState("");
   const [editorKey, setEditorKey] = useState(0);
+  const empty = !draft || draft === "<p></p>";
 
-  if (!isComposing) {
-    return (
-      <div className="flex items-start gap-3 rounded-2xl border border-hairline/60 bg-card shadow-sm p-3 shadow-xs">
-        <div className="pt-0.5">
-          <AvatarInitials value={currentUserName} />
-        </div>
-        <button
-          className="flex min-h-10 min-w-0 flex-1 items-center rounded-xl border border-hairline/60 bg-surface px-3 text-left text-sm text-muted-foreground transition hover:border-primary/30 hover:bg-muted/40 hover:text-foreground"
-          onClick={() => setIsComposing(true)}
-        >
-          Add a comment...
-        </button>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Add comment"
-          onClick={() => setIsComposing(true)}
-        >
-          <SendIcon className="size-4" />
-        </Button>
-      </div>
-    );
-  }
+  const send = () => {
+    if (empty || disabled) return;
+    onAddComment(draft);
+    setDraft("");
+    setEditorKey((key) => key + 1);
+    setIsComposing(false);
+  };
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      send();
+    }
+  };
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-hairline/60 bg-card shadow-sm p-3 shadow-xs">
-      <div className="pt-1">
-        <AvatarInitials value={currentUserName} />
-      </div>
-      <div className="min-w-0 flex-1">
+    <div
+      onKeyDown={onKeyDown}
+      className="flex flex-col gap-2.5 rounded-xl border border-hairline bg-surface p-3"
+    >
+      {isComposing ? (
         <RichTextEditor
           key={editorKey}
           value=""
           disabled={disabled}
-          placeholder="Add a comment..."
-          minHeightClassName="[&_.ProseMirror]:min-h-24"
-          onCancel={() => setIsComposing(false)}
-          onSave={(body) => {
-            onAddComment(body);
-            setEditorKey((key) => key + 1);
-            setIsComposing(false);
-          }}
+          showActions={false}
+          placeholder="Write a comment."
+          minHeightClassName="[&_.ProseMirror]:min-h-16"
+          onChange={setDraft}
+          onSave={setDraft}
         />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsComposing(true)}
+          className="min-h-11 rounded-md px-0.5 text-left text-[15px] text-ink-3 outline-none hover:text-ink-2 focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Write a comment.
+        </button>
+      )}
+      <div className="flex items-center gap-2">
+        <span className="flex-1" />
+        {isComposing ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setDraft("");
+              setEditorKey((key) => key + 1);
+              setIsComposing(false);
+            }}
+          >
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          variant="outline"
+          onClick={() => (isComposing ? send() : setIsComposing(true))}
+          disabled={disabled}
+          className="h-8 border-hairline bg-transparent px-3 text-[13px]"
+        >
+          Comment
+          <Kbd className="ml-1">⌘↵</Kbd>
+        </Button>
       </div>
     </div>
   );
@@ -178,37 +171,31 @@ function CommentComposer({ disabled, onAddComment }: CommentComposerProps) {
 function CommentList({ comments }: { comments: TaskComment[] }) {
   if (!comments.length) {
     return (
-      <ActivityEmptyState
-        icon={<MessageSquareIcon className="size-4" />}
-        title="No comments yet"
-        message="Start the conversation with context, decisions, or blockers."
-      />
+      <p className="text-sm text-ink-3">
+        No comments yet. Start the conversation with context, decisions or
+        blockers.
+      </p>
     );
   }
 
   return (
-    <div className="space-y-1">
+    <div className="flex flex-col gap-3.5">
       {comments.map((comment) => {
         const author = comment.authorName ?? comment.authorEmail ?? "Unknown";
 
         return (
-          <article
-            key={comment.id}
-            className="group flex gap-3 rounded-md px-1 py-3 transition hover:bg-muted/30"
-          >
-            <div className="pt-1">
-              <AvatarInitials value={author} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-2 text-sm">
-                <span className="font-semibold">{author}</span>
-                <span className="text-xs text-muted-foreground">
+          <article key={comment.id} className="flex gap-3">
+            <AvatarInitials value={author} size={32} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="text-sm font-semibold">{author}</span>
+                <span className="font-mono text-xs text-ink-3">
                   {formatActivityDate(comment.createdAt)}
                 </span>
               </div>
               <RichTextPreview
                 value={comment.body}
-                className="mt-1 min-h-0 rounded-none p-0 text-foreground"
+                className="min-h-0 rounded-none p-0 text-[15px] leading-[22px] text-ink"
               />
             </div>
           </article>
@@ -360,12 +347,17 @@ function formatActivityDate(value: Date | null) {
     return "just now";
   }
 
-  return new Intl.DateTimeFormat("en", {
-    day: "numeric",
-    hour: "numeric",
+  const date = new Date(value);
+  const time = date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
     minute: "2-digit",
-    month: "short",
-  }).format(value);
+  });
+  const day =
+    date.toDateString() === new Date().toDateString()
+      ? "Today"
+      : date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  return `${day} · ${time}`;
 }
 
 function ActivityEmptyState({

@@ -1,5 +1,4 @@
 import { paths } from "~/src/lib/paths";
-import { useState } from "react";
 
 import Link from "next/link";
 import { LinkIcon } from "lucide-react";
@@ -12,7 +11,6 @@ import {
   RichTextPreview,
 } from "@zentro/ui/components/rich-text-editor";
 
-import { Tile } from "@zentro/ui/components/tile";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
 
@@ -30,7 +28,6 @@ import type {
 type Props = {
   task: TaskDetail;
   members: MemberOption[];
-  selectedAssignee: MemberOption | null | undefined;
   savingField: string | null;
   onSave: (field: string, values: TaskUpdate) => void;
   onDelete: () => void;
@@ -42,7 +39,6 @@ type Props = {
 export function TaskDetailView({
   task,
   members,
-  selectedAssignee,
   savingField,
   onSave,
   onDelete,
@@ -50,7 +46,6 @@ export function TaskDetailView({
   activityEvents,
   onAddComment,
 }: Props) {
-  const [isDescriptionEditing, setIsDescriptionEditing] = useState(false);
   const resource = {
     projectId: task.projectId,
     teamId: task.teamId ?? undefined,
@@ -69,109 +64,83 @@ export function TaskDetailView({
   const canComment = useAnyPermission(["tasks.comment"], resource);
 
   return (
-    <section className="flex w-full flex-col gap-5">
-      <TaskDetailHeader task={task} />
-
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <main className="min-w-0 space-y-7">
-          <div className="space-y-3">
-            <InlineTitleEditor
-              disabled={savingField === "name" || !canEdit}
-              value={task.name}
-              onSave={(name) => onSave("name", { name })}
-            />
-          </div>
-
-          <section aria-label="Description" className="tile overflow-hidden">
-            {isDescriptionEditing ? (
-              <RichTextEditor
-                disabled={savingField === "description"}
-                value={task.description ?? ""}
-                placeholder="Describe the problem, acceptance criteria, implementation notes, and links."
-                minHeightClassName="[&_.ProseMirror]:min-h-44"
-                onCancel={() => setIsDescriptionEditing(false)}
-                onSave={(description) => {
-                  onSave("description", { description });
-                  setIsDescriptionEditing(false);
-                }}
-              />
-            ) : (
-              <div
-                role="button"
-                tabIndex={canEdit ? 0 : -1}
-                className="block w-full p-4 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                onClick={() => canEdit && setIsDescriptionEditing(true)}
-                onKeyDown={(event) => {
-                  if (canEdit && (event.key === "Enter" || event.key === " ")) {
-                    event.preventDefault();
-                    setIsDescriptionEditing(true);
-                  }
-                }}
-              >
-                <RichTextPreview
-                  value={task.description ?? ""}
-                  emptyLabel="Edit description"
-                />
-              </div>
-            )}
-          </section>
-
-          <TaskDetailActivity
-            members={members}
-            comments={comments}
-            activityEvents={activityEvents}
-            commentDisabled={savingField === "comment"}
-            canComment={canComment}
-            onAddComment={onAddComment}
-          />
-        </main>
-
-        <div className="flex min-w-0 flex-col gap-4">
-          <TaskDetailSidebar
-            task={task}
-            members={members}
-            selectedAssignee={selectedAssignee}
-            savingField={savingField}
-            onSave={onSave}
-            onDelete={onDelete}
-            canEdit={canEdit}
-            canAssign={canAssign}
-            canDelete={canDelete}
-            thread={
-              <Tile
-                title="Thread"
-                actions={
-                  <span className="font-mono text-xs text-ink-3">
-                    Linked work
-                  </span>
-                }
-              >
-                <LinkedThread
-                  current={{
-                    kind: "task",
-                    label: task.name,
-                    meta: task.key,
-                    status: task.status,
-                  }}
-                  currentId={task.id}
-                  projectId={task.projectId}
-                  projectName={task.projectName}
-                  projectSlug={task.projectSlug}
-                  extra={
-                    comments.length
-                      ? [
-                          {
-                            id: "comments",
-                            label: `${comments.length} ${comments.length === 1 ? "comment" : "comments"}`,
-                          },
-                        ]
-                      : []
-                  }
-                />
-              </Tile>
-            }
+    <section className="flex w-full max-w-[1240px] flex-wrap items-start gap-8">
+      <div className="flex min-w-0 flex-[1_1_560px] flex-col gap-7">
+        <div className="flex flex-col gap-3">
+          <TaskDetailHeader task={task} />
+          <InlineTitleEditor
+            disabled={savingField === "name" || !canEdit}
+            value={task.name}
+            onSave={(name) => onSave("name", { name })}
           />
         </div>
+
+        <section aria-label="Description">
+          {canEdit ? (
+            <RichTextEditor
+              disabled={savingField === "description"}
+              value={task.description ?? ""}
+              placeholder="Add details, steps or links."
+              showActions="dirty"
+              minHeightClassName="px-[22px] pt-[18px] pb-[22px] [&_.ProseMirror]:min-h-24"
+              onSave={(description) => onSave("description", { description })}
+            />
+          ) : (
+            <div className="tile px-[22px] pt-[18px] pb-[22px]">
+              <RichTextPreview
+                value={task.description ?? ""}
+                emptyLabel="No description yet."
+                className="min-h-0 p-0 text-[15px] leading-6"
+              />
+            </div>
+          )}
+        </section>
+
+        <TaskDetailActivity
+          members={members}
+          comments={comments}
+          activityEvents={activityEvents}
+          commentDisabled={savingField === "comment"}
+          canComment={canComment}
+          onAddComment={onAddComment}
+        />
+      </div>
+
+      <div className="flex w-full min-w-0 flex-[0_1_340px] flex-col">
+        <TaskDetailSidebar
+          task={task}
+          members={members}
+          savingField={savingField}
+          onSave={onSave}
+          onDelete={onDelete}
+          canEdit={canEdit}
+          canAssign={canAssign}
+          canDelete={canDelete}
+          thread={
+            <section aria-label="Thread" className="tile p-4">
+              <LinkedThread
+                header={(count) => (
+                  <div className="flex items-baseline justify-between pb-3">
+                    <h2 className="eyebrow">Thread</h2>
+                    <span className="font-mono text-xs text-ink-3">
+                      {count} linked
+                    </span>
+                  </div>
+                )}
+                current={{
+                  kind: "task",
+                  label: task.name,
+                  meta: task.key,
+                  status: task.status,
+                }}
+                currentId={task.id}
+                projectId={task.projectId}
+                projectName={task.projectName}
+                projectSlug={task.projectSlug}
+              />
+            </section>
+          }
+        />
       </div>
     </section>
   );
@@ -199,13 +168,13 @@ function TaskDetailHeader({ task }: { task: TaskDetail }) {
         /
       </span>
       <span className="flex items-center gap-1.5 font-mono text-ink">
-        <StatusGlyph status={task.status} size={14} decorative />
+        <StatusGlyph status={task.status} size={12} decorative />
         {task.key}
       </span>
       <Button
         variant="outline"
-        size="sm"
-        className="ml-1.5"
+        size="xs"
+        className="ml-1 h-[26px] rounded-sm border-hairline bg-transparent px-2 text-xs font-normal text-ink-2"
         onClick={() => {
           void navigator.clipboard
             .writeText(window.location.href)

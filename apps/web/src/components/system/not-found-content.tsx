@@ -12,14 +12,21 @@ import { OpenPaletteButton } from "./open-palette-button";
 import { SystemPage } from "./system-page";
 
 /** 404. `inShell` adds the palette search, which only exists in the app. */
-export function NotFoundContent({ inShell = false }: { inShell?: boolean }) {
+export function NotFoundContent({
+  inShell = false,
+  description = "That page doesn’t exist, or it was moved or deleted. Check the link, or jump to somewhere you know.",
+}: {
+  inShell?: boolean;
+  /** What exactly is missing, when the page knows ("ZEN-99 doesn’t exist"). */
+  description?: string;
+}) {
   const pathname = usePathname();
 
   return (
     <SystemPage
       eyebrow={`404 · ${pathname}`}
       title="We can’t find that page."
-      description="That page doesn’t exist, or it was moved or deleted. Check the link, or jump to somewhere you know."
+      description={description}
       actions={
         <>
           <Button variant="outline" asChild>

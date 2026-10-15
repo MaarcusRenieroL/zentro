@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { BookOpenIcon, CheckCircle2Icon, FolderIcon } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { StatusGlyph } from "@zentro/ui/components/status-glyph";
-import { TaskKey } from "@zentro/ui/components/task-key";
 import { Thread, ThreadItem } from "@zentro/ui/components/thread";
+import { cn } from "@zentro/ui/lib/utils";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
+import { formatDueDate } from "@zentro/utils";
 
 import { paths } from "~/src/lib/paths";
 
@@ -16,15 +16,16 @@ type Related = {
   kind: "task" | "doc";
   id: string;
   label: string;
-  meta?: string;
   status?: string;
+  sub: string;
+  late?: boolean;
   href: string;
 };
 
 type Props = {
   /** What is on screen now: it gets the live node. */
   current: {
-    kind: "task" | "doc";
+    kind: "task" | "doc" | "project";
     label: string;
     meta?: string;
     status?: string;
@@ -36,7 +37,94 @@ type Props = {
   currentId: string;
   /** Pieces of the page the Thread cannot know, such as comments. */
   extra?: Array<{ id: string; label: string }>;
+  /** Drawn above the line, with how many items are linked. */
+  header?: (count: number) => ReactNode;
 };
+
+const shortDate = (value: Date | string) =>
+  new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+function firstName(name: string | null | undefined) {
+  return name ? (name.split(" ")[0] ?? name) : "Unassigned";
+}
+
+/** A task's owner and where its date stands, as one short line. */
+function taskSub(task: {
+  assignee: string | null;
+  due: Date | null;
+  status: string;
+}) {
+  const owner = firstName(task.assignee);
+
+  if (task.status === "done") return { sub: `${owner} · done`, late: false };
+  if (!task.due) return { sub: `${owner} · no date`, late: false };
+
+  const due = formatDueDate(task.due);
+
+  return due.tone === "overdue"
+    ? { sub: `${owner} · overdue ${shortDate(task.due)}`, late: true }
+    : { sub: `${owner} · due ${due.text}`, late: false };
+}
+
+function Chip({ tint, children }: { tint: string; children: ReactNode }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex size-5 shrink-0 items-center justify-center rounded-[6px] border border-hairline font-mono text-[9px] text-ink",
+        tint,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Entry({
+  kind,
+  chip,
+  title,
+  sub,
+  subClassName,
+  strong = false,
+}: {
+  kind: string;
+  chip: ReactNode;
+  title: string;
+  sub?: string;
+  subClassName?: string;
+  strong?: boolean;
+}) {
+  return (
+    <span className="flex min-w-0 flex-col gap-0.5">
+      <span className="font-mono text-[10px] tracking-[0.08em] text-ink-3 uppercase">
+        {kind}
+      </span>
+      <span className="flex min-w-0 items-center gap-2">
+        {chip}
+        <span
+          className={cn(
+            "truncate text-sm text-ink",
+            strong ? "font-semibold" : "font-medium",
+          )}
+        >
+          {title}
+        </span>
+      </span>
+      {sub ? (
+        <span className={cn("font-mono text-[11px] text-ink-3", subClassName)}>
+          {sub}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+const itemLink =
+  "block rounded-md px-2 py-1.5 outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring";
 
 /**
  * The Thread: a 1px line with a node for each linked item (the project, the
@@ -49,9 +137,14 @@ export function LinkedThread({
   projectSlug,
   currentId,
   extra = [],
+  header,
 }: Props) {
   const trpc = useTrpcClient();
   const [related, setRelated] = useState<Related[] | null>(null);
+  const [project, setProject] = useState<{
+    prefix: string | null;
+    open: number;
+  } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -68,33 +161,33 @@ export function LinkedThread({
     ]).then(([docs, tasks]) => {
       if (!live) return;
 
+      const inProject = tasks.filter((task) => task.project === projectName);
       const docItems: Related[] = docs
         .filter((doc) => doc.id !== currentId)
-        .slice(0, 3)
+        .slice(0, 2)
         .map((doc) => ({
           kind: "doc",
           id: doc.id,
           label: doc.title,
-          meta: "Doc",
+          sub: `Edited ${shortDate(doc.updatedAt)}${doc.createdBy ? ` · ${firstName(doc.createdBy)}` : ""}`,
           href: paths.doc(doc.slug),
         }));
-      const taskItems: Related[] = tasks
-        .filter(
-          (task) =>
-            task.project === projectName &&
-            task.id !== currentId &&
-            task.status !== "done",
-        )
+      const taskItems: Related[] = inProject
+        .filter((task) => task.id !== currentId && task.status !== "done")
         .slice(0, 3)
         .map((task) => ({
           kind: "task",
           id: task.id,
-          label: task.name,
-          meta: task.key,
+          label: `${task.key} · ${task.name}`,
           status: task.status,
+          ...taskSub(task),
           href: paths.task(task.key),
         }));
 
+      setProject({
+        prefix: inProject[0]?.key.split("-")[0] ?? null,
+        open: inProject.filter((task) => task.status !== "done").length,
+      });
       setRelated([...taskItems, ...docItems]);
     });
 
@@ -103,76 +196,110 @@ export function LinkedThread({
     };
   }, [trpc, projectId, projectName, currentId]);
 
+  const count =
+    (projectName && current.kind !== "project" ? 1 : 0) +
+    1 +
+    (related?.length ?? 0) +
+    extra.length;
+
   return (
-    <Thread aria-label="Linked items">
-      {projectName ? (
-        <ThreadItem>
-          <Link
-            href={projectSlug ? paths.project(projectSlug) : paths.projects()}
-            className="flex items-center gap-2 text-sm text-ink-2 hover:text-ink"
-          >
-            <FolderIcon className="size-4 text-ink-3" aria-hidden="true" />
-            <span className="truncate">{projectName}</span>
-            <span className="ml-auto shrink-0 font-mono text-[11px] whitespace-nowrap text-ink-3">
-              Project
-            </span>
-          </Link>
-        </ThreadItem>
-      ) : null}
-
-      <ThreadItem active>
-        <div className="flex items-center gap-2 text-sm font-medium text-ink">
-          {current.kind === "task" ? (
-            <StatusGlyph status={current.status ?? "todo"} size={16} />
-          ) : (
-            <BookOpenIcon className="size-4 text-ink-3" aria-hidden="true" />
-          )}
-          <span className="truncate">{current.label}</span>
-          {current.meta ? (
-            <TaskKey className="ml-auto">{current.meta}</TaskKey>
-          ) : null}
-        </div>
-      </ThreadItem>
-
-      {related === null ? (
-        <ThreadItem>
-          <Skeleton className="h-5 w-40" />
-        </ThreadItem>
-      ) : (
-        related.map((item) => (
-          <ThreadItem key={`${item.kind}-${item.id}`}>
+    <>
+      {header?.(count)}
+      <Thread aria-label="Linked items">
+        {projectName && current.kind !== "project" ? (
+          <ThreadItem className="pb-1">
             <Link
-              href={item.href}
-              className="flex items-center gap-2 text-sm text-ink-2 hover:text-ink"
+              href={projectSlug ? paths.project(projectSlug) : paths.projects()}
+              className={itemLink}
             >
-              {item.kind === "task" ? (
-                <StatusGlyph status={item.status ?? "todo"} size={16} />
-              ) : (
-                <BookOpenIcon
-                  className="size-4 text-ink-3"
-                  aria-hidden="true"
-                />
-              )}
-              <span className="truncate">{item.label}</span>
-              <span className="ml-auto shrink-0 font-mono text-[11px] whitespace-nowrap text-ink-3">
-                {item.meta}
-              </span>
+              <Entry
+                kind="Project"
+                chip={
+                  <Chip tint="bg-tint-projects">
+                    {projectName.charAt(0).toUpperCase()}
+                  </Chip>
+                }
+                title={projectName}
+                sub={
+                  project
+                    ? [
+                        project.prefix,
+                        `${project.open} open ${project.open === 1 ? "task" : "tasks"}`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : undefined
+                }
+              />
             </Link>
           </ThreadItem>
-        ))
-      )}
+        ) : null}
 
-      {extra.map((item) => (
-        <ThreadItem key={item.id}>
-          <div className="flex items-center gap-2 text-sm text-ink-2">
-            <CheckCircle2Icon
-              className="size-4 text-ink-3"
-              aria-hidden="true"
+        <ThreadItem active className="pb-1">
+          <div className="px-2 py-1.5">
+            <Entry
+              kind={`This ${current.kind}`}
+              chip={
+                current.kind === "task" ? (
+                  <StatusGlyph status={current.status ?? "todo"} size={12} />
+                ) : current.kind === "project" ? (
+                  <Chip tint="bg-tint-projects">
+                    {current.label.charAt(0).toUpperCase()}
+                  </Chip>
+                ) : (
+                  <Chip tint="bg-tint-docs">D</Chip>
+                )
+              }
+              title={
+                current.meta
+                  ? `${current.meta} · ${current.label}`
+                  : current.label
+              }
+              sub="You’re here"
+              subClassName="text-signal"
+              strong
             />
-            {item.label}
           </div>
         </ThreadItem>
-      ))}
-    </Thread>
+
+        {related === null ? (
+          <ThreadItem>
+            <Skeleton className="mx-2 my-1.5 h-10 w-40" />
+          </ThreadItem>
+        ) : (
+          related.map((item) => (
+            <ThreadItem key={`${item.kind}-${item.id}`} className="pb-1">
+              <Link href={item.href} className={itemLink}>
+                <Entry
+                  kind={item.kind === "task" ? "Related task" : "Doc"}
+                  chip={
+                    item.kind === "task" ? (
+                      <StatusGlyph status={item.status ?? "todo"} size={12} />
+                    ) : (
+                      <Chip tint="bg-tint-docs">D</Chip>
+                    )
+                  }
+                  title={item.label}
+                  sub={item.sub}
+                  subClassName={item.late ? "text-danger-text" : undefined}
+                />
+              </Link>
+            </ThreadItem>
+          ))
+        )}
+
+        {extra.map((item) => (
+          <ThreadItem key={item.id} className="pb-1">
+            <div className="px-2 py-1.5">
+              <Entry
+                kind="On this page"
+                chip={<Chip tint="bg-tint-tasks">C</Chip>}
+                title={item.label}
+              />
+            </div>
+          </ThreadItem>
+        ))}
+      </Thread>
+    </>
   );
 }

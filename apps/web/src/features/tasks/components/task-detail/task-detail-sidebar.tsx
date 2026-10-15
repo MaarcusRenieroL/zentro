@@ -1,12 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 
-import {
-  CheckIcon,
-  SearchIcon,
-  Trash2Icon,
-  UserCircleIcon,
-  XIcon,
-} from "lucide-react";
+import { CalendarIcon, CheckIcon, SearchIcon, Trash2Icon } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
 import {
@@ -22,12 +16,6 @@ import {
 } from "@zentro/ui/components/shadcn/alert-dialog";
 import { PriorityMeter, StatusGlyph } from "@zentro/ui/components/status-glyph";
 import { Button } from "@zentro/ui/shadcn/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@zentro/ui/shadcn/card";
 import { Input } from "@zentro/ui/shadcn/input";
 import {
   Popover,
@@ -59,21 +47,19 @@ import type { MemberOption, TaskDetail, TaskUpdate } from "./types";
 type Props = {
   task: TaskDetail;
   members: MemberOption[];
-  selectedAssignee: MemberOption | null | undefined;
   savingField: string | null;
   onSave: (field: string, values: TaskUpdate) => void;
   onDelete: () => void;
   canEdit: boolean;
   canAssign: boolean;
   canDelete: boolean;
-  /** The Thread tile, shown between Details and the danger zone. */
+  /** The Thread tile, shown under Details. */
   thread?: ReactNode;
 };
 
 export function TaskDetailSidebar({
   task,
   members,
-  selectedAssignee,
   savingField,
   onSave,
   onDelete,
@@ -83,7 +69,7 @@ export function TaskDetailSidebar({
   thread,
 }: Props) {
   return (
-    <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
+    <aside className="flex flex-col gap-4">
       <Select
         value={toTaskStatus(task.status)}
         onValueChange={(status: TaskStatus) => onSave("status", { status })}
@@ -91,25 +77,29 @@ export function TaskDetailSidebar({
       >
         <SelectTrigger
           aria-label="Status"
-          className="h-11 w-full rounded-xl border-hairline bg-surface px-3.5 text-sm"
+          className="h-11 w-full justify-start gap-2.5 rounded-md border-hairline bg-surface px-3 text-[15px] font-medium shadow-none data-[size=default]:h-11 [&>svg:last-child]:ml-auto"
         >
-          <StatusGlyph
-            status={toTaskStatus(task.status)}
-            size={14}
-            decorative
-          />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="backlog">Backlog</SelectItem>
-          <SelectItem value="todo">To do</SelectItem>
-          <SelectItem value="in-progress">In progress</SelectItem>
-          <SelectItem value="review">Review</SelectItem>
-          <SelectItem value="done">Done</SelectItem>
+          {(
+            [
+              ["backlog", "Backlog"],
+              ["todo", "To do"],
+              ["in-progress", "In progress"],
+              ["review", "Review"],
+              ["done", "Done"],
+            ] as const
+          ).map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              <StatusGlyph status={value} size={12} decorative />
+              {label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
-      <section aria-label="Details" className="tile overflow-hidden">
+      <section aria-label="Details" className="tile px-4 py-2">
         <DetailRow label="Assignee">
           <AssigneePicker
             members={members}
@@ -131,7 +121,7 @@ export function TaskDetailSidebar({
           >
             <SelectTrigger
               aria-label="Priority"
-              className="h-8 border-0 bg-transparent px-0 shadow-none hover:bg-hover"
+              className="h-8 border-0 bg-transparent px-1.5 -ml-1.5 shadow-none hover:bg-hover"
             >
               <PriorityMeter priority={task.priority} />
               <SelectValue />
@@ -145,48 +135,31 @@ export function TaskDetailSidebar({
         </DetailRow>
 
         <DetailRow label="Due date">
-          <div className="flex items-center gap-2">
-            {task.due ? (
-              <DueDate value={task.due} done={task.status === "done"} />
-            ) : null}
-            <Input
-              type="date"
-              value={getDateInputValue(task.due)}
-              onChange={(event) =>
-                onSave("dueAt", {
-                  dueAt: event.target.value
-                    ? new Date(event.target.value)
-                    : null,
-                })
-              }
-              disabled={savingField === "dueAt" || !canEdit}
-              className="h-8 min-w-0 flex-1 border-0 bg-transparent px-0 font-mono text-xs text-ink-2 shadow-none hover:bg-hover"
-            />
-            {task.due && canEdit ? (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={savingField === "dueAt"}
-                aria-label="Remove due date"
-                onClick={() => onSave("dueAt", { dueAt: null })}
-              >
-                <XIcon className="size-4" />
-              </Button>
-            ) : null}
-          </div>
+          <DuePicker
+            value={task.due}
+            done={task.status === "done"}
+            disabled={savingField === "dueAt" || !canEdit}
+            onChange={(dueAt) => onSave("dueAt", { dueAt })}
+          />
         </DetailRow>
 
         <DetailRow label="Team">
-          <span
-            className={task.teamName ? "font-medium" : "text-muted-foreground"}
-          >
-            {task.teamName ?? "No team"}
+          <span className="flex items-center gap-2.5">
+            {task.teamName ? (
+              <span
+                aria-hidden="true"
+                className="size-2.5 rounded-[3px] border border-hairline bg-tint-teams"
+              />
+            ) : null}
+            <span className={task.teamName ? undefined : "text-ink-3"}>
+              {task.teamName ?? "No team"}
+            </span>
           </span>
         </DetailRow>
 
         {task.reporter ? (
           <DetailRow label="Reporter">
-            <span className="inline-flex items-center gap-2 font-medium">
+            <span className="inline-flex items-center gap-2.5">
               <AvatarInitials value={task.reporter} />
               {task.reporter}
             </span>
@@ -196,59 +169,48 @@ export function TaskDetailSidebar({
 
       {thread}
 
-      {canDelete ? (
-        <Card className="rounded-md border-destructive/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base text-destructive">
-              Danger Zone
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full justify-start"
-                  disabled={savingField === "delete"}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <p className="font-mono text-[11px] text-ink-3">
+          Created {formatDate(task.createdAt)} · updated{" "}
+          {formatDate(task.updatedAt)}
+        </p>
+        {canDelete ? (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-danger-text hover:bg-danger-subtle hover:text-danger-text"
+                disabled={savingField === "delete"}
+              >
+                <Trash2Icon className="size-3.5" />
+                Delete task
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete {task.key}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This task will be removed from task lists and boards. Its
+                  activity history is kept for audit trails.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={onDelete}
                 >
-                  <Trash2Icon className="size-4" />
                   Delete task
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {task.key}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This task will be removed from task lists and boards. Its
-                    activity history is kept for audit trails.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={onDelete}
-                  >
-                    Delete task
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="space-y-1 px-2 text-xs text-muted-foreground">
-        <p>Created {formatDate(task.createdAt)}</p>
-        <p>Updated {formatDate(task.updatedAt)}</p>
-        {selectedAssignee ? (
-          <p>Assigned to {selectedAssignee.name ?? selectedAssignee.email}</p>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         ) : null}
       </div>
     </aside>
   );
 }
-
 type AssigneePickerProps = {
   members: MemberOption[];
   value: string | null;
@@ -291,7 +253,7 @@ function AssigneePicker({
         <Button
           variant="ghost"
           disabled={disabled}
-          className="h-9 w-full justify-start px-0 font-normal hover:bg-muted"
+          className="-ml-1.5 h-8 w-[calc(100%+0.375rem)] justify-start gap-2.5 px-1.5 text-sm font-normal text-ink hover:bg-hover disabled:opacity-100"
         >
           {selectedMember ? (
             <>
@@ -304,8 +266,11 @@ function AssigneePicker({
             </>
           ) : (
             <>
-              <UserCircleIcon className="size-5 text-muted-foreground" />
-              <span className="text-muted-foreground">Unassigned</span>
+              <span
+                aria-hidden="true"
+                className="size-6 rounded-full border-[1.5px] border-dashed border-line-strong"
+              />
+              <span className="text-ink-3">Unassigned</span>
             </>
           )}
         </Button>
@@ -334,7 +299,10 @@ function AssigneePicker({
               setQuery("");
             }}
           >
-            <UserCircleIcon className="size-5 text-muted-foreground" />
+            <span
+              aria-hidden="true"
+              className="size-6 rounded-full border-[1.5px] border-dashed border-line-strong"
+            />
             <span className="min-w-0 flex-1 truncate">Unassigned</span>
             {!value ? <CheckIcon className="size-4 text-primary" /> : null}
           </button>
@@ -372,6 +340,90 @@ function AssigneePicker({
             </p>
           ) : null}
         </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+type DuePickerProps = {
+  value: Date | null;
+  done: boolean;
+  disabled: boolean;
+  onChange: (value: Date | null) => void;
+};
+
+/** The due date as it reads ("Tomorrow"), the date beside it, a picker on click. */
+function DuePicker({ value, done, disabled, onChange }: DuePickerProps) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(getDateInputValue(value));
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) setDraft(getDateInputValue(value));
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          disabled={disabled}
+          aria-label="Due date"
+          className="-ml-1.5 h-8 justify-start gap-2.5 px-1.5 text-sm font-normal hover:bg-hover disabled:opacity-100"
+        >
+          {value ? (
+            <>
+              <DueDate value={value} done={done} className="text-sm" />
+              <span className="font-mono text-xs text-ink-3">
+                {value.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+            </>
+          ) : (
+            <span className="flex items-center gap-2 font-mono text-[13px] text-ink-3">
+              <CalendarIcon className="size-3.5" aria-hidden="true" />
+              No date
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 rounded-2xl p-3">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onChange(draft ? new Date(draft) : null);
+            setOpen(false);
+          }}
+        >
+          <Input
+            type="date"
+            aria-label="Due date"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            className="font-mono"
+          />
+          <div className="flex justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={!value}
+              onClick={() => {
+                onChange(null);
+                setOpen(false);
+              }}
+            >
+              Remove date
+            </Button>
+            <Button type="submit" size="sm">
+              Save
+            </Button>
+          </div>
+        </form>
       </PopoverContent>
     </Popover>
   );
