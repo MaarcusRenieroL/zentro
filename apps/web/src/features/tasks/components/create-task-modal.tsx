@@ -28,9 +28,10 @@ import {
   SelectValue,
 } from "@zentro/ui/shadcn/select";
 import { toastError, toastSuccess } from "@zentro/ui/index";
-import { ArrowRightIcon, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
+import { Kbd } from "@zentro/ui/components/kbd";
 import { type FC, useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 type ProjectOption = {
   id: string;
@@ -111,6 +112,11 @@ const CreateTaskModalInner: FC<Props> = ({
     },
     mode: "onTouched",
   });
+
+  const chosenProject = useWatch({ control, name: "projectId" });
+  const selectedPrefix =
+    projects.find((project) => project.id === chosenProject)?.taskKeyPrefix ??
+    null;
 
   useEffect(() => {
     if (!open) return;
@@ -225,12 +231,17 @@ const CreateTaskModalInner: FC<Props> = ({
         </DialogTrigger>
       )}
 
-      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-[34rem]">
         <form noValidate onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup>
             <DialogHeader>
-              <DialogTitle>Create task</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="flex items-center gap-2.5">
+                New task
+                <span className="rounded-xs border border-hairline px-1.5 py-px font-mono text-xs font-normal text-ink-3">
+                  {selectedPrefix ? `${selectedPrefix}-…` : "No key yet"}
+                </span>
+              </DialogTitle>
+              <DialogDescription className="sr-only">
                 Add work to a project and get the next project task key.
               </DialogDescription>
             </DialogHeader>
@@ -322,7 +333,7 @@ const CreateTaskModalInner: FC<Props> = ({
                 )}
               />
 
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Controller
                   name="status"
                   control={control}
@@ -396,75 +407,83 @@ const CreateTaskModalInner: FC<Props> = ({
                     </Field>
                   )}
                 />
-              </div>
-
-              <Controller
-                name="assignedToMemberId"
-                control={control}
-                render={({ field }) => (
-                  <Field>
-                    <FieldLabel>Assignee</FieldLabel>
-                    <Select
-                      value={field.value ?? unassignedValue}
-                      onValueChange={(value) =>
-                        field.onChange(value === unassignedValue ? null : value)
-                      }
-                      disabled={isLoadingMembers}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={
-                            isLoadingMembers
-                              ? "Loading members..."
-                              : "Select assignee"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={unassignedValue}>
-                          Unassigned
-                        </SelectItem>
-                        {members.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            {member.name} - {member.email}
+                <Controller
+                  name="assignedToMemberId"
+                  control={control}
+                  render={({ field }) => (
+                    <Field>
+                      <FieldLabel>Assignee</FieldLabel>
+                      <Select
+                        value={field.value ?? unassignedValue}
+                        onValueChange={(value) =>
+                          field.onChange(
+                            value === unassignedValue ? null : value,
+                          )
+                        }
+                        disabled={isLoadingMembers}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              isLoadingMembers
+                                ? "Loading members..."
+                                : "Select assignee"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={unassignedValue}>
+                            Unassigned
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              />
+                          {members.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.name} - {member.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                />
+              </div>
             </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  isSubmitting ||
-                  isLoadingProjects ||
-                  isLoadingMembers ||
-                  !projects.length
-                }
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                    Creating task...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    Create task
-                    <ArrowRightIcon className="size-4" />
-                  </span>
-                )}
-              </Button>
+            <DialogFooter className="items-center sm:justify-between">
+              <span className="hidden text-[13px] text-ink-3 sm:block">
+                Press C anywhere to open this.
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    isLoadingProjects ||
+                    isLoadingMembers ||
+                    !projects.length
+                  }
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                      Creating task...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      Create task
+                      <Kbd className="border-transparent bg-on-signal/20 text-on-signal">
+                        ⏎
+                      </Kbd>
+                    </span>
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </FieldGroup>
         </form>

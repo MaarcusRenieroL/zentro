@@ -1,14 +1,13 @@
-import { paths } from "~/src/lib/paths";
 import Link from "next/link";
 import { FC } from "react";
 
-import { PriorityGlyph, StatusGlyph } from "@zentro/ui/components/status-glyph";
-import { TaskKey } from "@zentro/ui/components/task-key";
-import { initialsOf } from "@zentro/ui/lib/tone";
-import { Avatar, AvatarFallback } from "@zentro/ui/shadcn/avatar";
+import { PriorityMeter } from "@zentro/ui/components/status-glyph";
+import { cn } from "@zentro/ui/lib/utils";
 
+import { ActorAvatar } from "~/src/components/actor-avatar";
 import { DueDate } from "~/src/components/due-date";
 import { WorkspaceTask } from "~/src/features/tasks/lib/types";
+import { paths } from "~/src/lib/paths";
 
 type Props = {
   task: WorkspaceTask;
@@ -16,33 +15,34 @@ type Props = {
 
 export const TaskCard: FC<Props> = ({ task }) => {
   const assigned = task.assignee !== "Unassigned";
+  const done = task.status === "done";
 
   return (
     <Link
       href={paths.task(task.key)}
-      className="group block rounded-xl border border-hairline bg-surface p-3.5 shadow-(--edge-highlight) transition-colors duration-(--duration-fast) hover:border-line-strong"
+      className={cn(
+        "group flex flex-col gap-2 rounded-xl border border-hairline bg-surface p-3 outline-none hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring",
+        done && "opacity-70",
+      )}
     >
       <div className="flex items-center gap-2">
-        <StatusGlyph status={task.status} size={14} />
-        <TaskKey>{task.key}</TaskKey>
+        <span className="font-mono text-xs text-ink-3">{task.key}</span>
+        <span className="flex-1" />
+        {assigned ? (
+          <span title={task.assignee}>
+            <ActorAvatar name={task.assignee} size={20} />
+          </span>
+        ) : null}
       </div>
 
-      <p className="mt-1 line-clamp-2 text-sm leading-5 font-medium text-ink">
+      <p className="line-clamp-2 text-sm leading-5 font-medium text-ink">
         {task.title}
       </p>
 
-      <div className="mt-3.5 flex items-center gap-2 text-xs text-ink-2">
-        <PriorityGlyph priority={task.priority} size={16} />
-        <span className="min-w-0 flex-1 truncate">
-          <DueDate value={task.dueAt} done={task.status === "done"} />
-        </span>
-        {assigned ? (
-          <Avatar className="size-6" title={task.assignee}>
-            <AvatarFallback seed={task.assignee}>
-              {initialsOf(task.assignee)}
-            </AvatarFallback>
-          </Avatar>
-        ) : null}
+      <div className="mt-1 flex items-center gap-2 text-xs text-ink-2">
+        <PriorityMeter priority={task.priority} />
+        <span className="flex-1" />
+        <DueDate value={task.dueAt} done={done} />
       </div>
     </Link>
   );

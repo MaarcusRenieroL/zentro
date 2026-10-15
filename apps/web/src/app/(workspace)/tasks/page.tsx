@@ -89,6 +89,43 @@ export default function TasksPage() {
     }
   }
 
+  async function updateTasksStatus(
+    selected: WorkspaceTask[],
+    status: TaskStatus,
+  ) {
+    const targets = selected.filter((task) => task.status !== status);
+
+    if (!targets.length) return;
+
+    const ids = new Set(targets.map((task) => task.id));
+
+    setTasks(
+      (current) =>
+        current?.map((task) =>
+          ids.has(task.id) ? { ...task, status } : task,
+        ) ?? null,
+    );
+
+    const results = await Promise.allSettled(
+      targets.map((task) =>
+        trpc.task.updateTaskByKey.mutate({ key: task.key, status }),
+      ),
+    );
+    const failed = results.filter((result) => result.status === "rejected");
+
+    if (failed.length) {
+      toastError(
+        "Some tasks did not move",
+        `${failed.length} of ${targets.length} could not be updated.`,
+      );
+      setRefreshToken((token) => token + 1);
+    } else {
+      toastSuccess(
+        targets.length === 1 ? "Task moved" : `${targets.length} tasks moved`,
+      );
+    }
+  }
+
   const fetchTasks = useCallback(async () => {
     const data = await trpc.task.getTasksByOrgId.query({});
 
@@ -169,15 +206,11 @@ export default function TasksPage() {
     <TaskWorkspace
       key={`${projectSlug ?? ""}:${initialStatus}`}
       title={projectName ?? "Tasks"}
-      description={
-        projectSlug
-          ? "Tasks in this project."
-          : "Plan, sort, and track every task across your projects."
-      }
       tasks={tasks}
       projectSlug={projectSlug}
       initialStatus={initialStatus}
       onTaskStatusChange={updateTaskStatus}
+      onTasksStatusChange={updateTasksStatus}
       onTaskCreated={() => setRefreshToken((token) => token + 1)}
     />
   );

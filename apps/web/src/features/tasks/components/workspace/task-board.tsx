@@ -1,4 +1,4 @@
-import type { DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 import { PlusIcon } from "lucide-react";
 
 import { StatusGlyph } from "@zentro/ui/components/status-glyph";
@@ -8,7 +8,17 @@ import { CreateTaskModal } from "../create-task-modal";
 import { TaskCard } from "./task-card";
 import type { TaskStatus, WorkspaceTask } from "~/src/features/tasks/lib/types";
 import { EmptyTasks } from "./empty-tasks";
-import { statusLabels, statusOrder } from "~/src/features/tasks/lib/constants";
+import { statusLabels } from "~/src/features/tasks/lib/constants";
+
+// Work in motion first; parked work last. Finished work shows a few cards.
+const columns: TaskStatus[] = [
+  "in-progress",
+  "review",
+  "todo",
+  "backlog",
+  "done",
+];
+const doneVisible = 3;
 import { FC } from "react";
 
 type Props = {
@@ -22,6 +32,8 @@ export const TaskBoard: FC<Props> = ({
   onTaskStatusChange,
   onTaskCreated,
 }) => {
+  const [showAllDone, setShowAllDone] = useState(false);
+
   if (!tasks.length) return <EmptyTasks />;
 
   function handleDrop(event: DragEvent<HTMLElement>, status: TaskStatus) {
@@ -39,9 +51,16 @@ export const TaskBoard: FC<Props> = ({
 
   return (
     <div className="overflow-x-auto pb-2">
-      <div className="grid min-w-[1100px] grid-cols-5 gap-3">
-        {statusOrder.map((status) => {
-          const columnTasks = tasks.filter((task) => task.status === status);
+      <div className="grid min-w-[1100px] grid-cols-5 items-start gap-3">
+        {columns.map((status) => {
+          const allTasks = tasks.filter((task) => task.status === status);
+          const hidden =
+            status === "done" && !showAllDone
+              ? Math.max(allTasks.length - doneVisible, 0)
+              : 0;
+          const columnTasks = hidden
+            ? allTasks.slice(0, doneVisible)
+            : allTasks;
 
           return (
             <section
@@ -49,15 +68,15 @@ export const TaskBoard: FC<Props> = ({
               aria-label={statusLabels[status]}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => handleDrop(event, status)}
-              className="flex min-h-[520px] flex-col rounded-xl bg-sunken p-2.5"
+              className="flex min-h-[420px] flex-col rounded-xl border border-hairline/60 bg-sunken p-2.5"
             >
-              <div className="mb-2.5 flex items-center gap-2 px-2 pt-1">
-                <StatusGlyph status={status} size={16} decorative />
+              <div className="mb-2 flex h-8 items-center gap-2 px-1.5">
+                <StatusGlyph status={status} size={14} decorative />
                 <h2 className="text-sm font-semibold text-ink">
                   {statusLabels[status]}
                 </h2>
-                <span className="ml-auto rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-ink-2 tabular-nums">
-                  {columnTasks.length}
+                <span className="font-mono text-xs text-ink-3">
+                  {allTasks.length}
                 </span>
               </div>
 
@@ -80,6 +99,16 @@ export const TaskBoard: FC<Props> = ({
                     No tasks in {statusLabels[status].toLowerCase()}.
                   </div>
                 )}
+
+                {hidden ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllDone(true)}
+                    className="rounded-xl px-2 py-1.5 text-left font-mono text-xs text-ink-3 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {hidden} more
+                  </button>
+                ) : null}
 
                 <CreateTaskModal
                   defaultStatus={status}

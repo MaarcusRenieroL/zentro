@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import {
   CheckIcon,
-  ChevronDownIcon,
   SearchIcon,
   Trash2Icon,
   UserCircleIcon,
@@ -21,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@zentro/ui/components/shadcn/alert-dialog";
+import { PriorityMeter, StatusGlyph } from "@zentro/ui/components/status-glyph";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   Card,
@@ -44,6 +44,8 @@ import {
 
 import type { TaskPriority, TaskStatus } from "~/src/features/tasks/lib/types";
 
+import { DueDate } from "~/src/components/due-date";
+
 import { AvatarInitials } from "./avatar-initials";
 import { DetailRow } from "./detail-row";
 import {
@@ -64,6 +66,8 @@ type Props = {
   canEdit: boolean;
   canAssign: boolean;
   canDelete: boolean;
+  /** The Thread tile, shown between Details and the danger zone. */
+  thread?: ReactNode;
 };
 
 export function TaskDetailSidebar({
@@ -76,115 +80,121 @@ export function TaskDetailSidebar({
   canEdit,
   canAssign,
   canDelete,
+  thread,
 }: Props) {
   return (
     <aside className="space-y-3 lg:sticky lg:top-4 lg:self-start">
-      <div className="flex items-center gap-2">
-        <Select
-          value={toTaskStatus(task.status)}
-          onValueChange={(status: TaskStatus) => onSave("status", { status })}
-          disabled={savingField === "status" || !canEdit}
+      <Select
+        value={toTaskStatus(task.status)}
+        onValueChange={(status: TaskStatus) => onSave("status", { status })}
+        disabled={savingField === "status" || !canEdit}
+      >
+        <SelectTrigger
+          aria-label="Status"
+          className="h-11 w-full rounded-xl border-hairline bg-surface px-3.5 text-sm"
         >
-          <SelectTrigger className="h-9 w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="backlog">Backlog</SelectItem>
-            <SelectItem value="todo">To do</SelectItem>
-            <SelectItem value="in-progress">In progress</SelectItem>
-            <SelectItem value="review">Review</SelectItem>
-            <SelectItem value="done">Done</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          <StatusGlyph
+            status={toTaskStatus(task.status)}
+            size={14}
+            decorative
+          />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="backlog">Backlog</SelectItem>
+          <SelectItem value="todo">To do</SelectItem>
+          <SelectItem value="in-progress">In progress</SelectItem>
+          <SelectItem value="review">Review</SelectItem>
+          <SelectItem value="done">Done</SelectItem>
+        </SelectContent>
+      </Select>
 
-      <Card className="rounded-md">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ChevronDownIcon className="size-4" />
-            Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1 text-sm">
-          <DetailRow label="Assignee">
-            <AssigneePicker
-              members={members}
-              value={task.assignedToMemberId}
-              disabled={savingField === "assignee" || !canAssign}
-              onChange={(assignedToMemberId) =>
-                onSave("assignee", { assignedToMemberId })
+      <section aria-label="Details" className="tile overflow-hidden">
+        <DetailRow label="Assignee">
+          <AssigneePicker
+            members={members}
+            value={task.assignedToMemberId}
+            disabled={savingField === "assignee" || !canAssign}
+            onChange={(assignedToMemberId) =>
+              onSave("assignee", { assignedToMemberId })
+            }
+          />
+        </DetailRow>
+
+        <DetailRow label="Priority">
+          <Select
+            value={toTaskPriority(task.priority)}
+            onValueChange={(priority: TaskPriority) =>
+              onSave("priority", { priority })
+            }
+            disabled={savingField === "priority" || !canEdit}
+          >
+            <SelectTrigger
+              aria-label="Priority"
+              className="h-8 border-0 bg-transparent px-0 shadow-none hover:bg-hover"
+            >
+              <PriorityMeter priority={task.priority} />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+        </DetailRow>
+
+        <DetailRow label="Due date">
+          <div className="flex items-center gap-2">
+            {task.due ? (
+              <DueDate value={task.due} done={task.status === "done"} />
+            ) : null}
+            <Input
+              type="date"
+              value={getDateInputValue(task.due)}
+              onChange={(event) =>
+                onSave("dueAt", {
+                  dueAt: event.target.value
+                    ? new Date(event.target.value)
+                    : null,
+                })
               }
+              disabled={savingField === "dueAt" || !canEdit}
+              className="h-8 min-w-0 flex-1 border-0 bg-transparent px-0 font-mono text-xs text-ink-2 shadow-none hover:bg-hover"
             />
-          </DetailRow>
+            {task.due && canEdit ? (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={savingField === "dueAt"}
+                aria-label="Remove due date"
+                onClick={() => onSave("dueAt", { dueAt: null })}
+              >
+                <XIcon className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        </DetailRow>
 
-          <DetailRow label="Priority">
-            <Select
-              value={toTaskPriority(task.priority)}
-              onValueChange={(priority: TaskPriority) =>
-                onSave("priority", { priority })
-              }
-              disabled={savingField === "priority" || !canEdit}
-            >
-              <SelectTrigger className="h-8 border-0 bg-transparent px-0 shadow-none hover:bg-muted">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </DetailRow>
+        <DetailRow label="Team">
+          <span
+            className={task.teamName ? "font-medium" : "text-muted-foreground"}
+          >
+            {task.teamName ?? "No team"}
+          </span>
+        </DetailRow>
 
-          <DetailRow label="Due date">
-            <div className="flex items-center gap-1">
-              <Input
-                type="date"
-                value={getDateInputValue(task.due)}
-                onChange={(event) =>
-                  onSave("dueAt", {
-                    dueAt: event.target.value
-                      ? new Date(event.target.value)
-                      : null,
-                  })
-                }
-                disabled={savingField === "dueAt" || !canEdit}
-                className="h-8 border-0 bg-transparent px-0 shadow-none hover:bg-muted"
-              />
-              {task.due && canEdit ? (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={savingField === "dueAt"}
-                  aria-label="Remove due date"
-                  onClick={() => onSave("dueAt", { dueAt: null })}
-                >
-                  <XIcon className="size-4" />
-                </Button>
-              ) : null}
-            </div>
-          </DetailRow>
-
-          <DetailRow label="Team">
-            <span
-              className={
-                task.teamName ? "font-medium" : "text-muted-foreground"
-              }
-            >
-              {task.teamName ?? "No team"}
+        {task.reporter ? (
+          <DetailRow label="Reporter">
+            <span className="inline-flex items-center gap-2 font-medium">
+              <AvatarInitials value={task.reporter} />
+              {task.reporter}
             </span>
           </DetailRow>
+        ) : null}
+      </section>
 
-          {task.reporter ? (
-            <DetailRow label="Reporter">
-              <span className="inline-flex items-center gap-2 font-medium">
-                <AvatarInitials value={task.reporter} />
-                {task.reporter}
-              </span>
-            </DetailRow>
-          ) : null}
-        </CardContent>
-      </Card>
+      {thread}
 
       {canDelete ? (
         <Card className="rounded-md border-destructive/30">

@@ -37,7 +37,7 @@ export function InlineTitleEditor({ value, disabled, onSave }: Props) {
         type="button"
         disabled={disabled}
         onClick={() => setIsEditing(true)}
-        className="block w-full rounded-md border border-transparent px-0 py-1 text-left font-display text-4xl leading-[1.08] text-balance hover:border-hairline hover:bg-hover focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 lg:text-5xl lg:leading-[52px]"
+        className="block w-full rounded-md border border-transparent px-0 py-1 text-left font-display text-[1.75rem] leading-8 text-balance hover:border-hairline hover:bg-hover focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 sm:text-[2.25rem] sm:leading-10"
       >
         {value}
       </button>
@@ -62,7 +62,7 @@ export function InlineTitleEditor({ value, disabled, onSave }: Props) {
           event.currentTarget.blur();
         }
       }}
-      className="h-auto border-transparent bg-transparent px-0 py-1 font-display text-4xl shadow-none focus-visible:border-transparent focus-visible:ring-0 lg:text-5xl"
+      className="h-auto border-transparent bg-transparent px-0 py-1 font-display text-[1.75rem] shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-[2.25rem]"
     />
   );
 }

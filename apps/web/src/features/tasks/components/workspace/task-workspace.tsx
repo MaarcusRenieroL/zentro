@@ -3,17 +3,17 @@
 import { useMemo, useState } from "react";
 import { CalendarDaysIcon, Columns3Icon, ListIcon } from "lucide-react";
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@zentro/ui/shadcn/tabs";
+import { cn } from "@zentro/ui/lib/utils";
 
 import { CalendarView } from "./calendar-view";
 import { ListView } from "./list-view";
 import { TaskBoard } from "./task-board";
-import { TaskWorkspaceHeader } from "./task-workspace-header";
+import {
+  TaskWorkspaceHeader,
+  type TaskGroup,
+  type TaskSort,
+  type TaskView,
+} from "./task-workspace-header";
 import type {
   TaskPriority,
   TaskStatus,
@@ -23,22 +23,22 @@ import { FC } from "react";
 
 type Props = {
   title: string;
-  description: string;
   tasks: WorkspaceTask[];
   // Only tasks of this project are shown (from /tasks?project=<slug>).
   projectSlug?: string;
   initialStatus?: TaskStatus | "all";
   onTaskStatusChange?: (task: WorkspaceTask, status: TaskStatus) => void;
+  onTasksStatusChange?: (tasks: WorkspaceTask[], status: TaskStatus) => void;
   onTaskCreated?: () => void | Promise<void>;
 };
 
 export const TaskWorkspace: FC<Props> = ({
   title,
-  description,
   tasks,
   projectSlug,
   initialStatus = "all",
   onTaskStatusChange,
+  onTasksStatusChange,
   onTaskCreated,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,6 +50,9 @@ export const TaskWorkspace: FC<Props> = ({
   );
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [teamFilter, setTeamFilter] = useState("all");
+  const [group, setGroup] = useState<TaskGroup>("state");
+  const [sort, setSort] = useState<TaskSort>("due");
+  const [view, setView] = useState<TaskView>("list");
 
   const assigneeOptions = useMemo(() => {
     return Array.from(new Set(tasks.map((task) => task.assignee))).sort(
@@ -126,12 +129,18 @@ export const TaskWorkspace: FC<Props> = ({
     assigneeFilter !== "all" ||
     teamFilter !== "all";
 
+  const views = [
+    { value: "list", label: "List", Icon: ListIcon },
+    { value: "board", label: "Board", Icon: Columns3Icon },
+    { value: "calendar", label: "Calendar", Icon: CalendarDaysIcon },
+  ] as const;
+
   return (
-    <section className="flex w-full flex-col gap-6">
+    <section className="flex w-full flex-col">
       <TaskWorkspaceHeader
         title={title}
-        description={description}
         taskCount={filteredTasks.length}
+        totalCount={tasks.length}
         projectScoped={Boolean(projectSlug)}
         assigneeOptions={assigneeOptions}
         teamOptions={teamOptions}
@@ -141,11 +150,42 @@ export const TaskWorkspace: FC<Props> = ({
         priorityFilter={priorityFilter}
         assigneeFilter={assigneeFilter}
         teamFilter={teamFilter}
+        group={group}
+        sort={sort}
+        view={view}
+        viewControl={
+          <div
+            role="radiogroup"
+            aria-label="View"
+            className="flex gap-0.5 rounded-xl border border-hairline bg-surface p-[3px]"
+          >
+            {views.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={view === value}
+                onClick={() => setView(value)}
+                className={cn(
+                  "flex h-[26px] items-center gap-1.5 rounded-[9px] px-2.5 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  view === value
+                    ? "bg-ink text-ink-inverse"
+                    : "text-ink-2 hover:text-ink",
+                )}
+              >
+                <Icon className="size-3.5" aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
+        }
         onSearchQueryChange={setSearchQuery}
         onStatusFilterChange={setStatusFilter}
         onPriorityFilterChange={setPriorityFilter}
         onAssigneeFilterChange={setAssigneeFilter}
         onTeamFilterChange={setTeamFilter}
+        onGroupChange={setGroup}
+        onSortChange={setSort}
         onTaskCreated={onTaskCreated}
         onClearFilters={() => {
           setSearchQuery("");
@@ -156,42 +196,24 @@ export const TaskWorkspace: FC<Props> = ({
         }}
       />
 
-      <Tabs defaultValue="list" className="flex flex-col gap-4">
-        <TabsList className="w-full justify-start overflow-x-auto sm:w-fit">
-          <TabsTrigger value="list">
-            <ListIcon className="size-4" />
-            List
-          </TabsTrigger>
-
-          <TabsTrigger value="board">
-            <Columns3Icon className="size-4" />
-            Board
-          </TabsTrigger>
-
-          <TabsTrigger value="calendar">
-            <CalendarDaysIcon className="size-4" />
-            Calendar
-          </TabsTrigger>
-        </TabsList>
-
-        <div className="min-w-0">
-          <TabsContent value="board" className="mt-0">
-            <TaskBoard
-              tasks={filteredTasks}
-              onTaskStatusChange={onTaskStatusChange}
-              onTaskCreated={onTaskCreated}
-            />
-          </TabsContent>
-
-          <TabsContent value="list" className="mt-0">
-            <ListView tasks={filteredTasks} />
-          </TabsContent>
-
-          <TabsContent value="calendar" className="mt-0">
-            <CalendarView tasks={filteredTasks} />
-          </TabsContent>
-        </div>
-      </Tabs>
+      <div className="min-w-0">
+        {view === "board" ? (
+          <TaskBoard
+            tasks={filteredTasks}
+            onTaskStatusChange={onTaskStatusChange}
+            onTaskCreated={onTaskCreated}
+          />
+        ) : null}
+        {view === "list" ? (
+          <ListView
+            tasks={filteredTasks}
+            group={group}
+            sort={sort}
+            onTasksStatusChange={onTasksStatusChange}
+          />
+        ) : null}
+        {view === "calendar" ? <CalendarView tasks={filteredTasks} /> : null}
+      </div>
     </section>
   );
 };

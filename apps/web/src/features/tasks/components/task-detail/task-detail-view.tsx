@@ -2,11 +2,10 @@ import { paths } from "~/src/lib/paths";
 import { useState } from "react";
 
 import Link from "next/link";
-import { ArrowLeftIcon, LinkIcon } from "lucide-react";
+import { LinkIcon } from "lucide-react";
 
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { StatusGlyph } from "@zentro/ui/components/status-glyph";
-import { TaskKey } from "@zentro/ui/components/task-key";
 import { Button } from "@zentro/ui/shadcn/button";
 import {
   RichTextEditor,
@@ -70,7 +69,7 @@ export function TaskDetailView({
   const canComment = useAnyPermission(["tasks.comment"], resource);
 
   return (
-    <section className="flex w-full flex-col gap-6">
+    <section className="flex w-full flex-col gap-5">
       <TaskDetailHeader task={task} />
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -83,8 +82,7 @@ export function TaskDetailView({
             />
           </div>
 
-          <section className="space-y-2">
-            <h2 className="text-sm font-semibold">Description</h2>
+          <section aria-label="Description" className="tile overflow-hidden">
             {isDescriptionEditing ? (
               <RichTextEditor
                 disabled={savingField === "description"}
@@ -101,7 +99,7 @@ export function TaskDetailView({
               <div
                 role="button"
                 tabIndex={canEdit ? 0 : -1}
-                className="block w-full rounded-md border border-transparent text-left hover:border-border hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="block w-full p-4 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                 onClick={() => canEdit && setIsDescriptionEditing(true)}
                 onKeyDown={(event) => {
                   if (canEdit && (event.key === "Enter" || event.key === " ")) {
@@ -129,30 +127,6 @@ export function TaskDetailView({
         </main>
 
         <div className="flex min-w-0 flex-col gap-4">
-          <Tile title="Thread" description="Everything linked to this task">
-            <LinkedThread
-              current={{
-                kind: "task",
-                label: task.name,
-                meta: task.key,
-                status: task.status,
-              }}
-              currentId={task.id}
-              projectId={task.projectId}
-              projectName={task.projectName}
-              projectSlug={task.projectSlug}
-              extra={
-                comments.length
-                  ? [
-                      {
-                        id: "comments",
-                        label: `${comments.length} ${comments.length === 1 ? "comment" : "comments"}`,
-                      },
-                    ]
-                  : []
-              }
-            />
-          </Tile>
           <TaskDetailSidebar
             task={task}
             members={members}
@@ -163,6 +137,39 @@ export function TaskDetailView({
             canEdit={canEdit}
             canAssign={canAssign}
             canDelete={canDelete}
+            thread={
+              <Tile
+                title="Thread"
+                actions={
+                  <span className="font-mono text-xs text-ink-3">
+                    Linked work
+                  </span>
+                }
+              >
+                <LinkedThread
+                  current={{
+                    kind: "task",
+                    label: task.name,
+                    meta: task.key,
+                    status: task.status,
+                  }}
+                  currentId={task.id}
+                  projectId={task.projectId}
+                  projectName={task.projectName}
+                  projectSlug={task.projectSlug}
+                  extra={
+                    comments.length
+                      ? [
+                          {
+                            id: "comments",
+                            label: `${comments.length} ${comments.length === 1 ? "comment" : "comments"}`,
+                          },
+                        ]
+                      : []
+                  }
+                />
+              </Tile>
+            }
           />
         </div>
       </div>
@@ -172,38 +179,43 @@ export function TaskDetailView({
 
 function TaskDetailHeader({ task }: { task: TaskDetail }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-hairline pb-3">
-      <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-        <Button asChild variant="ghost" size="icon-sm">
-          <Link href={paths.tasks()} aria-label="Back to tasks">
-            <ArrowLeftIcon className="size-4" />
-          </Link>
-        </Button>
-        <Link href={paths.tasks()} className="hover:text-foreground">
-          Tasks
-        </Link>
-        <span>/</span>
-        <span className="truncate">{task.projectName}</span>
-        <span>/</span>
-        <StatusGlyph status={task.status} size={14} />
-        <TaskKey>{task.key}</TaskKey>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          aria-label="Copy task link"
-          onClick={() => {
-            void navigator.clipboard
-              .writeText(window.location.href)
-              .then(() => toastSuccess("Link copied"))
-              .catch(() => toastError("Error", "Could not copy the link"));
-          }}
-        >
-          <LinkIcon className="size-4" />
-        </Button>
-      </div>
+    <div className="flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
+      <Link
+        href={paths.tasksForProject(task.projectSlug)}
+        className="rounded-xs hover:text-ink focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        {task.projectName}
+      </Link>
+      <span aria-hidden="true" className="text-ink-3">
+        /
+      </span>
+      <Link
+        href={paths.tasks()}
+        className="rounded-xs hover:text-ink focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        Tasks
+      </Link>
+      <span aria-hidden="true" className="text-ink-3">
+        /
+      </span>
+      <span className="flex items-center gap-1.5 font-mono text-ink">
+        <StatusGlyph status={task.status} size={14} decorative />
+        {task.key}
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        className="ml-1.5"
+        onClick={() => {
+          void navigator.clipboard
+            .writeText(window.location.href)
+            .then(() => toastSuccess("Link copied"))
+            .catch(() => toastError("Error", "Could not copy the link"));
+        }}
+      >
+        <LinkIcon />
+        Copy link
+      </Button>
     </div>
   );
 }
