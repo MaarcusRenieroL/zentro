@@ -404,6 +404,24 @@ export const auditCatalog: readonly AuditEventDefinition[] = [
     "commented on {target}",
     "A comment was added to a task.",
   ),
+  event(
+    "task.linked",
+    "Task linked",
+    "tasks",
+    "task",
+    false,
+    "linked {target} to other work",
+    "A task was linked to another task or a doc.",
+  ),
+  event(
+    "task.unlinked",
+    "Task unlinked",
+    "tasks",
+    "task",
+    false,
+    "removed a link from {target}",
+    "A link between a task and other work was removed.",
+  ),
 
   // Docs
   event(
@@ -450,6 +468,24 @@ export const auditCatalog: readonly AuditEventDefinition[] = [
     false,
     "commented on the doc {target}",
     "A comment was added to a doc.",
+  ),
+  event(
+    "doc.linked",
+    "Doc linked",
+    "docs",
+    "doc",
+    false,
+    "linked the doc {target} to other work",
+    "A doc was linked to a task or another doc.",
+  ),
+  event(
+    "doc.unlinked",
+    "Doc unlinked",
+    "docs",
+    "doc",
+    false,
+    "removed a link from the doc {target}",
+    "A link between a doc and other work was removed.",
   ),
   event(
     "doc.comment_resolved",

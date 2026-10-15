@@ -37,6 +37,7 @@ const unmanaged: Record<string, string> = {
 // Procedures whose permission is checked in the handler (scope depends on the
 // input) rather than by permissionProcedure. They still declare `meta`.
 const metaOnly = new Set([
+  "link.remove",
   "permissions.assignments.assign",
   "permissions.assignments.unassign",
   "permissions.overrides.set",

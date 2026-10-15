@@ -8,6 +8,7 @@ import { commentRouter } from "./routers/comment";
 import { docsRouter } from "./routers/doc";
 import { fileRouter } from "./routers/file";
 import { invitationRouter } from "./routers/invitation";
+import { linkRouter } from "./routers/link";
 import { notificationRouter } from "./routers/notification";
 import { memberRouter } from "./routers/member";
 import { modulesRouter } from "./routers/modules";
@@ -29,6 +30,7 @@ export const appRouter = router({
   docs: docsRouter,
   file: fileRouter,
   invitation: invitationRouter,
+  link: linkRouter,
   member: memberRouter,
   notification: notificationRouter,
   modules: modulesRouter,
