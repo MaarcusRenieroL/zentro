@@ -244,7 +244,7 @@ async function loadDoc(ctx: OrganizationContext, id: string) {
 }
 
 /** The other end must exist and be visible to the caller. */
-async function resolveTarget(
+export async function resolveTarget(
   ctx: OrganizationContext,
   target: { type: "task"; key: string } | { type: "doc"; id: string },
 ): Promise<Ref & { label: string }> {

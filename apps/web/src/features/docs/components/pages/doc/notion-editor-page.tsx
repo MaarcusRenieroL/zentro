@@ -52,6 +52,7 @@ import {
   QuoteIcon,
   TableIcon,
   Trash2Icon,
+  SquareCheckIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -73,7 +74,11 @@ import {
 import { ActorAvatar } from "~/src/components/actor-avatar";
 import { LinkedWork } from "~/src/components/links/linked-work";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
-import { useAnyPermission } from "~/src/components/permissions/permission-provider";
+import {
+  useAnyPermission,
+  useReachable,
+} from "~/src/components/permissions/permission-provider";
+import { CreateTaskModal } from "~/src/features/tasks/components/create-task-modal";
 import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
 import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { CommentsPanel } from "./comments-panel";
@@ -672,6 +677,9 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
+  const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [linksVersion, setLinksVersion] = useState(0);
+  const canCreateTask = useReachable("tasks.create");
   const [commentCount, setCommentCount] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -1044,7 +1052,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                   <span className="sr-only">Page actions</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem
                   className="gap-2"
                   onClick={() => setCommentsOpen((isOpen) => !isOpen)}
@@ -1052,6 +1060,15 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                   <MessageSquareIcon className="size-4" />
                   {commentsOpen ? "Hide comments" : "Show comments"}
                 </DropdownMenuItem>
+                {canCreateTask ? (
+                  <DropdownMenuItem
+                    className="gap-2"
+                    onClick={() => setCreateTaskOpen(true)}
+                  >
+                    <SquareCheckIcon className="size-4" />
+                    Create task from this doc
+                  </DropdownMenuItem>
+                ) : null}
                 {canTrash ? (
                   <>
                     <DropdownMenuSeparator />
@@ -1179,8 +1196,18 @@ export function NotionEditorPage({ slug }: { slug: string }) {
             source={{ type: "doc", id: doc.id }}
             selfId={doc.id}
             canEdit={canEdit}
-            refreshKey={saveStatus}
+            refreshKey={`${saveStatus}-${linksVersion}`}
           />
+          {canCreateTask ? (
+            <CreateTaskModal
+              hideTrigger
+              open={createTaskOpen}
+              onOpenChange={setCreateTaskOpen}
+              linkDocId={doc.id}
+              defaultProjectId={doc.projectId ?? undefined}
+              onTaskCreated={() => setLinksVersion((value) => value + 1)}
+            />
+          ) : null}
 
           <section aria-label="Thread" className="tile hidden p-4 xl:block">
             <LinkedThread

@@ -67,6 +67,8 @@ type Props = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  /** Created from a doc: the new task is linked to it. */
+  linkDocId?: string;
 };
 
 const unassignedValue = "unassigned";
@@ -160,6 +162,7 @@ const CreateTaskModalInner: FC<Props> = ({
   open: controlledOpen,
   onOpenChange,
   hideTrigger = false,
+  linkDocId,
 }) => {
   const trpc = useTrpcClient();
   const userId = useCurrentUserId();
@@ -276,6 +279,7 @@ const CreateTaskModalInner: FC<Props> = ({
         description: values.description || "",
         assignedToMemberId: values.assignedToMemberId || null,
         dueAt: values.dueAt || null,
+        ...(linkDocId ? { linkDocId } : {}),
       });
 
       toastSuccess("Task created", `${task.key} is ready.`);

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileTextIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 
@@ -16,6 +17,7 @@ import {
 } from "@zentro/ui/shadcn/popover";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
+import { useReachable } from "~/src/components/permissions/permission-provider";
 import { trpcResult } from "~/src/lib/trpc-result";
 
 type Relation =
@@ -84,6 +86,7 @@ export function LinkedWork({
   canEdit,
   refreshKey,
   selfId,
+  newDoc,
 }: {
   source: Source;
   canEdit: boolean;
@@ -91,8 +94,13 @@ export function LinkedWork({
   refreshKey?: string;
   /** Left out of the picker. */
   selfId: string;
+  /** For a task: write a new doc linked to it, in this project. */
+  newDoc?: { projectId: string | null; title: string };
 }) {
   const trpc = useTrpcClient();
+  const router = useRouter();
+  const canCreateDoc = useReachable("docs.create");
+  const [writing, setWriting] = useState(false);
   const [items, setItems] = useState<Item[] | null>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -188,6 +196,35 @@ export function LinkedWork({
     setOpen(false);
     setQuery("");
     await load();
+  };
+
+  const writeDoc = async () => {
+    if (!newDoc || source.type !== "task") return;
+
+    setWriting(true);
+
+    const slug = `${newDoc.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 60)}-${Math.random().toString(36).slice(2, 6)}`;
+    const { data, error } = await trpcResult(
+      trpc.docs.create.mutate({
+        title: newDoc.title,
+        slug,
+        projectId: newDoc.projectId,
+        linkTaskKey: source.key,
+      }),
+    );
+
+    setWriting(false);
+
+    if (error) {
+      toastError(error.statusText, error.message);
+      return;
+    }
+
+    router.push(`/docs/${data.slug}`);
   };
 
   const remove = async (item: Item) => {
@@ -350,6 +387,18 @@ export function LinkedWork({
           );
         })
       )}
+      {newDoc && canCreateDoc && source.type === "task" ? (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-1 self-start"
+          loading={writing}
+          onClick={() => void writeDoc()}
+        >
+          <FileTextIcon />
+          Write a doc for this task
+        </Button>
+      ) : null}
     </section>
   );
 }

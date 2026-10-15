@@ -188,6 +188,27 @@ describe("tasks and docs link to each other", () => {
     ).toBe(false);
   });
 
+  it("links a task made from a doc, and a doc written for a task", async () => {
+    const fromDoc = await owner.task.createTask({
+      projectId,
+      name: "Follow-up from the spec",
+      linkDocId: doc.id,
+    });
+    const spec = await owner.docs.create({
+      projectId,
+      title: "Spec for billing",
+      slug: "spec-for-billing",
+      linkTaskKey: b.key,
+    });
+
+    expect(await owner.link.forTask({ taskKey: fromDoc.key })).toMatchObject([
+      { relation: "relates", type: "doc", title: "Session spec" },
+    ]);
+    expect(await owner.link.forDoc({ docId: spec.id })).toMatchObject([
+      { relation: "relates", type: "task", key: b.key },
+    ]);
+  });
+
   it("hides links to work the caller cannot see", async () => {
     const secret = await owner.project.createProject({
       name: "Secret",

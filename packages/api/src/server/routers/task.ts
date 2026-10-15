@@ -40,6 +40,7 @@ import {
   router,
 } from "../trpc";
 import { syncMentions } from "../mentions";
+import { resolveTarget } from "./link";
 import { loadProjectById, projectFromInput, taskByKey } from "../resources";
 import {
   getChangedTaskFields,
@@ -60,7 +61,7 @@ function isUniqueViolation(error: unknown) {
 export const taskRouter = router({
   createTask: permissionProcedure("tasks.create", projectFromInput, {
     module: "tasks",
-    also: ["tasks.assign"],
+    also: ["tasks.assign", "docs.view"],
     audit: ["task.created"],
   })
     .input(createTaskSchema)
@@ -72,6 +73,11 @@ export const taskRouter = router({
           project: (await loadProjectById(ctx, input.projectId)) ?? null,
         });
       }
+
+      // Created from a doc: the doc must be one the caller can see.
+      const linkDoc = input.linkDocId
+        ? await resolveTarget(ctx, { type: "doc", id: input.linkDocId })
+        : null;
 
       const create = () =>
         db.transaction(async (tx) => {
@@ -187,8 +193,21 @@ export const taskRouter = router({
             metadata: {
               name: task.name,
               ...(assignedToMemberId ? { assignedToMemberId } : {}),
+              ...(linkDoc ? { linkedTo: linkDoc.label } : {}),
             },
           });
+
+          if (linkDoc) {
+            await tx.insert(workLinks).values({
+              organizationId: activeOrganization.id,
+              sourceType: "doc",
+              sourceId: linkDoc.id,
+              targetType: "task",
+              targetId: task.id,
+              kind: "relates",
+              createdByMemberId: member.id,
+            });
+          }
           await syncMentions(tx, {
             organizationId: activeOrganization.id,
             memberId: member.id,

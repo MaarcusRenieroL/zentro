@@ -148,6 +148,8 @@ export const taskStatusSchema = z.enum([
 export const taskPrioritySchema = z.enum(["low", "medium", "high"]);
 
 export const createTaskSchema = z.object({
+  /** A doc to link the new task to, when it is created from that doc. */
+  linkDocId: z.string().uuid().optional(),
   projectId: z
     .string({ error: "Pick a project so this task gets a key like ZEN-18." })
     .uuid("Pick a project so this task gets a key like ZEN-18."),
@@ -215,6 +217,8 @@ export const reservedDocSlugs = [
 ] as const;
 
 export const createDocSchema = z.object({
+  /** A task to link the new doc to, when it is written for that task. */
+  linkTaskKey: z.string().trim().min(1).max(40).optional(),
   projectId: z.string().uuid().optional().nullable(),
   teamId: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1, "Title is required.").max(160).optional(),

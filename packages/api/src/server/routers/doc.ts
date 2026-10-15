@@ -17,6 +17,7 @@ import {
   projects,
   teams,
   users,
+  workLinks,
 } from "@zentro/db/schema";
 
 import {
@@ -36,6 +37,7 @@ import {
 import type { TRPCContext } from "../../types";
 import { hasRecentDocEdit, visibleDocsCondition } from "../access";
 import { syncMentions } from "../mentions";
+import { resolveTarget } from "./link";
 import { buildChanges } from "@zentro/audit";
 import { listProcedure, permissionProcedure, router } from "../trpc";
 import {
@@ -299,11 +301,16 @@ export const docsRouter = router({
     }),
   create: permissionProcedure("docs.create", projectFromInput, {
     module: "docs",
+    also: ["tasks.view"],
     audit: ["doc.created"],
   })
     .input(createDocSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user, activeOrganization } = ctx;
+      // Written for a task: the task must be one the caller can see.
+      const linkTask = input.linkTaskKey
+        ? await resolveTarget(ctx, { type: "task", key: input.linkTaskKey })
+        : null;
 
       return db.transaction(async (tx) => {
         const [member] = await tx
@@ -396,8 +403,24 @@ export const docsRouter = router({
           target: { id: doc.id, label: doc.title },
           projectId: doc.projectId,
           teamId: doc.teamId,
-          metadata: { slug: doc.slug },
+          metadata: {
+            slug: doc.slug,
+            ...(linkTask ? { linkedTo: linkTask.label } : {}),
+          },
         });
+
+        if (linkTask) {
+          await tx.insert(workLinks).values({
+            organizationId: activeOrganization.id,
+            sourceType: "doc",
+            sourceId: doc.id,
+            targetType: "task",
+            targetId: linkTask.id,
+            kind: "relates",
+            createdByMemberId: member.id,
+          });
+        }
+
         await syncMentions(tx, {
           organizationId: activeOrganization.id,
           memberId: member.id,

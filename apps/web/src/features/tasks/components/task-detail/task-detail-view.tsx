@@ -124,6 +124,10 @@ export function TaskDetailView({
                 selfId={task.id}
                 canEdit={canEdit}
                 refreshKey={task.description ?? ""}
+                newDoc={{
+                  projectId: task.projectId ?? null,
+                  title: `${task.key}: ${task.name}`,
+                }}
               />
               <section aria-label="Thread" className="tile p-4">
                 <LinkedThread
