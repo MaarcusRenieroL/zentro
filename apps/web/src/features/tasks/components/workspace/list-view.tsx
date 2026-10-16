@@ -427,7 +427,7 @@ export const ListView: FC<Props> = ({
                           : undefined
                       }
                       className={cn(
-                        "relative border-b border-hairline/70 transition-colors sm:rounded-md sm:hover:bg-hover",
+                        "group relative border-b border-hairline/70 transition-colors sm:rounded-md sm:hover:bg-hover",
                         isFocused &&
                           "bg-signal-subtle/40 ring-1 ring-signal/50 shadow-xs",
                         isSelected && "bg-selected sm:hover:bg-selected",
@@ -502,6 +502,20 @@ export const ListView: FC<Props> = ({
                         <span className="flex w-6 shrink-0 justify-center">
                           <Assignee task={task} size={24} />
                         </span>
+                        {task.status === "backlog" && onTasksChange ? (
+                          <button
+                            type="button"
+                            title="Plan into Active Sprint"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              onTasksChange([task], { status: "todo" });
+                            }}
+                            className="hidden group-hover:inline-flex items-center gap-1 rounded border border-signal/30 bg-signal-subtle px-1.5 py-0.5 font-mono text-[10px] font-semibold text-signal hover:bg-signal/20 transition-colors shrink-0 cursor-pointer"
+                          >
+                            <span>+ Sprint</span>
+                          </button>
+                        ) : null}
                         <span className="flex w-[88px] shrink-0 justify-end">
                           <DueDate
                             value={task.dueAt}

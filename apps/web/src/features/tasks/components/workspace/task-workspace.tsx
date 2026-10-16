@@ -20,6 +20,11 @@ import {
   type TaskSort,
   type TaskView,
 } from "./task-workspace-header";
+import {
+  SprintCycleBar,
+  type SprintScope,
+  type SprintStats,
+} from "./sprint-cycle-bar";
 import type {
   BulkChange,
   TaskPriority,
@@ -66,8 +71,47 @@ export const TaskWorkspace: FC<Props> = ({
   const [group, setGroup] = useState<TaskGroup>("state");
   const [sort, setSort] = useState<TaskSort>("due");
   const [chosenView, setView] = useState<TaskView>("list");
+  const [sprintScope, setSprintScope] = useState<SprintScope>("all");
   // Phones get the list only; board and calendar need the width.
   const view = isMobile ? "list" : chosenView;
+
+  const sprintStats: SprintStats = useMemo(() => {
+    const totalTasks = tasks.length;
+    const doneTasks = tasks.filter((t) => t.status === "done").length;
+    const backlogTasks = tasks.filter((t) => t.status === "backlog").length;
+    const sprintTasksList = tasks.filter((t) => t.status !== "backlog");
+    const sprintTasks = sprintTasksList.length;
+    const sprintDoneTasks = sprintTasksList.filter(
+      (t) => t.status === "done",
+    ).length;
+    const totalPoints = sprintTasksList.reduce(
+      (sum, t) => sum + (t.estimatePoints ?? 0),
+      0,
+    );
+    const donePoints = sprintTasksList
+      .filter((t) => t.status === "done")
+      .reduce((sum, t) => sum + (t.estimatePoints ?? 0), 0);
+
+    return {
+      totalTasks,
+      doneTasks,
+      sprintTasks,
+      sprintDoneTasks,
+      backlogTasks,
+      totalPoints,
+      donePoints,
+    };
+  }, [tasks]);
+
+  const handlePlanAllToSprint = () => {
+    const backlogTasks = tasks.filter((t) => t.status === "backlog");
+    if (!backlogTasks.length) return;
+    if (onTasksChange) {
+      onTasksChange(backlogTasks, { status: "todo" });
+    } else if (onTaskStatusChange) {
+      backlogTasks.forEach((t) => onTaskStatusChange(t, "todo"));
+    }
+  };
 
   const assigneeOptions = useMemo(() => {
     return Array.from(new Set(tasks.map((task) => task.assignee))).sort(
@@ -128,6 +172,11 @@ export const TaskWorkspace: FC<Props> = ({
         teamFilter === "all" ||
         (teamFilter === "workspace" && !task.teamId) ||
         task.teamId === teamFilter;
+      const matchesScope =
+        sprintScope === "all" ||
+        (sprintScope === "sprint"
+          ? task.status !== "backlog"
+          : task.status === "backlog");
 
       return (
         matchesView &&
@@ -136,7 +185,8 @@ export const TaskWorkspace: FC<Props> = ({
         matchesStatus &&
         matchesPriority &&
         matchesAssignee &&
-        matchesTeam
+        matchesTeam &&
+        matchesScope
       );
     });
   }, [
@@ -146,6 +196,7 @@ export const TaskWorkspace: FC<Props> = ({
     priorityFilter,
     projectSlug,
     searchQuery,
+    sprintScope,
     statusFilter,
     tasks,
     teamFilter,
@@ -156,7 +207,8 @@ export const TaskWorkspace: FC<Props> = ({
     statusFilter !== "all" ||
     priorityFilter !== "all" ||
     assigneeFilter !== "all" ||
-    teamFilter !== "all";
+    teamFilter !== "all" ||
+    sprintScope !== "all";
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -164,6 +216,7 @@ export const TaskWorkspace: FC<Props> = ({
     setPriorityFilter("all");
     setAssigneeFilter("all");
     setTeamFilter("all");
+    setSprintScope("all");
   };
   // What the filters ask for, in words, for the empty state.
   const filterSummary = [
@@ -279,6 +332,13 @@ export const TaskWorkspace: FC<Props> = ({
         onSortChange={setSort}
         onTaskCreated={onTaskCreated}
         onClearFilters={clearFilters}
+      />
+
+      <SprintCycleBar
+        scope={sprintScope}
+        onScopeChange={setSprintScope}
+        stats={sprintStats}
+        onPlanAllToSprint={handlePlanAllToSprint}
       />
 
       <div className="min-w-0">
