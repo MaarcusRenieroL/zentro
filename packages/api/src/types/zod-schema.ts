@@ -150,6 +150,7 @@ export const taskPrioritySchema = z.enum(["low", "medium", "high"]);
 export const createTaskSchema = z.object({
   /** A doc to link the new task to, when it is created from that doc. */
   linkDocId: z.string().uuid().optional(),
+  parentTaskId: z.string().uuid().optional().nullable(),
   projectId: z
     .string({ error: "Pick a project so this task gets a key like ZEN-18." })
     .uuid("Pick a project so this task gets a key like ZEN-18."),
@@ -176,12 +177,19 @@ export const getTaskByKeySchema = z.object({
   key: z.string(),
 });
 
+export const createSubtaskSchema = z.object({
+  parentTaskKey: z.string().trim().min(1, "Parent task key is required."),
+  name: z.string().trim().min(1, "Subtask name is required.").max(120),
+  assignedToMemberId: z.string().uuid().optional().nullable(),
+});
+
 export const updateTaskByKeySchema = z.object({
   key: z.string().trim().min(1, "Task key is required."),
   name: z.string().trim().min(1, "Task name is required.").max(120).optional(),
   description: z.string().trim().max(10000).optional().nullable(),
   status: taskStatusSchema.optional(),
   priority: taskPrioritySchema.optional(),
+  parentTaskId: z.string().uuid().optional().nullable(),
   assignedToMemberId: z.string().uuid().optional().nullable(),
   dueAt: z.preprocess(
     (value) => (value === "" ? null : value),

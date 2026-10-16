@@ -19,6 +19,7 @@ import { useAnyPermission } from "~/src/components/permissions/permission-provid
 import { InlineTitleEditor } from "./inline-title-editor";
 import { TaskDetailActivity } from "./task-detail-activity";
 import { TaskDetailSidebar } from "./task-detail-sidebar";
+import { TaskSubtasks } from "./task-subtasks";
 import type {
   MemberOption,
   TaskActivityEvent,
@@ -97,6 +98,8 @@ export function TaskDetailView({
             </div>
           )}
         </section>
+
+        <TaskSubtasks task={task} canEdit={canEdit} />
 
         <TaskDetailActivity
           members={members}
@@ -185,6 +188,18 @@ function TaskDetailHeader({ task }: { task: TaskDetail }) {
         <StatusGlyph status={task.status} size={12} decorative />
         {task.key}
       </span>
+      {task.parentTask ? (
+        <span className="flex items-center gap-1 font-mono text-xs text-ink-3">
+          <span>(subtask of</span>
+          <Link
+            href={paths.task(task.parentTask.key)}
+            className="text-ink-2 hover:text-ink hover:underline"
+          >
+            {task.parentTask.key}
+          </Link>
+          <span>)</span>
+        </span>
+      ) : null}
       <Button
         variant="outline"
         size="xs"

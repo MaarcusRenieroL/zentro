@@ -25,6 +25,7 @@ import {
 } from "@zentro/db/schema";
 
 import {
+  createSubtaskSchema,
   createTaskSchema,
   deleteTaskByKeySchema,
   getTaskByKeySchema,
@@ -169,6 +170,7 @@ export const taskRouter = router({
               priority: input.priority,
               dueAt: input.dueAt,
               projectId: project.id,
+              parentTaskId: input.parentTaskId ?? null,
               teamId: project.teamId,
               description: input.description || null,
               assignedToMemberId,
@@ -270,6 +272,7 @@ export const taskRouter = router({
           assignee: users.name,
           assigneeUserId: users.id,
           due: tasks.dueAt,
+          parentTaskId: tasks.parentTaskId,
           createdAt: tasks.createdAt,
         })
         .from(tasks)
@@ -283,31 +286,57 @@ export const taskRouter = router({
       // Open tasks that block each listed task, by key. Blockers the caller
       // cannot see are left out, like everything else here.
       const ids = allTasks.map((task) => task.id);
-      const blockers = ids.length
-        ? await db
-            .select({ targetId: workLinks.targetId, key: tasks.key })
-            .from(workLinks)
-            .innerJoin(tasks, eq(tasks.id, workLinks.sourceId))
-            .where(
-              and(
-                eq(workLinks.organizationId, activeOrganization.id),
-                eq(workLinks.kind, "blocks"),
-                eq(workLinks.sourceType, "task"),
-                eq(workLinks.targetType, "task"),
-                inArray(workLinks.targetId, ids),
-                ne(tasks.status, "done"),
-                isNull(tasks.deletedAt),
-                inArray(tasks.projectId, viewableProjectIds),
-              ),
-            )
-        : [];
+      const [blockers, subtaskCounts] = await Promise.all([
+        ids.length
+          ? db
+              .select({ targetId: workLinks.targetId, key: tasks.key })
+              .from(workLinks)
+              .innerJoin(tasks, eq(tasks.id, workLinks.sourceId))
+              .where(
+                and(
+                  eq(workLinks.organizationId, activeOrganization.id),
+                  eq(workLinks.kind, "blocks"),
+                  eq(workLinks.sourceType, "task"),
+                  eq(workLinks.targetType, "task"),
+                  inArray(workLinks.targetId, ids),
+                  ne(tasks.status, "done"),
+                  isNull(tasks.deletedAt),
+                  inArray(tasks.projectId, viewableProjectIds),
+                ),
+              )
+          : [],
+        ids.length
+          ? db
+              .select({
+                parentTaskId: tasks.parentTaskId,
+                total: count(),
+                done: sql<number>`count(*) filter (where ${tasks.status} = 'done')`,
+              })
+              .from(tasks)
+              .where(
+                and(
+                  eq(tasks.organizationId, activeOrganization.id),
+                  inArray(tasks.parentTaskId, ids),
+                  isNull(tasks.deletedAt),
+                ),
+              )
+              .groupBy(tasks.parentTaskId)
+          : [],
+      ]);
 
-      return allTasks.map((task) => ({
-        ...task,
-        blockedBy: blockers
-          .filter((row) => row.targetId === task.id)
-          .map((row) => row.key),
-      }));
+      return allTasks.map((task) => {
+        const sc = subtaskCounts.find((row) => row.parentTaskId === task.id);
+
+        return {
+          ...task,
+          subtaskCount: sc
+            ? { total: Number(sc.total), done: Number(sc.done) }
+            : null,
+          blockedBy: blockers
+            .filter((row) => row.targetId === task.id)
+            .map((row) => row.key),
+        };
+      });
     }),
   // An unknown key resolves to nothing. A task the caller may not see answers
   // the same way, so keys cannot be probed to learn what exists.
@@ -347,6 +376,7 @@ export const taskRouter = router({
           teamColor: teams.color,
           status: tasks.status,
           priority: tasks.priority,
+          parentTaskId: tasks.parentTaskId,
           assignedToMemberId: tasks.assignedToMemberId,
           createdByMemberId: tasks.createdByMemberId,
           assignee: users.name,
@@ -374,30 +404,183 @@ export const taskRouter = router({
       }
 
       // The reporter is the member who created the task, if they still exist.
-      const [reporter] = task.createdByMemberId
-        ? await db
-            .select({
-              name: users.name,
-              email: users.email,
-              userId: members.userId,
-            })
-            .from(members)
-            .innerJoin(users, eq(users.id, members.userId))
-            .where(
-              and(
-                eq(members.id, task.createdByMemberId),
-                eq(members.organizationId, activeOrganization.id),
-              ),
-            )
-            .limit(1)
-        : [];
+      const [reporter, subtasks, parentTask] = await Promise.all([
+        task.createdByMemberId
+          ? db
+              .select({
+                name: users.name,
+                email: users.email,
+                userId: members.userId,
+              })
+              .from(members)
+              .innerJoin(users, eq(users.id, members.userId))
+              .where(
+                and(
+                  eq(members.id, task.createdByMemberId),
+                  eq(members.organizationId, activeOrganization.id),
+                ),
+              )
+              .limit(1)
+              .then(([r]) => r ?? null)
+          : Promise.resolve(null),
+        db
+          .select({
+            id: tasks.id,
+            key: tasks.key,
+            taskNumber: tasks.taskNumber,
+            name: tasks.name,
+            status: tasks.status,
+            priority: tasks.priority,
+            assignee: users.name,
+            due: tasks.dueAt,
+            createdAt: tasks.createdAt,
+          })
+          .from(tasks)
+          .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
+          .leftJoin(users, eq(users.id, members.userId))
+          .where(
+            and(
+              eq(tasks.parentTaskId, task.id),
+              eq(tasks.organizationId, activeOrganization.id),
+              isNull(tasks.deletedAt),
+            ),
+          )
+          .orderBy(asc(tasks.taskNumber)),
+        task.parentTaskId
+          ? db
+              .select({
+                id: tasks.id,
+                key: tasks.key,
+                name: tasks.name,
+              })
+              .from(tasks)
+              .where(
+                and(
+                  eq(tasks.id, task.parentTaskId),
+                  eq(tasks.organizationId, activeOrganization.id),
+                  isNull(tasks.deletedAt),
+                ),
+              )
+              .limit(1)
+              .then(([p]) => p ?? null)
+          : Promise.resolve(null),
+      ]);
 
       return {
         ...task,
         reporter: reporter?.name ?? reporter?.email ?? null,
         // Who created the task, so `_own` permissions can be applied on screen.
         createdByUserId: reporter?.userId ?? null,
+        subtasks,
+        parentTask,
       };
+    }),
+  createSubtask: moduleProcedure("tasks")
+    .meta({ permissions: ["tasks.create"] })
+    .input(createSubtaskSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization, user } = ctx;
+      const parentTask = await getTaskForActiveOrganization(
+        ctx,
+        input.parentTaskKey,
+      );
+
+      await assertAnyPermission(ctx, ["tasks.create"], {
+        project: (await loadProjectById(ctx, parentTask.projectId)) ?? null,
+      });
+
+      const [member] = await db
+        .select({ id: members.id })
+        .from(members)
+        .where(
+          and(
+            eq(members.userId, user.id),
+            eq(members.organizationId, activeOrganization.id),
+          ),
+        )
+        .limit(1);
+
+      if (!member) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Member not found in active organization.",
+        });
+      }
+
+      const [project] = await db
+        .select({
+          id: projects.id,
+          taskKeyPrefix: projects.taskKeyPrefix,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, parentTask.projectId),
+            eq(projects.organizationId, activeOrganization.id),
+          ),
+        )
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found.",
+        });
+      }
+
+      return await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${parentTask.projectId}, 0))`,
+        );
+
+        const [latestTask] = await tx
+          .select({ taskNumber: tasks.taskNumber })
+          .from(tasks)
+          .where(eq(tasks.projectId, parentTask.projectId))
+          .orderBy(desc(tasks.taskNumber))
+          .limit(1);
+
+        const taskNumber = (latestTask?.taskNumber ?? 0) + 1;
+        const key = `${project.taskKeyPrefix}-${taskNumber}`;
+
+        const [subtask] = await tx
+          .insert(tasks)
+          .values({
+            organizationId: activeOrganization.id,
+            projectId: parentTask.projectId,
+            parentTaskId: parentTask.id,
+            teamId: parentTask.teamId,
+            key,
+            taskNumber,
+            name: input.name,
+            status: "todo",
+            priority: "medium",
+            createdByMemberId: member.id,
+            assignedToMemberId: input.assignedToMemberId ?? null,
+          })
+          .returning();
+
+        if (!subtask) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create subtask.",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "task.created",
+          target: { id: subtask.id, label: subtask.key },
+          projectId: subtask.projectId,
+          teamId: subtask.teamId,
+          metadata: {
+            name: subtask.name,
+            parentTaskId: parentTask.id,
+            parentTaskKey: parentTask.key,
+          },
+        });
+
+        return subtask;
+      });
     }),
   getOverview: listProcedure("tasks.view", "tasks").query(async ({ ctx }) => {
     const { db, user, activeOrganization } = ctx;
@@ -649,6 +832,7 @@ export const taskRouter = router({
         status?: string;
         priority?: string;
         assignedToMemberId?: string | null;
+        parentTaskId?: string | null;
         dueAt?: Date | null;
         updatedAt: Date;
       } = {
@@ -669,6 +853,10 @@ export const taskRouter = router({
 
       if (values.priority !== undefined) {
         updateValues.priority = values.priority;
+      }
+
+      if (values.parentTaskId !== undefined) {
+        updateValues.parentTaskId = values.parentTaskId;
       }
 
       if (values.assignedToMemberId !== undefined) {

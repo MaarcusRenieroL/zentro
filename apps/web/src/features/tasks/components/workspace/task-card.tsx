@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CheckSquareIcon } from "lucide-react";
 import { BlockedChip } from "./blocked-chip";
 import { FC } from "react";
 
@@ -48,6 +49,17 @@ export const TaskCard: FC<Props> = ({ task }) => {
 
       <div className="flex items-center gap-2.5 text-xs text-ink-2">
         <PriorityMeter priority={task.priority} />
+        {task.subtaskCount && task.subtaskCount.total > 0 ? (
+          <span
+            title={`${task.subtaskCount.done} of ${task.subtaskCount.total} subtasks completed`}
+            className="inline-flex items-center gap-1 font-mono text-[11px] text-ink-3"
+          >
+            <CheckSquareIcon className="size-3" />
+            <span>
+              {task.subtaskCount.done}/{task.subtaskCount.total}
+            </span>
+          </span>
+        ) : null}
         <span className="flex-1" />
         <DueDate value={task.dueAt} done={done} className="text-[13px]" />
       </div>

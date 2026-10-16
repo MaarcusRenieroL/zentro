@@ -1,5 +1,17 @@
 import type { TaskPriority, TaskStatus } from "~/src/features/tasks/lib/types";
 
+export type SubtaskItem = {
+  id: string;
+  key: string;
+  taskNumber: number;
+  name: string;
+  status: string;
+  priority: string;
+  assignee: string | null;
+  due: Date | null;
+  createdAt: Date;
+};
+
 export type TaskDetail = {
   id: string;
   key: string;
@@ -15,6 +27,9 @@ export type TaskDetail = {
   assignee: string | null;
   teamId: string | null;
   teamName: string | null;
+  parentTaskId?: string | null;
+  parentTask?: { id: string; key: string; name: string } | null;
+  subtasks?: SubtaskItem[];
   reporter: string | null;
   /** Who created the task; `_own` permissions apply to this person. */
   createdByUserId: string | null;

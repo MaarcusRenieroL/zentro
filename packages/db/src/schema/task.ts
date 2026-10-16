@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   index,
   integer,
   pgTable,
@@ -26,6 +27,10 @@ export const tasks = pgTable(
       .references(() => projects.id, {
         onDelete: "cascade",
       }),
+
+    parentTaskId: uuid("parentTaskId").references((): AnyPgColumn => tasks.id, {
+      onDelete: "cascade",
+    }),
 
     teamId: uuid("teamId").references(() => teams.id, {
       onDelete: "set null",
@@ -76,6 +81,7 @@ export const tasks = pgTable(
     index("task_team_status_idx").on(table.teamId, table.status),
     index("task_assigned_to_member_idx").on(table.assignedToMemberId),
     index("task_due_at_idx").on(table.dueAt),
+    index("task_parent_task_idx").on(table.parentTaskId),
   ],
 );
 

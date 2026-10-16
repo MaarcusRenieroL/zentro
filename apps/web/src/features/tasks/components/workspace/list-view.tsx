@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState, type FC, type ReactNode } from "react";
 import {
   CheckIcon,
+  CheckSquareIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   PlusIcon,
@@ -295,6 +296,17 @@ export const ListView: FC<Props> = ({
                         {done ? null : (
                           <BlockedChip blockedBy={task.blockedBy} />
                         )}
+                        {task.subtaskCount && task.subtaskCount.total > 0 ? (
+                          <span
+                            title={`${task.subtaskCount.done} of ${task.subtaskCount.total} subtasks completed`}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-sm border border-hairline bg-surface-subtle px-1.5 py-px font-mono text-[11px] text-ink-2"
+                          >
+                            <CheckSquareIcon className="size-3 text-ink-3" />
+                            <span>
+                              {task.subtaskCount.done}/{task.subtaskCount.total}
+                            </span>
+                          </span>
+                        ) : null}
                         <span
                           title={task.projectName}
                           className="hidden shrink-0 rounded-sm border border-hairline px-1.5 py-px font-mono text-[11px] text-ink-3 md:block [[data-density=compact]_&]:hidden"

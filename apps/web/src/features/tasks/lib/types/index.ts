@@ -21,6 +21,8 @@ export type WorkspaceTask = {
   dueAt: string | null;
   /** Keys of open tasks that block this one. */
   blockedBy: string[];
+  parentTaskId?: string | null;
+  subtaskCount?: { total: number; done: number } | null;
 };
 
 /** A change made to several tasks at once from the selection bar. */

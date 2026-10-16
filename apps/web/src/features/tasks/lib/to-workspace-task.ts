@@ -19,6 +19,8 @@ type ApiTask = {
   assigneeUserId?: string | null;
   due?: Date | null;
   blockedBy?: string[];
+  parentTaskId?: string | null;
+  subtaskCount?: { total: number; done: number } | null;
 };
 
 /** One API task as the task list renders it. */
@@ -44,5 +46,7 @@ export function toWorkspaceTask(task: ApiTask): WorkspaceTask {
     dueDate: task.due ? task.due.toDateString() : "",
     dueAt: task.due ? task.due.toISOString() : null,
     blockedBy: task.blockedBy ?? [],
+    parentTaskId: task.parentTaskId ?? null,
+    subtaskCount: task.subtaskCount ?? null,
   };
 }
