@@ -197,10 +197,10 @@ export const TeamWorkloadBalancer: FC<Props> = ({
               className={cn(
                 "h-full rounded-full transition-all duration-300",
                 avgUtilization > 100
-                  ? "bg-rose-500"
+                  ? "bg-danger"
                   : avgUtilization > 80
-                    ? "bg-amber-500"
-                    : "bg-emerald-500",
+                    ? "bg-warning"
+                    : "bg-success",
               )}
               style={{ width: `${Math.min(100, avgUtilization)}%` }}
             />
@@ -210,7 +210,7 @@ export const TeamWorkloadBalancer: FC<Props> = ({
         <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
           <div className="flex items-center justify-between text-xs text-ink-3">
             <span className="font-medium">Overallocated</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-danger-subtle text-danger-text">
               <AlertCircleIcon className="size-3.5" />
             </div>
           </div>
@@ -218,7 +218,7 @@ export const TeamWorkloadBalancer: FC<Props> = ({
             <span
               className={cn(
                 "font-mono text-xl font-bold tracking-tight",
-                overloadedCount > 0 ? "text-rose-500" : "text-ink",
+                overloadedCount > 0 ? "text-danger-text" : "text-ink",
               )}
             >
               {overloadedCount}
@@ -235,12 +235,12 @@ export const TeamWorkloadBalancer: FC<Props> = ({
         <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
           <div className="flex items-center justify-between text-xs text-ink-3">
             <span className="font-medium">Available</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-success-subtle text-success-text">
               <CheckCircle2Icon className="size-3.5" />
             </div>
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="font-mono text-xl font-bold tracking-tight text-emerald-500">
+            <span className="font-mono text-xl font-bold tracking-tight text-success-text">
               {underutilizedCount}
             </span>
             <span className="text-xs text-ink-3">can take work</span>
@@ -296,7 +296,7 @@ export const TeamWorkloadBalancer: FC<Props> = ({
               className={cn(
                 "flex flex-col rounded-2xl border transition-all duration-200 overflow-hidden",
                 member.isOverloaded
-                  ? "border-rose-300 dark:border-rose-900/50 bg-rose-50/20 dark:bg-rose-950/10"
+                  ? "border-danger/30 bg-danger-subtle/30"
                   : "border-hairline bg-surface",
               )}
             >
@@ -314,11 +314,11 @@ export const TeamWorkloadBalancer: FC<Props> = ({
                         {member.name}
                       </span>
                       {member.isOverloaded ? (
-                        <span className="rounded-md bg-rose-100 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                        <span className="rounded-md bg-danger-subtle border border-danger/30 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-danger-text">
                           OVERLOADED
                         </span>
                       ) : member.isUnderutilized ? (
-                        <span className="rounded-md bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span className="rounded-md bg-success-subtle border border-success/30 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-success-text">
                           AVAILABLE
                         </span>
                       ) : null}
@@ -341,10 +341,10 @@ export const TeamWorkloadBalancer: FC<Props> = ({
                         className={cn(
                           "h-full rounded-full transition-all duration-300",
                           member.isOverloaded
-                            ? "bg-rose-500"
+                            ? "bg-danger"
                             : member.utilizationPercent > 80
-                              ? "bg-amber-500"
-                              : "bg-emerald-500",
+                              ? "bg-warning"
+                              : "bg-success",
                         )}
                         style={{
                           width: `${Math.min(100, member.utilizationPercent ?? 0)}%`,
@@ -356,7 +356,7 @@ export const TeamWorkloadBalancer: FC<Props> = ({
                   {/* Overdue / In Progress pills */}
                   <div className="flex items-center gap-1.5">
                     {member.overdueCount > 0 ? (
-                      <span className="rounded bg-rose-100 dark:bg-rose-950 px-1.5 py-0.5 font-mono text-[11px] text-rose-600 dark:text-rose-400">
+                      <span className="rounded bg-danger-subtle px-1.5 py-0.5 font-mono text-[11px] text-danger-text font-medium">
                         {member.overdueCount} overdue
                       </span>
                     ) : null}
@@ -462,12 +462,12 @@ export const TeamWorkloadBalancer: FC<Props> = ({
                                     </div>
                                     <span
                                       className={cn(
-                                        "font-mono text-[10px] px-1 py-0.5 rounded shrink-0",
+                                        "font-mono text-[10px] px-1.5 py-0.5 rounded shrink-0 font-medium",
                                         target.isUnderutilized
-                                          ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950"
+                                          ? "text-success-text bg-success-subtle"
                                           : target.isOverloaded
-                                            ? "text-rose-600 bg-rose-50 dark:bg-rose-950"
-                                            : "text-ink-3",
+                                            ? "text-danger-text bg-danger-subtle"
+                                            : "text-ink-3 bg-sunken",
                                       )}
                                     >
                                       {target.openCount} open
