@@ -9,12 +9,17 @@ import {
   SearchIcon,
   Trash2Icon,
   XIcon,
-  FileTextIcon,
-  LayersIcon,
 } from "lucide-react";
 
 import { Kbd } from "@zentro/ui/components/kbd";
 import { Button } from "@zentro/ui/shadcn/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@zentro/ui/shadcn/select";
 import { cn } from "@zentro/ui/lib/utils";
 
 import { paths } from "~/src/lib/paths";
@@ -30,6 +35,9 @@ interface SearchToolbarProps {
     meetings: number;
     recent: number;
   };
+  projects?: Array<[string, number]>;
+  selectedProject?: string | null;
+  onProjectChange?: (project: string | null) => void;
 }
 
 export const SearchToolbar: FC<SearchToolbarProps> = ({
@@ -38,6 +46,9 @@ export const SearchToolbar: FC<SearchToolbarProps> = ({
   activeFilter = "all",
   onFilterChange,
   filterCounts = { all: 0, specs: 0, meetings: 0, recent: 0 },
+  projects = [],
+  selectedProject = null,
+  onProjectChange,
 }) => {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -82,6 +93,7 @@ export const SearchToolbar: FC<SearchToolbarProps> = ({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Top Search Input & Route Links */}
       <div className="flex flex-wrap items-center gap-2">
         <form onSubmit={handleSearch} className="min-w-0 flex-1 basis-72">
           <div className="relative h-10">
@@ -151,38 +163,82 @@ export const SearchToolbar: FC<SearchToolbarProps> = ({
         </div>
       </div>
 
-      {/* Filter Category Chips */}
-      {onFilterChange && (
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          {filters.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => onFilterChange(f.id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
-                activeFilter === f.id
-                  ? "bg-ink text-ink-inverse"
-                  : "bg-surface border border-hairline text-ink-2 hover:bg-hover hover:text-ink",
-              )}
+      {/* Filter Category Chips & Project Dropdown */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+        {onFilterChange && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {filters.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => onFilterChange(f.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
+                  activeFilter === f.id
+                    ? "bg-ink text-ink-inverse"
+                    : "bg-surface border border-hairline text-ink-2 hover:bg-hover hover:text-ink",
+                )}
+              >
+                <span>{f.label}</span>
+                {typeof f.count === "number" && (
+                  <span
+                    className={cn(
+                      "font-mono text-[10px] px-1 rounded",
+                      activeFilter === f.id
+                        ? "bg-ink-inverse/20 text-ink-inverse"
+                        : "bg-muted text-ink-3",
+                    )}
+                  >
+                    {f.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* In-Bar Project Selector */}
+        {projects.length > 0 && onProjectChange && (
+          <div className="flex items-center gap-1.5 ml-auto">
+            <Select
+              value={selectedProject ?? "all-projects"}
+              onValueChange={(val) =>
+                onProjectChange(val === "all-projects" ? null : val)
+              }
             >
-              <span>{f.label}</span>
-              {typeof f.count === "number" && (
-                <span
-                  className={cn(
-                    "font-mono text-[10px] px-1 rounded",
-                    activeFilter === f.id
-                      ? "bg-ink-inverse/20 text-ink-inverse"
-                      : "bg-muted text-ink-3",
-                  )}
-                >
-                  {f.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+              <SelectTrigger
+                aria-label="Filter by project"
+                className="h-7.5 rounded-lg border-hairline bg-surface/80 px-2.5 text-xs text-ink-2 shadow-none gap-1.5"
+              >
+                <FolderIcon className="size-3 text-ink-3" />
+                <SelectValue>
+                  {selectedProject ? selectedProject : "All Projects"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent align="end" className="text-xs">
+                <SelectItem value="all-projects">All Projects</SelectItem>
+                {projects.map(([name, count]) => (
+                  <SelectItem key={name} value={name}>
+                    {name} ({count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedProject && (
+              <button
+                type="button"
+                onClick={() => onProjectChange(null)}
+                className="flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-ink-3 hover:text-ink"
+                title="Clear project filter"
+              >
+                <XIcon className="size-3" />
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
