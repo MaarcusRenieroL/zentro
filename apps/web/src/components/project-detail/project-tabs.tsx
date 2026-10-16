@@ -15,6 +15,7 @@ import { ListView } from "~/src/features/tasks/components/workspace/list-view";
 import type { WorkspaceTask } from "~/src/features/tasks/lib/types";
 import { paths } from "~/src/lib/paths";
 import { CriticalPathVisualizer } from "./critical-path-visualizer";
+import { TimelineGanttVisualizer } from "./timeline-gantt-visualizer";
 
 type Props = {
   projectId: string;
@@ -36,7 +37,7 @@ type Props = {
   };
 };
 
-type TabId = "overview" | "tasks" | "graph" | "docs" | "activity";
+type TabId = "overview" | "tasks" | "timeline" | "graph" | "docs" | "activity";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -163,6 +164,10 @@ export const ProjectTabs: FC<Props> = ({
             count: tasks.length,
           },
           {
+            id: "timeline" as const,
+            label: "Timeline (Gantt)",
+          },
+          {
             id: "graph" as const,
             label: "Critical Path",
           },
@@ -267,6 +272,10 @@ export const ProjectTabs: FC<Props> = ({
 
           {tab === "tasks" ? (
             <ProjectTasks tasks={tasks} projectSlug={projectSlug} />
+          ) : null}
+
+          {tab === "timeline" ? (
+            <TimelineGanttVisualizer projectSlug={projectSlug} tasks={tasks} />
           ) : null}
 
           {tab === "graph" ? (
