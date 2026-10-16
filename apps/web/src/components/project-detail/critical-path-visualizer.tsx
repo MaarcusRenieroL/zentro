@@ -214,7 +214,7 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
         <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
           <div className="flex items-center justify-between text-xs text-ink-3">
             <span className="font-medium">Bottlenecks</span>
-            <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-warning-subtle text-warning-text">
               <AlertTriangleIcon className="size-3.5" />
             </div>
           </div>
@@ -236,10 +236,10 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
               className={cn(
                 "flex size-7 items-center justify-center rounded-lg",
                 metrics.riskLevel === "high"
-                  ? "bg-rose-500/10 text-rose-500"
+                  ? "bg-danger-subtle text-danger-text"
                   : metrics.riskLevel === "moderate"
-                    ? "bg-amber-500/10 text-amber-500"
-                    : "bg-emerald-500/10 text-emerald-500",
+                    ? "bg-warning-subtle text-warning-text"
+                    : "bg-success-subtle text-success-text",
               )}
             >
               <ShieldAlertIcon className="size-3.5" />
@@ -250,10 +250,10 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
               className={cn(
                 "font-mono text-2xl font-bold tracking-tight uppercase",
                 metrics.riskLevel === "high"
-                  ? "text-rose-500"
+                  ? "text-danger-text"
                   : metrics.riskLevel === "moderate"
-                    ? "text-amber-500"
-                    : "text-emerald-500",
+                    ? "text-warning-text"
+                    : "text-success-text",
               )}
             >
               {metrics.riskLevel}
@@ -291,7 +291,7 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
             className={cn(
               "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
               filterMode === "critical"
-                ? "bg-signal text-white"
+                ? "bg-signal text-on-signal font-semibold"
                 : "text-ink-2 hover:bg-hover hover:text-ink",
             )}
           >
@@ -304,7 +304,7 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
             className={cn(
               "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
               filterMode === "bottlenecks"
-                ? "bg-amber-500 text-white"
+                ? "bg-warning text-on-warning font-semibold"
                 : "text-ink-2 hover:bg-hover hover:text-ink",
             )}
           >
@@ -425,7 +425,7 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
                           {node.isBottleneck ? (
                             <span
                               title={`Blocks ${node.blocksCount} tasks`}
-                              className="inline-flex items-center gap-0.5 text-[10px] font-mono text-amber-500 font-semibold"
+                              className="inline-flex items-center gap-0.5 text-[10px] font-mono text-warning-text font-semibold"
                             >
                               <AlertTriangleIcon className="size-3" />
                               {node.blocksCount}
@@ -486,11 +486,11 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
                       </Link>
                       <span className="flex items-center gap-1 text-[11px] text-ink-3">
                         {e.isBlockerDone ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-500 font-mono">
+                          <span className="inline-flex items-center gap-1 text-success-text font-mono font-medium">
                             <CheckCircle2Icon className="size-3" /> Resolved
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-amber-500 font-mono">
+                          <span className="inline-flex items-center gap-1 text-warning-text font-mono font-medium">
                             <ClockIcon className="size-3" /> Incomplete
                           </span>
                         )}
