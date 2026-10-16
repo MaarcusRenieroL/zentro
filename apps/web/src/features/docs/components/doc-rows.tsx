@@ -93,17 +93,17 @@ export const DocTiles: FC<{ docs: DocsListItem[]; columns?: string }> = ({
         return (
           <div
             key={doc.id}
-            className="group relative flex min-h-[160px] flex-col justify-between rounded-xl border border-hairline bg-surface/60 p-4 transition-all hover:border-signal/40 hover:bg-surface hover:shadow-xs focus-within:ring-2 focus-within:ring-ring"
+            className="group relative flex min-h-[175px] flex-col justify-between rounded-2xl border border-hairline bg-surface p-5 shadow-xs transition-all hover:border-hairline-strong hover:shadow-sm hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-ring dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
           >
             {/* Top Bar with Project Chip & Quick Actions */}
-            <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center justify-between gap-2 mb-3">
               <ProjectChip doc={doc} />
 
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   type="button"
                   onClick={(e) => handleCopyLink(e, doc.slug)}
-                  className="p-1 rounded text-ink-3 hover:text-ink hover:bg-muted"
+                  className="p-1 rounded text-ink-3 hover:text-ink hover:bg-hover transition-colors"
                   title="Copy link"
                 >
                   <CopyIcon className="size-3.5" />
@@ -122,30 +122,32 @@ export const DocTiles: FC<{ docs: DocsListItem[]; columns?: string }> = ({
             <div className="flex-1 min-w-0">
               <Link
                 href={paths.doc(doc.slug)}
-                className="flex items-center gap-1.5 text-[14px] font-semibold text-ink hover:text-signal transition-colors outline-none"
+                className="flex items-center gap-2 text-[15px] font-semibold text-ink group-hover:text-signal tracking-tight transition-colors outline-none"
               >
                 {isSpec && (
-                  <SparklesIcon className="size-3.5 text-amber-500 shrink-0" />
+                  <SparklesIcon className="size-3.5 text-warning-text shrink-0" />
                 )}
                 <span className="truncate">{title}</span>
               </Link>
 
               {doc.excerpt ? (
-                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-ink-3">
+                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-ink-2">
                   {doc.excerpt}
                 </p>
               ) : (
-                <p className="mt-1.5 text-xs text-ink-4 italic">
+                <p className="mt-2 text-xs text-ink-3 italic">
                   No preview text available
                 </p>
               )}
             </div>
 
             {/* Footer with Creator & Relative Timestamp */}
-            <div className="mt-4 flex items-center justify-between pt-2.5 border-t border-hairline/60 text-xs text-ink-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <ActorAvatar name={owner} size={18} />
-                <span className="truncate text-[11px] text-ink-3">{owner}</span>
+            <div className="mt-4 flex items-center justify-between pt-3 border-t border-hairline/60 text-xs text-ink-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <ActorAvatar name={owner} size={20} />
+                <span className="truncate text-xs text-ink-3 font-medium">
+                  {owner}
+                </span>
               </div>
               <span className="font-mono text-[11px] text-ink-3 shrink-0">
                 {formatDocDate(doc.updatedAt)}
@@ -173,11 +175,11 @@ export const DocTable: FC<{ docs: DocsListItem[] }> = ({ docs }) => {
     <div
       role="table"
       aria-label="Docs"
-      className="flex flex-col rounded-xl border border-hairline bg-surface/40 overflow-hidden"
+      className="flex flex-col rounded-2xl border border-hairline bg-surface shadow-xs overflow-hidden dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
     >
       <div
         role="row"
-        className="hidden h-9 items-center gap-3 border-b border-hairline bg-surface/80 px-4 font-mono text-[11px] font-medium tracking-[0.08em] text-ink-3 sm:flex"
+        className="hidden h-10 items-center gap-3 border-b border-hairline bg-sunken/40 px-4 font-mono text-[11px] font-semibold tracking-[0.08em] text-ink-3 sm:flex"
       >
         <span role="columnheader" className="flex-1">
           DOCUMENT

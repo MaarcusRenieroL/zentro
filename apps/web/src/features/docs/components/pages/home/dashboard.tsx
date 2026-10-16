@@ -181,7 +181,7 @@ export const HomeDashboard: FC = () => {
   }, [docs, project, categoryFilter, searchQuery, sort]);
 
   return (
-    <div className="w-full flex min-w-0 flex-col gap-8">
+    <div className="w-full flex min-w-0 flex-col gap-10 sm:gap-12">
       <ModuleNavClaim />
       <Header
         totalDocs={docs.length}
@@ -207,27 +207,27 @@ export const HomeDashboard: FC = () => {
           onRetry={() => setAttempt((value) => value + 1)}
         />
       ) : isLoading ? (
-        <div className="flex flex-col gap-4" aria-busy="true">
-          <Skeleton className="h-4 w-28" />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="flex flex-col gap-6" aria-busy="true">
+          <Skeleton className="h-5 w-32 rounded-lg" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[0, 1, 2, 3].map((tile) => (
-              <Skeleton key={tile} className="h-[140px] rounded-xl" />
+              <Skeleton key={tile} className="h-[160px] rounded-2xl" />
             ))}
           </div>
           {[0, 1, 2, 3].map((row) => (
-            <Skeleton key={row} className="h-12 rounded-xl" />
+            <Skeleton key={row} className="h-12 rounded-2xl" />
           ))}
         </div>
       ) : docs.length === 0 ? (
         <>
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-hairline/80 bg-surface/30 px-6 py-16 text-center">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-tint-docs text-ink shadow-sm">
-              <SparklesIcon className="size-6" />
+          <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-hairline/80 bg-surface/50 px-8 py-20 text-center shadow-xs">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-tint-docs text-ink shadow-sm">
+              <SparklesIcon className="size-7" />
             </div>
-            <h2 className="font-display text-2xl font-semibold text-ink">
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-ink">
               Your Knowledge Base is Empty
             </h2>
-            <p className="max-w-[480px] text-sm text-ink-3 leading-relaxed">
+            <p className="max-w-[500px] text-sm text-ink-3 leading-relaxed">
               Specs, meeting notes, and architectural decisions live here, next
               to the tasks they explain. Start blank or pick a blueprint below.
             </p>
@@ -247,7 +247,7 @@ export const HomeDashboard: FC = () => {
             categoryFilter === "all" &&
             project === null &&
             recentStrip.length > 0 && (
-              <section aria-label="Recent docs" className="flex flex-col gap-3">
+              <section aria-label="Recent docs" className="flex flex-col gap-4">
                 <div className="flex items-center gap-2">
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                     Recently Edited
@@ -261,8 +261,8 @@ export const HomeDashboard: FC = () => {
             )}
 
           {/* Document Collection View */}
-          <section aria-label="All docs" className="flex flex-col gap-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline/80 pb-3">
+          <section aria-label="All docs" className="flex flex-col gap-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline/80 pb-4">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold text-ink">
                   {project === null

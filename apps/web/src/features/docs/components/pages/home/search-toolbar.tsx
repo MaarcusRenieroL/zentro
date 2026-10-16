@@ -96,10 +96,10 @@ export const SearchToolbar: FC<SearchToolbarProps> = ({
       {/* Top Search Input & Route Links */}
       <div className="flex flex-wrap items-center gap-2">
         <form onSubmit={handleSearch} className="min-w-0 flex-1 basis-72">
-          <div className="relative h-10">
+          <div className="relative h-11">
             <SearchIcon
               aria-hidden="true"
-              className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3"
+              className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-3"
             />
             <input
               ref={input}
@@ -107,13 +107,13 @@ export const SearchToolbar: FC<SearchToolbarProps> = ({
               onChange={(event) => onQueryChange?.(event.target.value)}
               placeholder="Search docs in real-time or press Enter for global search..."
               aria-label="Search docs"
-              className="h-full w-full rounded-xl border border-hairline bg-surface/80 pr-16 pl-9 text-[13px] outline-none placeholder:text-ink-3 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 transition-all"
+              className="h-full w-full rounded-2xl border border-hairline bg-surface pr-16 pl-10 text-[13px] text-ink outline-none placeholder:text-ink-3 shadow-xs focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 transition-all dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
             />
             {query ? (
               <button
                 type="button"
                 onClick={() => onQueryChange?.("")}
-                className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-ink-3 hover:text-ink rounded"
+                className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-ink-3 hover:text-ink rounded transition-colors"
                 title="Clear search"
               >
                 <XIcon className="size-3.5" />
@@ -126,37 +126,37 @@ export const SearchToolbar: FC<SearchToolbarProps> = ({
           </div>
         </form>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
-            className="h-10 border-hairline text-xs gap-1.5"
+            className="h-11 rounded-2xl border-hairline bg-surface shadow-xs text-xs font-medium gap-1.5 px-3.5 hover:border-hairline-strong transition-all dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
             asChild
           >
             <Link href={paths.recentDocs()}>
-              <ClockIcon className="size-3.5" />
+              <ClockIcon className="size-3.5 text-ink-3" />
               Recent
             </Link>
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-10 border-hairline text-xs gap-1.5"
+            className="h-11 rounded-2xl border-hairline bg-surface shadow-xs text-xs font-medium gap-1.5 px-3.5 hover:border-hairline-strong transition-all dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
             asChild
           >
             <Link href={paths.projectDocs()}>
-              <FolderIcon className="size-3.5" />
+              <FolderIcon className="size-3.5 text-ink-3" />
               Projects
             </Link>
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-10 border-hairline text-xs gap-1.5"
+            className="h-11 rounded-2xl border-hairline bg-surface shadow-xs text-xs font-medium gap-1.5 px-3.5 hover:border-hairline-strong transition-all dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
             asChild
           >
             <Link href={paths.trashedDocs()}>
-              <Trash2Icon className="size-3.5" />
+              <Trash2Icon className="size-3.5 text-ink-3" />
               Trash
             </Link>
           </Button>

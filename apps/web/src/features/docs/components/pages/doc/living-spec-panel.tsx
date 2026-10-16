@@ -292,8 +292,8 @@ export function LivingSpecPanel({
 
       {/* Action Items Compiler Banner (if unlinked checkboxes found in spec) */}
       {extractedActionItems.length > 0 && canCreateTask && (
-        <div className="p-3 bg-amber-500/10 border-b border-amber-500/20 text-xs space-y-2">
-          <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 font-medium">
+        <div className="p-3 bg-warning-subtle border-b border-warning/20 text-xs space-y-2">
+          <div className="flex items-center justify-between text-warning-text font-medium">
             <div className="flex items-center gap-1.5">
               <SparklesIcon className="size-3.5" />
               <span>

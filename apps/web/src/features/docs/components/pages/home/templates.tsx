@@ -29,8 +29,7 @@ export const templates = [
     title: "Product Requirement Spec (PRD)",
     badge: "Product",
     icon: SparklesIcon,
-    accent:
-      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    accent: "bg-warning-subtle text-warning-text border-warning/20",
     hint: "Problem, user stories, functional scope & task checklist",
     content: `# Product Requirement Document: [Feature Name]
 
@@ -60,7 +59,7 @@ What problem does this solve for our users? Why are we prioritizing it now?
     title: "Technical RFC & Architecture",
     badge: "Engineering",
     icon: Code2Icon,
-    accent: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+    accent: "bg-signal-subtle text-signal border-signal/20",
     hint: "System design, API contracts, schemas & rollout",
     content: `# Technical RFC: [System / Architecture Title]
 
@@ -90,8 +89,7 @@ Client -> API Route -> Event Engine -> PostgreSQL
     title: "Architecture Decision (ADR)",
     badge: "Architecture",
     icon: LayersIcon,
-    accent:
-      "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+    accent: "bg-tint-docs text-ink border-hairline-strong",
     hint: "Context, decision, tradeoffs & alternatives",
     content: `# Architecture Decision Record: [Decision Title]
 
@@ -118,8 +116,7 @@ What is the architecture choice we are committing to?
     title: "Meeting Notes & Action Items",
     badge: "Team",
     icon: UsersIcon,
-    accent:
-      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    accent: "bg-success-subtle text-success-text border-success/20",
     hint: "Agendas, key decisions, follow-up tickets",
     content: `# Sync & Planning Notes
 
@@ -146,8 +143,7 @@ What is the architecture choice we are committing to?
     title: "Incident Postmortem (RCA)",
     badge: "Operations",
     icon: FlameIcon,
-    accent:
-      "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+    accent: "bg-danger-subtle text-danger-text border-danger/20",
     hint: "Root cause, timeline, preventive fixes",
     content: `# Incident Postmortem: [Incident Name]
 
@@ -178,8 +174,7 @@ Detailed 5-Whys analysis on why the incident occurred.
     title: "Sprint Retrospective",
     badge: "Agile",
     icon: CheckSquareIcon,
-    accent:
-      "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+    accent: "bg-tint-tasks text-ink border-hairline-strong",
     hint: "What went well, what could be improved",
     content: `# Sprint Retrospective
 
@@ -260,7 +255,7 @@ export const TemplateRow: FC = () => {
         </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {displayedTemplates.map((template) => {
           const Icon = template.icon;
           return (
@@ -269,33 +264,33 @@ export const TemplateRow: FC = () => {
               type="button"
               disabled={Boolean(busy)}
               onClick={() => void start(template)}
-              className="group relative flex flex-col justify-between rounded-xl border border-hairline bg-surface/40 p-3.5 text-left transition-all hover:border-signal/40 hover:bg-surface hover:shadow-xs focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              className="group relative flex flex-col justify-between rounded-2xl border border-hairline bg-surface p-5 text-left shadow-xs transition-all hover:border-hairline-strong hover:shadow-sm hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] cursor-pointer"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center justify-between gap-2 mb-3">
                   <div
                     className={cn(
-                      "flex size-7 items-center justify-center rounded-lg border",
+                      "flex size-9 items-center justify-center rounded-xl border shadow-2xs",
                       template.accent,
                     )}
                   >
-                    <Icon className="size-3.5" />
+                    <Icon className="size-4" />
                   </div>
-                  <span className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-ink-3">
+                  <span className="rounded-md border border-hairline bg-sunken/60 px-2 py-0.5 font-mono text-[10px] font-semibold text-ink-3">
                     {template.badge}
                   </span>
                 </div>
-                <h3 className="text-[13px] font-semibold text-ink group-hover:text-signal transition-colors line-clamp-1">
+                <h3 className="text-[14px] font-semibold text-ink group-hover:text-signal transition-colors tracking-tight line-clamp-1">
                   {busy === template.id ? "Creating…" : template.title}
                 </h3>
-                <p className="mt-1 line-clamp-2 text-xs text-ink-3 leading-relaxed">
+                <p className="mt-1.5 line-clamp-2 text-xs text-ink-2 leading-relaxed">
                   {template.hint}
                 </p>
               </div>
 
-              <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-ink-3 group-hover:text-signal transition-colors">
+              <div className="mt-4 flex items-center justify-between pt-3 border-t border-hairline/60 text-xs font-semibold text-ink-3 group-hover:text-signal transition-colors">
                 <span>Start blueprint</span>
-                <ArrowRightIcon className="size-3 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRightIcon className="size-3.5 transition-transform group-hover:translate-x-1" />
               </div>
             </button>
           );

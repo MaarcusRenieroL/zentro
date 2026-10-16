@@ -48,26 +48,28 @@ export const Header: FC<HeaderProps> = ({
 
     {/* Quick stats pills */}
     <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-ink-2">
-      <div className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/60 px-3 py-1.5 font-medium shadow-2xs">
+      <div className="inline-flex items-center gap-2 rounded-xl border border-hairline bg-surface px-3.5 py-1.5 font-medium shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
         <FileTextIcon className="size-3.5 text-ink-3" />
-        <span>{totalDocs}</span>
+        <span className="font-mono font-semibold text-ink">{totalDocs}</span>
         <span className="text-ink-3 font-normal">
           {totalDocs === 1 ? "Document" : "Documents"}
         </span>
       </div>
 
-      <div className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/60 px-3 py-1.5 font-medium shadow-2xs">
+      <div className="inline-flex items-center gap-2 rounded-xl border border-hairline bg-surface px-3.5 py-1.5 font-medium shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
         <FolderGit2Icon className="size-3.5 text-ink-3" />
-        <span>{projectCount}</span>
+        <span className="font-mono font-semibold text-ink">{projectCount}</span>
         <span className="text-ink-3 font-normal">
           {projectCount === 1 ? "Project" : "Projects"}
         </span>
       </div>
 
       {recentCount > 0 && (
-        <div className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/60 px-3 py-1.5 font-medium shadow-2xs">
-          <span className="size-2 rounded-full bg-status-progress" />
-          <span>{recentCount}</span>
+        <div className="inline-flex items-center gap-2 rounded-xl border border-hairline bg-surface px-3.5 py-1.5 font-medium shadow-xs dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
+          <span className="size-2 rounded-full bg-status-progress animate-pulse" />
+          <span className="font-mono font-semibold text-ink">
+            {recentCount}
+          </span>
           <span className="text-ink-3 font-normal">Active this week</span>
         </div>
       )}
