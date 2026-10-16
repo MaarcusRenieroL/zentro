@@ -61,6 +61,9 @@ export const tasks = pgTable(
     archivedAt: timestamp("archivedAt"),
     deletedAt: timestamp("deletedAt"),
 
+    estimatePoints: integer("estimatePoints"),
+    timeSpentMinutes: integer("timeSpentMinutes").default(0).notNull(),
+
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow(),
   },
@@ -85,5 +88,31 @@ export const tasks = pgTable(
   ],
 );
 
+export const taskTimeLogs = pgTable(
+  "taskTimeLog",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    organizationId: uuid("organizationId")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    taskId: uuid("taskId")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    memberId: uuid("memberId").references(() => members.id, {
+      onDelete: "set null",
+    }),
+    durationMinutes: integer("durationMinutes").notNull(),
+    note: text("note"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("task_time_log_org_idx").on(table.organizationId),
+    index("task_time_log_task_idx").on(table.taskId),
+    index("task_time_log_member_idx").on(table.memberId),
+  ],
+);
+
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
+export type TaskTimeLog = typeof taskTimeLogs.$inferSelect;
+export type NewTaskTimeLog = typeof taskTimeLogs.$inferInsert;

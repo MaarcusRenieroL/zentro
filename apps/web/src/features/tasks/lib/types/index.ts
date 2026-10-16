@@ -23,6 +23,8 @@ export type WorkspaceTask = {
   blockedBy: string[];
   parentTaskId?: string | null;
   subtaskCount?: { total: number; done: number } | null;
+  estimatePoints?: number | null;
+  timeSpentMinutes?: number;
 };
 
 /** A change made to several tasks at once from the selection bar. */

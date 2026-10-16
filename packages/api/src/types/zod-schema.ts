@@ -167,6 +167,7 @@ export const createTaskSchema = z.object({
     (value) => (value === "" ? null : value),
     z.coerce.date().optional().nullable(),
   ),
+  estimatePoints: z.number().int().min(0).max(100).optional().nullable(),
 });
 
 export const getTasksSchema = z.object({
@@ -191,10 +192,22 @@ export const updateTaskByKeySchema = z.object({
   priority: taskPrioritySchema.optional(),
   parentTaskId: z.string().uuid().optional().nullable(),
   assignedToMemberId: z.string().uuid().optional().nullable(),
+  estimatePoints: z.number().int().min(0).max(100).optional().nullable(),
+  timeSpentMinutes: z.number().int().min(0).optional(),
   dueAt: z.preprocess(
     (value) => (value === "" ? null : value),
     z.coerce.date().optional().nullable(),
   ),
+});
+
+export const logTaskTimeSchema = z.object({
+  key: z.string().trim().min(1, "Task key is required."),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(1, "Duration must be at least 1 minute.")
+    .max(1440),
+  note: z.string().trim().max(500).optional().nullable(),
 });
 
 export const deleteTaskByKeySchema = z.object({

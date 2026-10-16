@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckSquareIcon } from "lucide-react";
+import { CheckSquareIcon, ClockIcon } from "lucide-react";
 import { BlockedChip } from "./blocked-chip";
 import { FC } from "react";
 
@@ -49,6 +49,25 @@ export const TaskCard: FC<Props> = ({ task }) => {
 
       <div className="flex items-center gap-2.5 text-xs text-ink-2">
         <PriorityMeter priority={task.priority} />
+        {task.estimatePoints ? (
+          <span
+            title={`Estimate: ${task.estimatePoints} story points`}
+            className="inline-flex items-center rounded bg-surface-subtle px-1 py-0.5 font-mono text-[10px] text-ink-3"
+          >
+            {task.estimatePoints}pts
+          </span>
+        ) : null}
+        {task.timeSpentMinutes && task.timeSpentMinutes > 0 ? (
+          <span
+            title={`Time logged: ${task.timeSpentMinutes}m`}
+            className="inline-flex items-center gap-0.5 font-mono text-[10px] text-ink-3"
+          >
+            <ClockIcon className="size-3 text-ink-3" />
+            {task.timeSpentMinutes >= 60
+              ? `${Math.floor(task.timeSpentMinutes / 60)}h`
+              : `${task.timeSpentMinutes}m`}
+          </span>
+        ) : null}
         {task.subtaskCount && task.subtaskCount.total > 0 ? (
           <span
             title={`${task.subtaskCount.done} of ${task.subtaskCount.total} subtasks completed`}

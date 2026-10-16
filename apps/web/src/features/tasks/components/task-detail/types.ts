@@ -12,6 +12,14 @@ export type SubtaskItem = {
   createdAt: Date;
 };
 
+export type TaskTimeLogItem = {
+  id: string;
+  durationMinutes: number;
+  note: string | null;
+  createdAt: Date;
+  userName: string | null;
+};
+
 export type TaskDetail = {
   id: string;
   key: string;
@@ -30,6 +38,9 @@ export type TaskDetail = {
   parentTaskId?: string | null;
   parentTask?: { id: string; key: string; name: string } | null;
   subtasks?: SubtaskItem[];
+  estimatePoints?: number | null;
+  timeSpentMinutes?: number;
+  timeLogs?: TaskTimeLogItem[];
   reporter: string | null;
   /** Who created the task; `_own` permissions apply to this person. */
   createdByUserId: string | null;
@@ -52,6 +63,7 @@ export type TaskUpdate = {
   status?: TaskStatus;
   priority?: TaskPriority;
   assignedToMemberId?: string | null;
+  estimatePoints?: number | null;
   dueAt?: Date | null;
 };
 

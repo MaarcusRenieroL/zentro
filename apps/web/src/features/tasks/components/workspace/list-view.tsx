@@ -8,6 +8,7 @@ import {
   CheckSquareIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ClockIcon,
   PlusIcon,
 } from "lucide-react";
 
@@ -305,6 +306,25 @@ export const ListView: FC<Props> = ({
                             <span>
                               {task.subtaskCount.done}/{task.subtaskCount.total}
                             </span>
+                          </span>
+                        ) : null}
+                        {task.estimatePoints ? (
+                          <span
+                            title={`Estimate: ${task.estimatePoints} story points`}
+                            className="hidden shrink-0 rounded-sm border border-hairline bg-surface-subtle px-1.5 py-px font-mono text-[11px] text-ink-3 sm:inline-flex"
+                          >
+                            {task.estimatePoints}pts
+                          </span>
+                        ) : null}
+                        {task.timeSpentMinutes && task.timeSpentMinutes > 0 ? (
+                          <span
+                            title={`Time logged: ${task.timeSpentMinutes}m`}
+                            className="hidden shrink-0 items-center gap-1 rounded-sm border border-hairline bg-surface-subtle px-1.5 py-px font-mono text-[11px] text-ink-3 sm:inline-flex"
+                          >
+                            <ClockIcon className="size-3 text-ink-3" />
+                            {task.timeSpentMinutes >= 60
+                              ? `${Math.floor(task.timeSpentMinutes / 60)}h`
+                              : `${task.timeSpentMinutes}m`}
                           </span>
                         ) : null}
                         <span

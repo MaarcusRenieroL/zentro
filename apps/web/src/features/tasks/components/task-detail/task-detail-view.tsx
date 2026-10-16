@@ -21,6 +21,7 @@ import { InlineTitleEditor } from "./inline-title-editor";
 import { TaskDetailActivity } from "./task-detail-activity";
 import { TaskDetailSidebar } from "./task-detail-sidebar";
 import { TaskSubtasks } from "./task-subtasks";
+import { TaskTimeTracker } from "./task-time-tracker";
 import type {
   MemberOption,
   TaskActivityEvent,
@@ -101,6 +102,12 @@ export function TaskDetailView({
         </section>
 
         <TaskSubtasks task={task} canEdit={canEdit} />
+
+        <TaskTimeTracker
+          task={task}
+          canEdit={canEdit}
+          onTaskUpdated={() => onSave("estimatePoints", {})}
+        />
 
         <TaskDetailActivity
           members={members}

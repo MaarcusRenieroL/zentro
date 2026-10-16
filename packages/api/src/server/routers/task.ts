@@ -19,6 +19,7 @@ import {
   members,
   projects,
   tasks,
+  taskTimeLogs,
   teams,
   users,
   workLinks,
@@ -30,6 +31,7 @@ import {
   deleteTaskByKeySchema,
   getTaskByKeySchema,
   getTasksSchema,
+  logTaskTimeSchema,
   updateTaskByKeySchema,
 } from "../../types/zod-schema";
 import {
@@ -169,6 +171,7 @@ export const taskRouter = router({
               status: input.status,
               priority: input.priority,
               dueAt: input.dueAt,
+              estimatePoints: input.estimatePoints ?? null,
               projectId: project.id,
               parentTaskId: input.parentTaskId ?? null,
               teamId: project.teamId,
@@ -273,6 +276,8 @@ export const taskRouter = router({
           assigneeUserId: users.id,
           due: tasks.dueAt,
           parentTaskId: tasks.parentTaskId,
+          estimatePoints: tasks.estimatePoints,
+          timeSpentMinutes: tasks.timeSpentMinutes,
           createdAt: tasks.createdAt,
         })
         .from(tasks)
@@ -377,6 +382,8 @@ export const taskRouter = router({
           status: tasks.status,
           priority: tasks.priority,
           parentTaskId: tasks.parentTaskId,
+          estimatePoints: tasks.estimatePoints,
+          timeSpentMinutes: tasks.timeSpentMinutes,
           assignedToMemberId: tasks.assignedToMemberId,
           createdByMemberId: tasks.createdByMemberId,
           assignee: users.name,
@@ -404,7 +411,7 @@ export const taskRouter = router({
       }
 
       // The reporter is the member who created the task, if they still exist.
-      const [reporter, subtasks, parentTask] = await Promise.all([
+      const [reporter, subtasks, parentTask, timeLogs] = await Promise.all([
         task.createdByMemberId
           ? db
               .select({
@@ -464,6 +471,19 @@ export const taskRouter = router({
               .limit(1)
               .then(([p]) => p ?? null)
           : Promise.resolve(null),
+        db
+          .select({
+            id: taskTimeLogs.id,
+            durationMinutes: taskTimeLogs.durationMinutes,
+            note: taskTimeLogs.note,
+            createdAt: taskTimeLogs.createdAt,
+            userName: users.name,
+          })
+          .from(taskTimeLogs)
+          .leftJoin(members, eq(members.id, taskTimeLogs.memberId))
+          .leftJoin(users, eq(users.id, members.userId))
+          .where(eq(taskTimeLogs.taskId, task.id))
+          .orderBy(desc(taskTimeLogs.createdAt)),
       ]);
 
       return {
@@ -473,6 +493,7 @@ export const taskRouter = router({
         createdByUserId: reporter?.userId ?? null,
         subtasks,
         parentTask,
+        timeLogs,
       };
     }),
   createSubtask: moduleProcedure("tasks")
@@ -833,6 +854,8 @@ export const taskRouter = router({
         priority?: string;
         assignedToMemberId?: string | null;
         parentTaskId?: string | null;
+        estimatePoints?: number | null;
+        timeSpentMinutes?: number;
         dueAt?: Date | null;
         updatedAt: Date;
       } = {
@@ -857,6 +880,14 @@ export const taskRouter = router({
 
       if (values.parentTaskId !== undefined) {
         updateValues.parentTaskId = values.parentTaskId;
+      }
+
+      if (values.estimatePoints !== undefined) {
+        updateValues.estimatePoints = values.estimatePoints;
+      }
+
+      if (values.timeSpentMinutes !== undefined) {
+        updateValues.timeSpentMinutes = values.timeSpentMinutes;
       }
 
       if (values.assignedToMemberId !== undefined) {
@@ -994,5 +1025,72 @@ export const taskRouter = router({
       });
 
       return deletedTask;
+    }),
+
+  logTime: permissionProcedure("tasks.update_own", taskByKey("key"), {
+    module: "tasks",
+  })
+    .input(logTaskTimeSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization, user } = ctx;
+      const { key, durationMinutes, note } = input;
+
+      return await db.transaction(async (tx) => {
+        const [task] = await tx
+          .select({ id: tasks.id, timeSpentMinutes: tasks.timeSpentMinutes })
+          .from(tasks)
+          .where(
+            and(
+              eq(tasks.key, key),
+              eq(tasks.organizationId, activeOrganization.id),
+              isNull(tasks.deletedAt),
+            ),
+          )
+          .limit(1);
+
+        if (!task) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Task not found.",
+          });
+        }
+
+        const [member] = await tx
+          .select({ id: members.id })
+          .from(members)
+          .where(
+            and(
+              eq(members.userId, user.id),
+              eq(members.organizationId, activeOrganization.id),
+            ),
+          )
+          .limit(1);
+
+        const [log] = await tx
+          .insert(taskTimeLogs)
+          .values({
+            organizationId: activeOrganization.id,
+            taskId: task.id,
+            memberId: member?.id ?? null,
+            durationMinutes,
+            note: note ?? null,
+          })
+          .returning();
+
+        if (!log) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create time log entry.",
+          });
+        }
+
+        const newTotal = (task.timeSpentMinutes ?? 0) + durationMinutes;
+        await tx
+          .update(tasks)
+          .set({ timeSpentMinutes: newTotal, updatedAt: new Date() })
+          .where(eq(tasks.id, task.id));
+
+        return { log, totalTimeSpentMinutes: newTotal };
+      });
     }),
 });

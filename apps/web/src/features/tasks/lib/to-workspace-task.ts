@@ -21,6 +21,8 @@ type ApiTask = {
   blockedBy?: string[];
   parentTaskId?: string | null;
   subtaskCount?: { total: number; done: number } | null;
+  estimatePoints?: number | null;
+  timeSpentMinutes?: number;
 };
 
 /** One API task as the task list renders it. */
@@ -48,5 +50,7 @@ export function toWorkspaceTask(task: ApiTask): WorkspaceTask {
     blockedBy: task.blockedBy ?? [],
     parentTaskId: task.parentTaskId ?? null,
     subtaskCount: task.subtaskCount ?? null,
+    estimatePoints: task.estimatePoints ?? null,
+    timeSpentMinutes: task.timeSpentMinutes ?? 0,
   };
 }
