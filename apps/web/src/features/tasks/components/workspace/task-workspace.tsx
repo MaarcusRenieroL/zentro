@@ -285,6 +285,7 @@ export const TaskWorkspace: FC<Props> = ({
         {view === "board" ? (
           <TaskBoard
             tasks={filteredTasks}
+            group={group}
             onTaskStatusChange={onTaskStatusChange}
             onTaskCreated={onTaskCreated}
             empty={empty}
