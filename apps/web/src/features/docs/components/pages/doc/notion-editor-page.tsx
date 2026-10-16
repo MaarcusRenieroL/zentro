@@ -23,6 +23,7 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
+import { Link as TiptapLink } from "@tiptap/extension-link";
 import {
   EditorContent,
   useEditor,
@@ -31,6 +32,7 @@ import {
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
+  AtSignIcon,
   BoldIcon,
   CheckIcon,
   ChevronLeftIcon,
@@ -86,6 +88,7 @@ import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed"
 import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { CommentsPanel } from "./comments-panel";
 import { LivingSpecPanel } from "./living-spec-panel";
+import { MentionPopover, type MentionItem } from "./mention-popover";
 
 const slashCommands = [
   {
@@ -151,6 +154,13 @@ const slashCommands = [
     icon: TableIcon,
     action: "table",
   },
+  {
+    label: "Mention",
+    hint: "@",
+    description: "Mention a task, teammate, or document",
+    icon: AtSignIcon,
+    action: "mention",
+  },
 ] as const;
 
 type SlashAction = (typeof slashCommands)[number]["action"];
@@ -194,6 +204,7 @@ type ToolbarProps = {
   onAction: (action: SlashAction) => void;
   onHeading: (level: 1 | 2 | 3 | 4 | 5 | 6) => void;
   onConvertToTask?: () => void;
+  onMention?: () => void;
 };
 
 /** Six everyday actions, and everything else behind More. */
@@ -203,6 +214,7 @@ function DocToolbar({
   onAction,
   onHeading,
   onConvertToTask,
+  onMention,
 }: ToolbarProps) {
   const state = useEditorState({
     editor,
@@ -335,6 +347,20 @@ function DocToolbar({
         </PopoverContent>
       </Popover>
 
+      {onMention ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Mention task, member or doc"
+          title="Mention (@)"
+          onClick={onMention}
+          className="size-8 text-ink-2 hover:text-signal"
+        >
+          <AtSignIcon className="size-4" />
+        </Button>
+      ) : null}
+
       {onConvertToTask ? (
         <Button
           type="button"
@@ -410,8 +436,8 @@ function renderInlineMarkdown(value: string) {
         ? `<code>${part.slice(1, -1)}</code>`
         : part
             .replace(
-              /\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
-              '<a href="$2">$1</a>',
+              /\[([^\]]+)\]\(((?:https?:\/\/|mailto:|\/)[^\s)]+)\)/g,
+              '<a href="$2" class="mention-link">$1</a>',
             )
             .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
             .replace(/\*([^*]+)\*/g, "<em>$1</em>"),
@@ -598,7 +624,7 @@ function inlineMarkdown(node: Node): string {
   if (tag === "a") {
     const href = node.getAttribute("href") ?? "";
 
-    return /^(https?:\/\/|mailto:)/.test(href)
+    return /^(https?:\/\/|mailto:|\/)/.test(href)
       ? `[${children}](${href})`
       : children;
   }
@@ -710,6 +736,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [commentCount, setCommentCount] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [showMentionMenu, setShowMentionMenu] = useState(false);
   // Open beside the doc on wide screens; on a phone it would cover the page.
   const [commentsOpen, setCommentsOpen] = useState(false);
 
@@ -748,8 +775,14 @@ export function NotionEditorPage({ slug }: { slug: string }) {
           levels: [1, 2, 3, 4, 5, 6],
         },
       }),
+      TiptapLink.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: "mention-link",
+        },
+      }),
       Placeholder.configure({
-        placeholder: "Start typing, or press / for blocks...",
+        placeholder: "Start typing, or press / for blocks, @ for mentions...",
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -965,6 +998,8 @@ export function NotionEditorPage({ slug }: { slug: string }) {
           withHeaderRow: true,
         })
         .run();
+    } else if (action === "mention") {
+      setShowMentionMenu(true);
     }
 
     setShowSlashMenu(false);
@@ -974,13 +1009,47 @@ export function NotionEditorPage({ slug }: { slug: string }) {
     editor?.chain().focus().toggleHeading({ level }).run();
   }
 
+  function removeTypedAt(currentEditor: Editor) {
+    const position = currentEditor.state.selection.from;
+    const previousCharacter = currentEditor.state.doc.textBetween(
+      Math.max(0, position - 1),
+      position,
+    );
+
+    if (previousCharacter === "@") {
+      currentEditor
+        .chain()
+        .focus()
+        .deleteRange({ from: position - 1, to: position })
+        .run();
+    }
+  }
+
+  function handleSelectMention(item: MentionItem) {
+    if (!editor) return;
+    removeTypedAt(editor);
+    editor
+      .chain()
+      .focus()
+      .insertContent(
+        `<a href="${item.link}" class="mention-link">@${escapeHtml(item.title)}</a> `,
+      )
+      .run();
+    setShowMentionMenu(false);
+  }
+
   function handleEditorKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "/") {
       setShowSlashMenu(true);
     }
 
+    if (event.key === "@") {
+      setShowMentionMenu(true);
+    }
+
     if (event.key === "Escape") {
       setShowSlashMenu(false);
+      setShowMentionMenu(false);
     }
   }
 
@@ -1214,6 +1283,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 onAction={(action) => runEditorAction(action)}
                 onHeading={setHeading}
                 onConvertToTask={() => handleCompileSelectionToTask()}
+                onMention={() => setShowMentionMenu(true)}
               />
 
               <div className="relative group">
@@ -1235,6 +1305,14 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                   />
                 ) : (
                   <div className="min-h-[620px] animate-pulse rounded-lg bg-muted/40" />
+                )}
+
+                {showMentionMenu && (
+                  <MentionPopover
+                    isOpen={showMentionMenu}
+                    onClose={() => setShowMentionMenu(false)}
+                    onSelect={handleSelectMention}
+                  />
                 )}
 
                 {showSlashMenu && (

@@ -561,6 +561,25 @@
     border-radius: var(--radius-2xl);
   }
 
+  /* Bi-directional mention chips (@task, @doc, @member) */
+  .mention-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-sm);
+    background: var(--signal-subtle);
+    color: var(--signal);
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--signal) 20%, transparent);
+    transition: all 0.15s ease;
+  }
+  .mention-link:hover {
+    background: color-mix(in srgb, var(--signal) 15%, transparent);
+    color: var(--signal-strong);
+  }
+
   /* Glass tile for dark showcase surfaces */
   .glass {
     background: color-mix(in srgb, var(--surface) 70%, transparent);
