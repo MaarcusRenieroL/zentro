@@ -53,6 +53,8 @@ import {
   TableIcon,
   Trash2Icon,
   SquareCheckIcon,
+  Columns2Icon,
+  SparklesIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -83,6 +85,7 @@ import { CreateTaskModal } from "~/src/features/tasks/components/create-task-mod
 import { ActivityFeed } from "~/src/components/workspace/activity/activity-feed";
 import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { CommentsPanel } from "./comments-panel";
+import { LivingSpecPanel } from "./living-spec-panel";
 
 const slashCommands = [
   {
@@ -190,10 +193,17 @@ type ToolbarProps = {
   canEdit: boolean;
   onAction: (action: SlashAction) => void;
   onHeading: (level: 1 | 2 | 3 | 4 | 5 | 6) => void;
+  onConvertToTask?: () => void;
 };
 
 /** Six everyday actions, and everything else behind More. */
-function DocToolbar({ editor, canEdit, onAction, onHeading }: ToolbarProps) {
+function DocToolbar({
+  editor,
+  canEdit,
+  onAction,
+  onHeading,
+  onConvertToTask,
+}: ToolbarProps) {
   const state = useEditorState({
     editor,
     selector: ({ editor: current }) => ({
@@ -324,6 +334,20 @@ function DocToolbar({ editor, canEdit, onAction, onHeading }: ToolbarProps) {
           </div>
         </PopoverContent>
       </Popover>
+
+      {onConvertToTask ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Compile to task"
+          title="Compile selection to task"
+          onClick={onConvertToTask}
+          className="size-8 text-ink-2 hover:text-signal"
+        >
+          <SparklesIcon className="size-4" />
+        </Button>
+      ) : null}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -679,6 +703,8 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
+  const [splitCanvas, setSplitCanvas] = useState(false);
+  const [prefillTaskName, setPrefillTaskName] = useState("");
   const [linksVersion, setLinksVersion] = useState(0);
   const canCreateTask = useReachable("tasks.create");
   const [commentCount, setCommentCount] = useState<number | null>(null);
@@ -686,6 +712,28 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   // Open beside the doc on wide screens; on a phone it would cover the page.
   const [commentsOpen, setCommentsOpen] = useState(false);
+
+  const handleCompileSelectionToTask = (prefill?: string) => {
+    if (typeof prefill === "string" && prefill.trim().length > 0) {
+      setPrefillTaskName(prefill.trim());
+      setCreateTaskOpen(true);
+      return;
+    }
+
+    if (editor) {
+      const selected = editor.state.doc
+        .textBetween(
+          editor.state.selection.from,
+          editor.state.selection.to,
+          " ",
+        )
+        .trim();
+      setPrefillTaskName(selected || "");
+    } else {
+      setPrefillTaskName("");
+    }
+    setCreateTaskOpen(true);
+  };
 
   useEffect(() => {
     setCommentsOpen(window.matchMedia("(min-width: 1280px)").matches);
@@ -1022,6 +1070,23 @@ export function NotionEditorPage({ slug }: { slug: string }) {
               href={`/docs/${doc.slug}`}
             />
             <Button
+              variant={splitCanvas ? "secondary" : "outline"}
+              size="sm"
+              aria-pressed={splitCanvas}
+              aria-label="Split canvas"
+              className={cn(
+                "h-8 gap-1.5 border-hairline px-2.5 text-[13px]",
+                splitCanvas
+                  ? "border-signal bg-signal/10 text-signal font-medium"
+                  : "bg-transparent",
+              )}
+              onClick={() => setSplitCanvas((v) => !v)}
+              title="Toggle Split Canvas: Spec & Tasks side-by-side"
+            >
+              <Columns2Icon className="size-3.5" />
+              <span className="hidden sm:inline">Split Canvas</span>
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               aria-pressed={commentsOpen}
@@ -1070,7 +1135,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 {canCreateTask ? (
                   <DropdownMenuItem
                     className="gap-2"
-                    onClick={() => setCreateTaskOpen(true)}
+                    onClick={() => handleCompileSelectionToTask()}
                   >
                     <SquareCheckIcon className="size-4" />
                     Create task from this doc
@@ -1095,9 +1160,26 @@ export function NotionEditorPage({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <div className="grid min-h-[calc(100vh-7rem)] xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <main className="min-w-0 bg-canvas">
-          <div className="mx-auto w-full max-w-[720px] px-5 py-8 sm:px-8 lg:py-12">
+      <div
+        className={cn(
+          "grid min-h-[calc(100vh-7rem)]",
+          splitCanvas
+            ? "grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(380px,1fr)] xl:grid-cols-[minmax(0,1.3fr)_minmax(420px,1fr)]"
+            : "xl:grid-cols-[minmax(0,1fr)_22rem]",
+        )}
+      >
+        <main
+          className={cn(
+            "min-w-0 bg-canvas",
+            splitCanvas && "border-r border-hairline",
+          )}
+        >
+          <div
+            className={cn(
+              "mx-auto w-full px-5 py-8 sm:px-8 lg:py-12",
+              splitCanvas ? "max-w-3xl" : "max-w-[720px]",
+            )}
+          >
             <div>
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <span className="inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-hairline pr-2 pl-1 text-xs text-ink-2">
@@ -1131,6 +1213,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 canEdit={canEdit}
                 onAction={(action) => runEditorAction(action)}
                 onHeading={setHeading}
+                onConvertToTask={() => handleCompileSelectionToTask()}
               />
 
               <div className="relative group">
@@ -1198,49 +1281,73 @@ export function NotionEditorPage({ slug }: { slug: string }) {
           </section>
         </main>
 
-        <div className="flex flex-col gap-4 p-6 pl-0 xl:sticky xl:top-16 xl:max-h-[calc(100vh-5rem)] xl:self-start xl:overflow-y-auto max-xl:contents">
-          <LinkedWork
-            source={{ type: "doc", id: doc.id }}
-            selfId={doc.id}
-            canEdit={canEdit}
-            refreshKey={`${saveStatus}-${linksVersion}`}
-          />
-          {canCreateTask ? (
-            <CreateTaskModal
-              hideTrigger
-              open={createTaskOpen}
-              onOpenChange={setCreateTaskOpen}
-              linkDocId={doc.id}
-              defaultProjectId={doc.projectId ?? undefined}
-              onTaskCreated={() => setLinksVersion((value) => value + 1)}
-            />
-          ) : null}
-
-          <section aria-label="Thread" className="tile hidden p-4 xl:block">
-            <LinkedThread
-              header={(count) => (
-                <div className="flex items-baseline justify-between pb-3">
-                  <h2 className="eyebrow">Thread</h2>
-                  <span className="font-mono text-xs text-ink-3">
-                    {count} linked
-                  </span>
-                </div>
-              )}
-              current={{ kind: "doc", label: getDocTitle(title) }}
-              currentId={doc.id}
+        {splitCanvas ? (
+          <div className="sticky top-16 max-h-[calc(100vh-5rem)] h-[calc(100vh-5rem)] self-start overflow-hidden">
+            <LivingSpecPanel
+              docId={doc.id}
+              docTitle={getDocTitle(title)}
+              docContent={content}
               projectId={doc.projectId}
-              projectName={doc.projectName}
+              canEdit={canEdit}
+              canCreateTask={canCreateTask}
+              refreshTrigger={linksVersion}
+              onOpenCreateTask={handleCompileSelectionToTask}
+              onTaskChange={() => setLinksVersion((v) => v + 1)}
             />
-          </section>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 p-6 pl-0 xl:sticky xl:top-16 xl:max-h-[calc(100vh-5rem)] xl:self-start xl:overflow-y-auto max-xl:contents">
+            <LinkedWork
+              source={{ type: "doc", id: doc.id }}
+              selfId={doc.id}
+              canEdit={canEdit}
+              refreshKey={`${saveStatus}-${linksVersion}`}
+            />
 
-          <CommentsPanel
-            docId={doc.id}
-            canComment={canComment}
-            isOpen={commentsOpen}
-            onClose={() => setCommentsOpen(false)}
-            onCount={setCommentCount}
+            <section aria-label="Thread" className="tile hidden p-4 xl:block">
+              <LinkedThread
+                header={(count) => (
+                  <div className="flex items-baseline justify-between pb-3">
+                    <h2 className="eyebrow">Thread</h2>
+                    <span className="font-mono text-xs text-ink-3">
+                      {count} linked
+                    </span>
+                  </div>
+                )}
+                current={{ kind: "doc", label: getDocTitle(title) }}
+                currentId={doc.id}
+                projectId={doc.projectId}
+                projectName={doc.projectName}
+              />
+            </section>
+
+            <CommentsPanel
+              docId={doc.id}
+              canComment={canComment}
+              isOpen={commentsOpen}
+              onClose={() => setCommentsOpen(false)}
+              onCount={setCommentCount}
+            />
+          </div>
+        )}
+
+        {canCreateTask ? (
+          <CreateTaskModal
+            hideTrigger
+            open={createTaskOpen}
+            onOpenChange={(isOpen) => {
+              setCreateTaskOpen(isOpen);
+              if (!isOpen) setPrefillTaskName("");
+            }}
+            defaultName={prefillTaskName}
+            linkDocId={doc.id}
+            defaultProjectId={doc.projectId ?? undefined}
+            onTaskCreated={() => {
+              setLinksVersion((value) => value + 1);
+              setPrefillTaskName("");
+            }}
           />
-        </div>
+        ) : null}
       </div>
     </div>
   );

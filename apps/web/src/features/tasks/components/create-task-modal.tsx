@@ -61,6 +61,8 @@ type MemberOption = {
 type Props = {
   defaultProjectId?: string;
   defaultStatus?: CreateTaskFormValues["status"];
+  defaultName?: string;
+  defaultDescription?: string;
   trigger?: React.ReactNode;
   onTaskCreated?: () => void | Promise<void>;
   /** Control the dialog from outside (the Create menu), with no trigger button. */
@@ -157,6 +159,8 @@ function Label({
 const CreateTaskModalInner: FC<Props> = ({
   defaultProjectId = "",
   defaultStatus = "todo",
+  defaultName = "",
+  defaultDescription = "",
   trigger,
   onTaskCreated,
   open: controlledOpen,
@@ -179,8 +183,8 @@ const CreateTaskModalInner: FC<Props> = ({
 
   const blank = {
     projectId: defaultProjectId,
-    name: "",
-    description: "",
+    name: defaultName,
+    description: defaultDescription,
     status: defaultStatus,
     priority: "medium" as const,
     assignedToMemberId: null,
@@ -198,6 +202,14 @@ const CreateTaskModalInner: FC<Props> = ({
     defaultValues: blank,
     mode: "onTouched",
   });
+
+  useEffect(() => {
+    if (open) {
+      if (defaultName) setValue("name", defaultName);
+      if (defaultDescription) setValue("description", defaultDescription);
+      if (defaultProjectId) setValue("projectId", defaultProjectId);
+    }
+  }, [open, defaultName, defaultDescription, defaultProjectId, setValue]);
 
   const chosenProject = useWatch({ control, name: "projectId" });
   const selected = projects.find((project) => project.id === chosenProject);

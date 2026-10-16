@@ -40,6 +40,8 @@ export type LinkedItem = {
   key: string | null;
   status: string | null;
   assignee: string | null;
+  priority?: string | null;
+  estimatePoints?: number | null;
   href: string;
 };
 
@@ -119,6 +121,8 @@ export async function linksOf(
               name: tasks.name,
               status: tasks.status,
               assignee: users.name,
+              priority: tasks.priority,
+              estimatePoints: tasks.estimatePoints,
             })
             .from(tasks)
             .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
@@ -177,6 +181,8 @@ export async function linksOf(
           key: task.key,
           status: task.status,
           assignee: task.assignee,
+          priority: task.priority,
+          estimatePoints: task.estimatePoints,
           href: `/tasks/${task.key}`,
         });
       }
