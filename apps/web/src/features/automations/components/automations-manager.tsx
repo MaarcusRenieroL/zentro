@@ -399,8 +399,8 @@ export const AutomationsManager: FC = () => {
             <div
               key={rule.id}
               className={cn(
-                "tile p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all",
-                !rule.enabled && "opacity-60 bg-surface-subtle/40",
+                "rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-hairline hover:shadow-xs",
+                !rule.enabled && "opacity-60 bg-surface/40",
               )}
             >
               <div className="flex items-start gap-3.5 min-w-0">
