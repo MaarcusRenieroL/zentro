@@ -145,10 +145,10 @@ function TabsList({
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "-mb-px flex gap-1.5 border-b-2 py-2.5 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "-mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-xs font-medium whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
               active
-                ? "border-ink font-medium text-ink"
-                : "border-transparent text-ink-2 hover:text-ink",
+                ? "border-signal font-semibold text-ink"
+                : "border-transparent text-ink-3 hover:text-ink hover:border-hairline",
             )}
           >
             {item.label}

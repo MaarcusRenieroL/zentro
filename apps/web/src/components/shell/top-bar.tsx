@@ -152,11 +152,11 @@ export function TopBar({
           type="button"
           onClick={() => setPaletteOpen(true)}
           aria-label="Open command palette"
-          className="hidden h-8 w-[300px] items-center gap-2 rounded-md border border-hairline bg-surface px-2.5 text-left text-[13px] text-ink-3 outline-none transition-colors hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-ring lg:flex"
+          className="hidden h-8 w-[280px] items-center gap-2 rounded-lg border border-hairline bg-surface/80 px-2.5 text-left text-xs text-ink-3 shadow-2xs outline-none transition-all hover:border-ink-3 hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring lg:flex"
         >
-          <SearchIcon className="size-4" aria-hidden="true" />
-          <span className="flex-1 truncate">Search or jump to</span>
-          <Kbd>⌘K</Kbd>
+          <SearchIcon className="size-3.5 text-ink-3" aria-hidden="true" />
+          <span className="flex-1 truncate">Search or jump to...</span>
+          <Kbd className="text-[10px] bg-muted/60">⌘K</Kbd>
         </button>
         <Button
           variant="ghost"

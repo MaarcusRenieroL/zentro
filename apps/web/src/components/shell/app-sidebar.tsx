@@ -165,25 +165,31 @@ export function AppSidebar({
                         tooltip={item.label}
                         className={cn(
                           itemSize,
-                          "rounded-md text-ink-2 hover:bg-hover hover:text-ink data-active:bg-transparent data-active:font-medium data-active:text-ink",
+                          "rounded-lg text-ink-2 transition-all hover:bg-hover hover:text-ink data-active:bg-selected data-active:font-semibold data-active:text-ink shadow-2xs",
                         )}
                       >
                         <Link
                           href={item.href}
                           onClick={close}
                           aria-current={isActive ? "page" : undefined}
+                          className="flex items-center gap-2.5"
                         >
                           <Icon
-                            className={isActive ? "text-signal" : undefined}
+                            className={cn(
+                              "size-4 shrink-0 transition-colors",
+                              isActive
+                                ? "text-signal font-semibold"
+                                : "text-ink-3",
+                            )}
                           />
-                          <span className="flex-1">{item.label}</span>
+                          <span className="flex-1 truncate">{item.label}</span>
                           {item.id === "tasks" && taskCount ? (
-                            <span className="font-mono text-xs text-ink-3 group-data-[collapsible=icon]:hidden">
+                            <span className="font-mono text-[11px] font-semibold px-1.5 py-0.2 rounded-full bg-signal/10 text-signal group-data-[collapsible=icon]:hidden">
                               {taskCount}
                             </span>
                           ) : null}
                           {item.id === "overview" ? (
-                            <span className="rounded-sm border border-hairline px-1.5 font-mono text-[10px] tracking-[0.06em] text-ink-2 group-data-[collapsible=icon]:hidden">
+                            <span className="rounded-md border border-hairline bg-muted/50 px-1.5 py-0.2 font-mono text-[9px] font-medium tracking-[0.08em] text-ink-3 group-data-[collapsible=icon]:hidden">
                               ADMIN
                             </span>
                           ) : null}
