@@ -14,6 +14,7 @@ import type { DocsListItem } from "~/src/features/docs/lib/docs";
 import { ListView } from "~/src/features/tasks/components/workspace/list-view";
 import type { WorkspaceTask } from "~/src/features/tasks/lib/types";
 import { paths } from "~/src/lib/paths";
+import { CriticalPathVisualizer } from "./critical-path-visualizer";
 
 type Props = {
   projectId: string;
@@ -35,7 +36,7 @@ type Props = {
   };
 };
 
-type TabId = "overview" | "tasks" | "docs" | "activity";
+type TabId = "overview" | "tasks" | "graph" | "docs" | "activity";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -161,6 +162,10 @@ export const ProjectTabs: FC<Props> = ({
             label: "Tasks",
             count: tasks.length,
           },
+          {
+            id: "graph" as const,
+            label: "Critical Path",
+          },
         ]
       : []),
     ...(showDocs
@@ -260,6 +265,10 @@ export const ProjectTabs: FC<Props> = ({
 
           {tab === "tasks" ? (
             <ProjectTasks tasks={tasks} projectSlug={projectSlug} />
+          ) : null}
+
+          {tab === "graph" ? (
+            <CriticalPathVisualizer projectSlug={projectSlug} />
           ) : null}
 
           {tab === "docs" ? <ProjectDocsList projectId={projectId} /> : null}
