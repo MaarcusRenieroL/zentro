@@ -78,8 +78,19 @@ export function ModuleSectionNav() {
   const context = useContext(ModuleNavContext);
   const items = context?.items ?? [];
   const { onListPage } = useActive(items);
+  const [mounted, setMounted] = useState(false);
 
-  if (!context || context.claimed || items.length < 2 || !onListPage) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (
+    !mounted ||
+    !context ||
+    context.claimed ||
+    items.length < 2 ||
+    !onListPage
+  ) {
     return null;
   }
 
