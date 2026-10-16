@@ -14,11 +14,45 @@ import { cn } from "@zentro/ui/lib/utils";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
+import { StatusGlyph } from "@zentro/ui/components/status-glyph";
 import { ActorAvatar } from "~/src/components/actor-avatar";
+import { DueDate } from "~/src/components/due-date";
 import { usePermission } from "~/src/components/permissions/permission-provider";
 import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { TeamActivity } from "~/src/components/workspace/activity/activity-feed";
 import { paths } from "~/src/lib/paths";
+
+type WorkloadData = {
+  team: {
+    id: string;
+    name: string;
+  };
+  totalTasks: number;
+  openTasksCount: number;
+  doneTasksCount: number;
+  memberWorkload: Array<{
+    memberId: string;
+    userId: string;
+    name: string;
+    openCount: number;
+    inProgressCount: number;
+    overdueCount: number;
+  }>;
+  tasks: Array<{
+    id: string;
+    key: string;
+    name: string;
+    status: string;
+    priority: string | null;
+    dueAt: Date | string | null;
+    projectId: string;
+    projectName: string;
+    projectSlug: string;
+    assignedToMemberId: string | null;
+    assigneeName: string | null;
+    createdAt: Date | string;
+  }>;
+};
 
 type Data = {
   team: {
@@ -48,6 +82,7 @@ type Data = {
     assigneeUserId: string | null;
   }>;
   docs: Array<{ updatedAt: Date }>;
+  workload: WorkloadData | null;
 };
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -71,8 +106,9 @@ export function TeamDetail({ teamId }: { teamId: string }) {
       trpc.project.getProjectsByOrgId.query().catch(() => []),
       trpc.task.getTasksByOrgId.query({ teamId }).catch(() => []),
       trpc.docs.getAll.query({ teamId }).catch(() => []),
+      trpc.team.getTeamWorkload.query({ id: teamId }).catch(() => null),
     ])
-      .then(([teams, projects, tasks, docs]) => {
+      .then(([teams, projects, tasks, docs, workload]) => {
         if (!live) return;
 
         const team = teams.find((entry) => entry.id === teamId);
@@ -89,6 +125,7 @@ export function TeamDetail({ teamId }: { teamId: string }) {
           ),
           tasks,
           docs,
+          workload,
         });
       })
       .catch(() => live && setMissing(true));
@@ -128,7 +165,7 @@ export function TeamDetail({ teamId }: { teamId: string }) {
     );
   }
 
-  const { team, projects, tasks, docs } = data;
+  const { team, projects, tasks, docs, workload } = data;
   const now = Date.now();
   const open = tasks.filter((task) => task.status !== "done");
   const started = open.filter((task) => task.status === "in-progress").length;
@@ -294,7 +331,12 @@ export function TeamDetail({ teamId }: { teamId: string }) {
             </h2>
             {team.members.length ? (
               team.members.map((member) => {
-                const count = openFor(member.userId);
+                const memberLoad = workload?.memberWorkload.find(
+                  (m) => m.memberId === member.memberId,
+                );
+                const count = memberLoad
+                  ? memberLoad.openCount
+                  : openFor(member.userId);
 
                 return (
                   <div
@@ -310,22 +352,106 @@ export function TeamDetail({ teamId }: { teamId: string }) {
                         {member.role}
                       </span>
                     </span>
-                    <span className="flex items-center gap-1.5 font-mono text-xs text-ink-2">
-                      <CircleIcon
-                        aria-hidden="true"
-                        className={cn(
-                          "size-3",
-                          count > 5 ? "text-warning-text" : "text-ink-3",
-                        )}
-                      />
-                      {count} open
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {memberLoad && memberLoad.overdueCount > 0 ? (
+                        <span className="rounded bg-danger-subtle px-1.5 py-0.5 font-mono text-[11px] text-danger-text">
+                          {memberLoad.overdueCount} overdue
+                        </span>
+                      ) : null}
+                      {memberLoad && memberLoad.inProgressCount > 0 ? (
+                        <span className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[11px] text-ink-2">
+                          {memberLoad.inProgressCount} active
+                        </span>
+                      ) : null}
+                      <span className="flex items-center gap-1.5 font-mono text-xs text-ink-2">
+                        <CircleIcon
+                          aria-hidden="true"
+                          className={cn(
+                            "size-3",
+                            count > 5 ? "text-warning-text" : "text-ink-3",
+                          )}
+                        />
+                        {count} open
+                      </span>
+                    </div>
                   </div>
                 );
               })
             ) : (
               <p className="py-3 text-sm text-ink-2">
                 Nobody is on this team yet.
+              </p>
+            )}
+          </section>
+
+          <section aria-labelledby="team-task-stream" className="flex flex-col">
+            <div className="flex items-center justify-between pb-2">
+              <h2
+                id="team-task-stream"
+                className="flex items-center gap-2 font-semibold"
+              >
+                Cross-Project Tasks
+                <span className="font-mono text-xs font-normal text-ink-3">
+                  {workload?.tasks.length ?? 0}
+                </span>
+              </h2>
+              {workload && workload.totalTasks > 0 ? (
+                <span className="font-mono text-xs text-ink-3">
+                  {workload.openTasksCount} open · {workload.doneTasksCount}{" "}
+                  done
+                </span>
+              ) : null}
+            </div>
+
+            {workload && workload.tasks.length > 0 ? (
+              <div className="flex flex-col">
+                {workload.tasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-2.5 border-b border-hairline/60 px-1 py-2 hover:bg-hover transition-colors"
+                  >
+                    <StatusGlyph
+                      status={task.status as any}
+                      size={12}
+                      decorative
+                    />
+                    <Link
+                      href={paths.task(task.key)}
+                      className="font-mono text-xs font-medium text-ink-2 hover:text-ink shrink-0"
+                    >
+                      {task.key}
+                    </Link>
+                    <Link
+                      href={paths.task(task.key)}
+                      className="min-w-0 truncate text-sm text-ink hover:underline"
+                    >
+                      {task.name}
+                    </Link>
+                    <div className="ml-auto flex items-center gap-2.5 shrink-0">
+                      <Link
+                        href={paths.project(task.projectSlug)}
+                        className="rounded border border-hairline/80 bg-sunken px-1.5 py-0.5 font-mono text-[10px] text-ink-2 hover:text-ink hover:border-hairline"
+                      >
+                        {task.projectName}
+                      </Link>
+                      {task.dueAt ? (
+                        <DueDate
+                          value={task.dueAt}
+                          done={task.status === "done"}
+                        />
+                      ) : null}
+                      {task.assigneeName ? (
+                        <span className="hidden sm:inline-block max-w-[80px] truncate font-mono text-[11px] text-ink-3">
+                          {task.assigneeName}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="py-3 text-sm text-ink-2">
+                No tasks assigned to this team or its members yet.
               </p>
             )}
           </section>

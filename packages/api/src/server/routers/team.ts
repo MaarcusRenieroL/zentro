@@ -1,6 +1,22 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, isNull, ne } from "@zentro/db/drizzle";
-import { members, teamMembers, teams, users } from "@zentro/db/schema";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  ne,
+  or,
+} from "@zentro/db/drizzle";
+import {
+  members,
+  projects,
+  tasks,
+  teamMembers,
+  teams,
+  users,
+} from "@zentro/db/schema";
 
 import {
   createTeamSchema,
@@ -594,5 +610,112 @@ export const teamRouter = router({
 
         return { id: team.id };
       });
+    }),
+
+  getTeamWorkload: protectedProcedure
+    .input(getTeamByIdSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+
+      const [team] = await db
+        .select({ id: teams.id, name: teams.name })
+        .from(teams)
+        .where(
+          and(
+            eq(teams.id, input.id),
+            eq(teams.organizationId, activeOrganization.id),
+          ),
+        )
+        .limit(1);
+
+      if (!team) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Team not found.",
+        });
+      }
+
+      // Team members
+      const teamMemberList = await db
+        .select({
+          memberId: members.id,
+          userId: users.id,
+          name: users.name,
+          email: users.email,
+        })
+        .from(teamMembers)
+        .innerJoin(members, eq(members.id, teamMembers.memberId))
+        .innerJoin(users, eq(users.id, members.userId))
+        .where(eq(teamMembers.teamId, input.id));
+
+      const memberIds = teamMemberList.map((m) => m.memberId);
+
+      // Tasks either owned by this team, or assigned to a member of this team across any project
+      const teamTasks = await db
+        .select({
+          id: tasks.id,
+          key: tasks.key,
+          name: tasks.name,
+          status: tasks.status,
+          priority: tasks.priority,
+          dueAt: tasks.dueAt,
+          projectId: projects.id,
+          projectName: projects.name,
+          projectSlug: projects.slug,
+          assignedToMemberId: tasks.assignedToMemberId,
+          assigneeName: users.name,
+          createdAt: tasks.createdAt,
+        })
+        .from(tasks)
+        .innerJoin(projects, eq(projects.id, tasks.projectId))
+        .leftJoin(members, eq(members.id, tasks.assignedToMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .where(
+          and(
+            eq(tasks.organizationId, activeOrganization.id),
+            isNull(tasks.deletedAt),
+            memberIds.length
+              ? or(
+                  eq(tasks.teamId, input.id),
+                  inArray(tasks.assignedToMemberId, memberIds),
+                )
+              : eq(tasks.teamId, input.id),
+          ),
+        )
+        .orderBy(desc(tasks.createdAt));
+
+      const now = new Date();
+      const openTasks = teamTasks.filter((t) => t.status !== "done");
+
+      // Per-member capacity breakdown
+      const memberWorkload = teamMemberList.map((member) => {
+        const assigned = openTasks.filter(
+          (t) => t.assignedToMemberId === member.memberId,
+        );
+        const inProgress = assigned.filter(
+          (t) => t.status === "in-progress",
+        ).length;
+        const overdue = assigned.filter(
+          (t) => t.dueAt && new Date(t.dueAt).getTime() < now.getTime(),
+        ).length;
+
+        return {
+          memberId: member.memberId,
+          userId: member.userId,
+          name: member.name || member.email,
+          openCount: assigned.length,
+          inProgressCount: inProgress,
+          overdueCount: overdue,
+        };
+      });
+
+      return {
+        team,
+        totalTasks: teamTasks.length,
+        openTasksCount: openTasks.length,
+        doneTasksCount: teamTasks.length - openTasks.length,
+        memberWorkload,
+        tasks: teamTasks.slice(0, 30),
+      };
     }),
 });
