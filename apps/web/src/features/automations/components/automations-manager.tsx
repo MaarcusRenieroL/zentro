@@ -202,7 +202,7 @@ export const AutomationsManager: FC = () => {
               type="button"
               onClick={handleSeedPresets}
               disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-signal bg-signal/10 px-3 py-2 text-xs font-semibold text-signal hover:bg-signal hover:text-white transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-signal bg-signal/10 px-3 py-2 text-xs font-semibold text-signal hover:bg-signal hover:text-on-signal transition-all cursor-pointer"
             >
               <SparklesIcon className="size-3.5" />
               <span>Deploy Recommended Presets</span>
@@ -299,7 +299,7 @@ export const AutomationsManager: FC = () => {
 
                 {/* Then Action */}
                 <div className="rounded-xl border border-hairline/80 bg-surface-subtle/50 p-3 flex flex-col gap-2.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-500 flex items-center gap-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-success-text flex items-center gap-1">
                     <BotIcon className="size-3" /> Then (Action)
                   </span>
                   <select
@@ -399,8 +399,8 @@ export const AutomationsManager: FC = () => {
             <div
               key={rule.id}
               className={cn(
-                "rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-hairline hover:shadow-xs",
-                !rule.enabled && "opacity-60 bg-surface/40",
+                "rounded-2xl border border-hairline bg-surface p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-hairline-strong hover:shadow-sm",
+                !rule.enabled && "opacity-60",
               )}
             >
               <div className="flex items-start gap-3.5 min-w-0">
@@ -421,7 +421,7 @@ export const AutomationsManager: FC = () => {
                       {rule.name}
                     </span>
                     {rule.enabled ? (
-                      <span className="rounded-md bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="rounded-md bg-success-subtle border border-success/30 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-success-text">
                         ACTIVE
                       </span>
                     ) : (
@@ -469,7 +469,7 @@ export const AutomationsManager: FC = () => {
                     className={cn(
                       "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-medium cursor-pointer transition-colors",
                       rule.enabled
-                        ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
+                        ? "border-success/30 bg-success-subtle text-success-text"
                         : "border-hairline bg-surface text-ink-3 hover:text-ink",
                     )}
                   >
@@ -480,7 +480,7 @@ export const AutomationsManager: FC = () => {
                   <button
                     type="button"
                     onClick={() => handleDelete(rule.id, rule.name)}
-                    className="p-1.5 rounded-lg text-ink-3 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-ink-3 hover:text-danger-text hover:bg-danger-subtle transition-colors cursor-pointer"
                     title="Delete rule"
                   >
                     <Trash2Icon className="size-4" />
