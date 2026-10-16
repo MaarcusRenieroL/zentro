@@ -11,6 +11,7 @@ import {
   sql,
 } from "@zentro/db/drizzle";
 import {
+  activityEvents,
   docComments,
   docs,
   members,
@@ -549,7 +550,13 @@ export const docsRouter = router({
             target: { id: updatedDoc.id, label: updatedDoc.title },
             projectId: updatedDoc.projectId,
             teamId: updatedDoc.teamId,
-            metadata: { slug: updatedDoc.slug, fields: ["content"] },
+            metadata: {
+              slug: updatedDoc.slug,
+              fields: ["content"],
+              snippet: content.slice(0, 160),
+              snapshot: content,
+              length: content.length,
+            },
           });
         }
 
@@ -798,6 +805,107 @@ export const docsRouter = router({
         });
 
         return comment;
+      });
+    }),
+
+  getVersionHistory: permissionProcedure("docs.view", docById("id"))
+    .input(getDocByIdSchema)
+    .query(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const events = await db
+        .select({
+          id: activityEvents.id,
+          action: activityEvents.action,
+          createdAt: activityEvents.createdAt,
+          metadata: activityEvents.metadata,
+          actorUserId: activityEvents.actorUserId,
+          actorName: users.name,
+          actorEmail: users.email,
+        })
+        .from(activityEvents)
+        .leftJoin(users, eq(users.id, activityEvents.actorUserId))
+        .where(
+          and(
+            eq(activityEvents.organizationId, activeOrganization.id),
+            eq(activityEvents.targetType, "doc"),
+            eq(activityEvents.targetId, input.id),
+          ),
+        )
+        .orderBy(desc(activityEvents.createdAt))
+        .limit(30);
+
+      return events.map((e) => {
+        const meta = (e.metadata ?? {}) as Record<string, any>;
+        return {
+          id: e.id,
+          action: e.action,
+          createdAt: e.createdAt,
+          actorName: e.actorName || e.actorEmail || "Teammate",
+          snippet: (meta.snippet as string) || "",
+          snapshot: (meta.snapshot as string) || null,
+          length: (meta.length as number) || 0,
+        };
+      });
+    }),
+
+  restoreVersion: permissionProcedure("docs.update_own", docById("id"), {
+    module: "docs",
+    audit: ["doc.updated"],
+  })
+    .input(updateDocContentSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization } = ctx;
+      const { id, content } = input;
+      const member = await getCurrentMember(ctx);
+
+      return db.transaction(async (tx) => {
+        const [updatedDoc] = await tx
+          .update(docs)
+          .set({
+            content,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(docs.id, id),
+              eq(docs.organizationId, activeOrganization.id),
+              isNull(docs.deletedAt),
+            ),
+          )
+          .returning();
+
+        if (!updatedDoc) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Doc not found.",
+          });
+        }
+
+        await ctx.audit.record(tx, {
+          action: "doc.updated",
+          target: { id: updatedDoc.id, label: updatedDoc.title },
+          projectId: updatedDoc.projectId,
+          teamId: updatedDoc.teamId,
+          metadata: {
+            slug: updatedDoc.slug,
+            fields: ["content"],
+            restored: true,
+            snippet: content.slice(0, 160),
+            snapshot: content,
+            length: content.length,
+          },
+        });
+
+        await syncMentions(tx, {
+          organizationId: activeOrganization.id,
+          memberId: member.id,
+          source: { type: "doc", id: updatedDoc.id },
+          text: updatedDoc.content,
+          via: "content",
+          mode: "replace",
+        });
+
+        return updatedDoc;
       });
     }),
 });

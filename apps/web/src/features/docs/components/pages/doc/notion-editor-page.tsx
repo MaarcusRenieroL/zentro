@@ -57,6 +57,7 @@ import {
   SquareCheckIcon,
   Columns2Icon,
   SparklesIcon,
+  HistoryIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,6 +90,7 @@ import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { CommentsPanel } from "./comments-panel";
 import { LivingSpecPanel } from "./living-spec-panel";
 import { MentionPopover, type MentionItem } from "./mention-popover";
+import { VersionHistoryPanel } from "./version-history-panel";
 
 const slashCommands = [
   {
@@ -737,6 +739,7 @@ export function NotionEditorPage({ slug }: { slug: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [showMentionMenu, setShowMentionMenu] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   // Open beside the doc on wide screens; on a phone it would cover the page.
   const [commentsOpen, setCommentsOpen] = useState(false);
 
@@ -1158,6 +1161,23 @@ export function NotionEditorPage({ slug }: { slug: string }) {
             <Button
               variant="outline"
               size="sm"
+              aria-pressed={historyOpen}
+              aria-label={
+                historyOpen ? "Hide version history" : "Show version history"
+              }
+              className={cn(
+                "h-8 gap-1.5 border-hairline px-2.5 text-[13px]",
+                historyOpen ? "border-ink bg-hover" : "bg-transparent",
+              )}
+              onClick={() => setHistoryOpen((isOpen) => !isOpen)}
+              title="Version history snapshots & rollback"
+            >
+              <HistoryIcon className="size-3.5 text-signal" />
+              <span className="hidden sm:inline">History</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               aria-pressed={commentsOpen}
               aria-label={commentsOpen ? "Hide comments" : "Show comments"}
               className={cn(
@@ -1423,6 +1443,18 @@ export function NotionEditorPage({ slug }: { slug: string }) {
             onTaskCreated={() => {
               setLinksVersion((value) => value + 1);
               setPrefillTaskName("");
+            }}
+          />
+        ) : null}
+
+        {historyOpen && doc ? (
+          <VersionHistoryPanel
+            docId={doc.id}
+            isOpen={historyOpen}
+            onClose={() => setHistoryOpen(false)}
+            onRestore={(restoredContent) => {
+              setContent(restoredContent);
+              editor?.commands.setContent(markdownToHtml(restoredContent));
             }}
           />
         ) : null}
