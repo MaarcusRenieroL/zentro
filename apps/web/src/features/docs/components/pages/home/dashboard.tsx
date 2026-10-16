@@ -1,12 +1,18 @@
 "use client";
 
 import { FC, useEffect, useMemo, useState } from "react";
-import { Grid2X2Icon, ListIcon } from "lucide-react";
+import {
+  Grid2X2Icon,
+  ListIcon,
+  FolderKanbanIcon,
+  SparklesIcon,
+} from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { ErrorState } from "@zentro/ui/components/error-state";
 import { cn } from "@zentro/ui/lib/utils";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
+import { Button } from "@zentro/ui/shadcn/button";
 import {
   Select,
   SelectContent,
@@ -18,7 +24,7 @@ import {
 import { ModuleNavClaim } from "~/src/components/shell/module-section-nav";
 
 import type { DocsListItem } from "../../../lib/docs";
-import { DocTable, DocTiles } from "../../doc-rows";
+import { DocTable, DocTiles, DocGrouped } from "../../doc-rows";
 import { CreateDocModal } from "./create-doc-modal";
 import { DocsRail } from "./docs-rail";
 import { Header } from "./header";
@@ -26,6 +32,7 @@ import { TemplateRow } from "./templates";
 import { SearchToolbar } from "./search-toolbar";
 
 type Sort = "edited" | "title" | "project";
+type ViewMode = "table" | "grid" | "grouped";
 
 export const HomeDashboard: FC = () => {
   const trpc = useTrpcClient();
@@ -33,9 +40,11 @@ export const HomeDashboard: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [sort, setSort] = useState<Sort>("edited");
-  const [view, setView] = useState<"table" | "grid">("table");
+  const [view, setView] = useState<ViewMode>("grid");
   const [attempt, setAttempt] = useState(0);
   const [project, setProject] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
     let live = true;
@@ -57,20 +66,106 @@ export const HomeDashboard: FC = () => {
     };
   }, [trpc, attempt]);
 
-  const recent = useMemo(
+  // Unique projects count
+  const projectCount = useMemo(() => {
+    const projects = new Set(docs.map((d) => d.projectName).filter(Boolean));
+    return projects.size;
+  }, [docs]);
+
+  // Recent docs (updated in last 7 days)
+  const recentDocs = useMemo(() => {
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return docs.filter((d) => d.updatedAt.getTime() > oneWeekAgo);
+  }, [docs]);
+
+  // Top 4 most recently edited for the Recent Strip
+  const recentStrip = useMemo(
     () =>
       [...docs]
         .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
         .slice(0, 4),
     [docs],
   );
-  const sorted = useMemo(() => {
-    const copy =
-      project === null
-        ? [...docs]
-        : docs.filter((doc) => (doc.projectName ?? "") === project);
 
-    copy.sort((a, b) =>
+  // Filter category counts
+  const filterCounts = useMemo(() => {
+    const specs = docs.filter((d) => {
+      const t = d.title.toLowerCase();
+      return (
+        t.includes("spec") ||
+        t.includes("prd") ||
+        t.includes("rfc") ||
+        t.includes("design")
+      );
+    }).length;
+
+    const meetings = docs.filter((d) => {
+      const t = d.title.toLowerCase();
+      return (
+        t.includes("meeting") ||
+        t.includes("sync") ||
+        t.includes("notes") ||
+        t.includes("retro")
+      );
+    }).length;
+
+    return {
+      all: docs.length,
+      specs,
+      meetings,
+      recent: recentDocs.length,
+    };
+  }, [docs, recentDocs]);
+
+  // Filtered and sorted docs
+  const filteredAndSortedDocs = useMemo(() => {
+    let list = [...docs];
+
+    // Project rail filter
+    if (project !== null) {
+      list = list.filter((doc) => (doc.projectName ?? "") === project);
+    }
+
+    // Category filter
+    if (categoryFilter === "specs") {
+      list = list.filter((d) => {
+        const t = d.title.toLowerCase();
+        return (
+          t.includes("spec") ||
+          t.includes("prd") ||
+          t.includes("rfc") ||
+          t.includes("design")
+        );
+      });
+    } else if (categoryFilter === "meetings") {
+      list = list.filter((d) => {
+        const t = d.title.toLowerCase();
+        return (
+          t.includes("meeting") ||
+          t.includes("sync") ||
+          t.includes("notes") ||
+          t.includes("retro")
+        );
+      });
+    } else if (categoryFilter === "recent") {
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      list = list.filter((d) => d.updatedAt.getTime() > oneWeekAgo);
+    }
+
+    // Live search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (doc) =>
+          doc.title.toLowerCase().includes(q) ||
+          (doc.excerpt && doc.excerpt.toLowerCase().includes(q)) ||
+          (doc.projectName && doc.projectName.toLowerCase().includes(q)) ||
+          (doc.createdBy && doc.createdBy.toLowerCase().includes(q)),
+      );
+    }
+
+    // Sorting
+    list.sort((a, b) =>
       sort === "title"
         ? a.title.localeCompare(b.title)
         : sort === "project"
@@ -78,8 +173,8 @@ export const HomeDashboard: FC = () => {
           : b.updatedAt.getTime() - a.updatedAt.getTime(),
     );
 
-    return copy;
-  }, [docs, sort, project]);
+    return list;
+  }, [docs, project, categoryFilter, searchQuery, sort]);
 
   const rail = !failed && !isLoading && docs.length > 0;
 
@@ -87,7 +182,7 @@ export const HomeDashboard: FC = () => {
     <div
       className={cn(
         "grid w-full items-start gap-10",
-        rail && "xl:grid-cols-[200px_minmax(0,1fr)]",
+        rail && "xl:grid-cols-[220px_minmax(0,1fr)]",
       )}
     >
       {rail ? (
@@ -95,10 +190,22 @@ export const HomeDashboard: FC = () => {
           <DocsRail docs={docs} project={project} onProject={setProject} />
         </aside>
       ) : null}
-      <section className="flex w-full min-w-0 flex-col gap-7">
+
+      <section className="flex w-full min-w-0 flex-col gap-8">
         <ModuleNavClaim />
-        <Header />
-        <SearchToolbar />
+        <Header
+          totalDocs={docs.length}
+          projectCount={projectCount}
+          recentCount={recentDocs.length}
+        />
+
+        <SearchToolbar
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          activeFilter={categoryFilter}
+          onFilterChange={setCategoryFilter}
+          filterCounts={filterCounts}
+        />
 
         {failed ? (
           <ErrorState
@@ -107,110 +214,173 @@ export const HomeDashboard: FC = () => {
             onRetry={() => setAttempt((value) => value + 1)}
           />
         ) : isLoading ? (
-          <div className="flex flex-col gap-3" aria-busy="true">
-            <Skeleton className="h-3 w-16" />
+          <div className="flex flex-col gap-4" aria-busy="true">
+            <Skeleton className="h-4 w-28" />
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[0, 1, 2, 3].map((tile) => (
-                <Skeleton key={tile} className="h-[124px] rounded-xl" />
+                <Skeleton key={tile} className="h-[140px] rounded-xl" />
               ))}
             </div>
             {[0, 1, 2, 3].map((row) => (
-              <Skeleton key={row} className="h-12" />
+              <Skeleton key={row} className="h-12 rounded-xl" />
             ))}
           </div>
         ) : docs.length === 0 ? (
           <>
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line-strong px-6 py-16 text-center">
-              <p className="font-serif-italic text-[2.5rem] leading-none">
-                No docs yet.
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-hairline/80 bg-surface/30 px-6 py-16 text-center">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-tint-docs text-ink shadow-sm">
+                <SparklesIcon className="size-6" />
+              </div>
+              <h2 className="font-display text-2xl font-semibold text-ink">
+                Your Knowledge Base is Empty
+              </h2>
+              <p className="max-w-[480px] text-sm text-ink-3 leading-relaxed">
+                Specs, meeting notes, and architectural decisions live here,
+                next to the tasks they explain. Start blank or pick a blueprint
+                below.
               </p>
-              <p className="max-w-[460px] text-[15px] text-ink-2">
-                Specs, meeting notes and decisions live here, next to the tasks
-                they explain. Start blank or from a template.
-              </p>
-              <CreateDocModal triggerVariant="outline" />
+              <div className="pt-2">
+                <CreateDocModal />
+              </div>
             </div>
             <TemplateRow />
           </>
         ) : (
           <>
-            <section aria-label="Recent" className="flex flex-col gap-3">
-              <h2 className="eyebrow">Recent</h2>
-              <DocTiles docs={recent} />
-            </section>
-
+            {/* Quick Start Blueprints */}
             <TemplateRow />
 
-            <section aria-label="All docs" className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-[15px] font-semibold">
-                  {project === null ? "All docs" : project || "No project"}
-                </h2>
-                <span className="font-mono text-xs text-ink-3">
-                  {sorted.length}
-                </span>
-                <span className="flex-1" />
-                <Select
-                  value={sort}
-                  onValueChange={(value) => setSort(value as Sort)}
+            {/* Recent Strip (only shown when not searching and on All filter) */}
+            {!searchQuery &&
+              categoryFilter === "all" &&
+              project === null &&
+              recentStrip.length > 0 && (
+                <section
+                  aria-label="Recent docs"
+                  className="flex flex-col gap-3"
                 >
-                  <SelectTrigger
-                    aria-label="Sort docs"
-                    className="h-8 gap-1.5 rounded-xl border-hairline bg-transparent px-2.5 text-[13px] shadow-none data-[size=default]:h-8"
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+                      Recently Edited
+                    </h2>
+                  </div>
+                  <DocTiles docs={recentStrip} />
+                </section>
+              )}
+
+            {/* Document Collection View */}
+            <section aria-label="All docs" className="flex flex-col gap-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-ink">
+                    {project === null
+                      ? categoryFilter === "specs"
+                        ? "Product Specs & RFCs"
+                        : categoryFilter === "meetings"
+                          ? "Meeting Notes"
+                          : categoryFilter === "recent"
+                            ? "Recently Updated Docs"
+                            : "All Documents"
+                      : project || "No Project"}
+                  </h2>
+                  <span className="font-mono text-xs text-ink-3">
+                    ({filteredAndSortedDocs.length})
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Sort Select */}
+                  <Select
+                    value={sort}
+                    onValueChange={(value) => setSort(value as Sort)}
                   >
-                    <span className="text-ink-3">Sort</span>
-                    <SelectValue>
-                      <span className="font-medium text-ink">
-                        {sort === "title"
-                          ? "Title"
-                          : sort === "project"
-                            ? "Project"
-                            : "Last edited"}
-                      </span>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="edited">Last edited</SelectItem>
-                    <SelectItem value="title">Title</SelectItem>
-                    <SelectItem value="project">Project</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div
-                  role="radiogroup"
-                  aria-label="View"
-                  className="flex gap-0.5 rounded-xl border border-hairline bg-surface p-[3px]"
-                >
-                  {(
-                    [
-                      ["table", ListIcon, "Table"],
-                      ["grid", Grid2X2Icon, "Grid"],
-                    ] as const
-                  ).map(([value, Icon, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      role="radio"
-                      aria-checked={view === value}
-                      aria-label={`${label} view`}
-                      onClick={() => setView(value)}
-                      className={cn(
-                        "flex h-[26px] items-center gap-1.5 rounded-[9px] px-2.5 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        view === value
-                          ? "bg-ink text-ink-inverse"
-                          : "text-ink-2 hover:text-ink",
-                      )}
+                    <SelectTrigger
+                      aria-label="Sort docs"
+                      className="h-8 gap-1.5 rounded-lg border-hairline bg-surface/80 px-2.5 text-xs shadow-none data-[size=default]:h-8"
                     >
-                      <Icon className="size-3.5" aria-hidden="true" />
-                      {label}
-                    </button>
-                  ))}
+                      <span className="text-ink-3">Sort:</span>
+                      <SelectValue>
+                        <span className="font-medium text-ink">
+                          {sort === "title"
+                            ? "Title (A-Z)"
+                            : sort === "project"
+                              ? "Project"
+                              : "Last edited"}
+                        </span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="edited">Last edited</SelectItem>
+                      <SelectItem value="title">Title (A-Z)</SelectItem>
+                      <SelectItem value="project">Project</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* View Mode Toggle: Grid / Table / Grouped */}
+                  <div
+                    role="radiogroup"
+                    aria-label="View mode"
+                    className="flex gap-0.5 rounded-lg border border-hairline bg-surface p-0.5"
+                  >
+                    {(
+                      [
+                        ["grid", Grid2X2Icon, "Grid"],
+                        ["table", ListIcon, "Table"],
+                        ["grouped", FolderKanbanIcon, "Grouped"],
+                      ] as const
+                    ).map(([value, Icon, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={view === value}
+                        aria-label={`${label} view`}
+                        onClick={() => setView(value)}
+                        className={cn(
+                          "flex h-[26px] items-center gap-1.5 rounded-md px-2.5 text-xs transition-colors outline-none",
+                          view === value
+                            ? "bg-ink text-ink-inverse font-medium"
+                            : "text-ink-3 hover:text-ink hover:bg-hover",
+                        )}
+                        title={`${label} view`}
+                      >
+                        <Icon className="size-3.5" aria-hidden="true" />
+                        <span className="hidden sm:inline">{label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-              {view === "table" ? (
-                <DocTable docs={sorted} />
+
+              {/* Render Selected View */}
+              {filteredAndSortedDocs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-hairline py-12 text-center">
+                  <p className="text-sm font-medium text-ink">
+                    No documents match your search or filter
+                  </p>
+                  <p className="mt-1 text-xs text-ink-3">
+                    Try clearing the search query or switching categories.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="mt-3 text-xs"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setCategoryFilter("all");
+                      setProject(null);
+                    }}
+                  >
+                    Reset all filters
+                  </Button>
+                </div>
+              ) : view === "table" ? (
+                <DocTable docs={filteredAndSortedDocs} />
+              ) : view === "grouped" ? (
+                <DocGrouped docs={filteredAndSortedDocs} />
               ) : (
                 <DocTiles
-                  docs={sorted}
+                  docs={filteredAndSortedDocs}
                   columns="sm:grid-cols-2 xl:grid-cols-3"
                 />
               )}
