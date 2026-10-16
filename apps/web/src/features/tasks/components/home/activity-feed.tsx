@@ -26,18 +26,18 @@ type Props = {
 
 const ActivityItem = ({ event }: { event: ActivityEvent }) => {
   return (
-    <div className="flex gap-3">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <ActivityIcon className="size-4" />
+    <div className="flex gap-3 items-start">
+      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-signal/10 text-signal mt-0.5">
+        <ActivityIcon className="size-3.5" />
       </div>
 
       <div className="min-w-0">
-        <p className="text-sm leading-5">
-          <span className="font-medium">{event.actor}</span>{" "}
-          <span className="text-muted-foreground">{event.action}</span>{" "}
-          <span className="font-medium">{event.target}</span>
+        <p className="text-[13px] leading-snug">
+          <span className="font-semibold text-ink">{event.actor}</span>{" "}
+          <span className="text-ink-3">{event.action}</span>{" "}
+          <span className="font-medium text-ink-2">{event.target}</span>
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">{event.time}</p>
+        <p className="mt-1 font-mono text-[11px] text-ink-3">{event.time}</p>
       </div>
     </div>
   );
@@ -47,23 +47,29 @@ export const ActivityFeed = ({ events }: Props) => {
   const previewEvents = events.slice(0, 3);
 
   return (
-    <Card className="rounded-lg">
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+    <Card className="rounded-2xl border border-hairline/80 bg-surface/80 p-5 shadow-2xs">
+      <CardHeader className="p-0 pb-4 flex flex-row items-start justify-between gap-4 space-y-0">
         <div>
-          <CardTitle className="text-base">Recent activity</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-[15px] font-semibold text-ink">
+            Recent activity
+          </CardTitle>
+          <CardDescription className="text-xs text-ink-3">
             Latest task updates across your workspace.
           </CardDescription>
         </div>
 
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <ExternalLinkIcon className="size-3.5" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 rounded-lg border-hairline px-2.5 text-xs font-medium"
+            >
+              <ExternalLinkIcon className="size-3" />
               View all
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-2xl">
+          <DialogContent className="max-h-[85vh] overflow-hidden rounded-2xl border-hairline sm:max-w-2xl">
             <DialogHeader className="shrink-0">
               <DialogTitle>All activity</DialogTitle>
               <DialogDescription>

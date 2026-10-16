@@ -80,14 +80,14 @@ export const TaskBoard: FC<Props> = ({
               aria-label={statusLabels[status]}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => handleDrop(event, status)}
-              className="flex flex-col gap-2 rounded-xl border border-hairline/60 bg-sunken p-2.5"
+              className="flex flex-col gap-2.5 rounded-2xl border border-hairline/70 bg-surface/40 p-3 shadow-2xs transition-colors hover:border-hairline"
             >
-              <div className="flex h-8 items-center gap-2 px-1.5">
-                <StatusGlyph status={status} size={12} decorative />
-                <h2 className="text-sm font-semibold text-ink">
+              <div className="flex h-8 items-center gap-2 px-1">
+                <StatusGlyph status={status} size={13} decorative />
+                <h2 className="text-[13px] font-semibold text-ink">
                   {statusLabels[status]}
                 </h2>
-                <span className="font-mono text-xs text-ink-3">
+                <span className="font-mono text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted/70 text-ink-3">
                   {allTasks.length}
                 </span>
                 <span className="flex-1" />
@@ -98,15 +98,15 @@ export const TaskBoard: FC<Props> = ({
                     <button
                       type="button"
                       aria-label={`Create a task in ${statusLabels[status]}`}
-                      className="flex size-7 items-center justify-center rounded-sm text-ink-3 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex size-6 items-center justify-center rounded-md text-ink-3 transition-colors outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      <PlusIcon className="size-4" aria-hidden="true" />
+                      <PlusIcon className="size-3.5" aria-hidden="true" />
                     </button>
                   }
                 />
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2.5">
                 {columnTasks.length ? (
                   columnTasks.map((task) => (
                     <div

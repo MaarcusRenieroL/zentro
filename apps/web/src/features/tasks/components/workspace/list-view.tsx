@@ -359,8 +359,8 @@ export const ListView: FC<Props> = ({
         const isClosed = closed[section.id] ?? section.collapsed;
 
         return (
-          <section key={section.id} aria-label={section.label}>
-            <h3 className="m-0 flex h-9 items-center rounded-md pr-1 hover:bg-hover sm:pr-2">
+          <section key={section.id} aria-label={section.label} className="mb-4">
+            <h3 className="m-0 flex h-9 items-center rounded-lg bg-surface/50 border border-hairline/60 pr-1 hover:bg-hover/80 transition-colors mb-1 sm:pr-2">
               <button
                 type="button"
                 aria-expanded={!isClosed}
@@ -370,7 +370,7 @@ export const ListView: FC<Props> = ({
                     [section.id]: !isClosed,
                   }))
                 }
-                className="flex h-full min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
+                className="flex h-full min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-left text-xs font-semibold uppercase tracking-wider text-ink outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-3"
               >
                 {isClosed ? (
                   <ChevronRightIcon

@@ -47,40 +47,50 @@ export const TaskListCard: FC<Props> = ({
   detail,
 }) => {
   return (
-    <Card className="rounded-lg">
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+    <Card className="rounded-2xl border border-hairline/80 bg-surface/80 p-5 shadow-2xs">
+      <CardHeader className="p-0 pb-4">
+        <CardTitle className="text-[15px] font-semibold text-ink">
+          {title}
+        </CardTitle>
+        <CardDescription className="text-xs text-ink-3">
+          {description}
+        </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="p-0 space-y-2.5">
         {tasks.length ? (
           tasks.map((task) => (
             <Link
               key={task.id}
               href={paths.task(task.key)}
-              className="flex min-w-0 items-center justify-between gap-3 rounded-md border p-3 transition-colors hover:bg-muted/50"
+              className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-hairline/70 bg-surface/40 p-3 transition-all hover:border-signal/40 hover:bg-surface hover:shadow-2xs"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{task.name}</p>
-                <p className="mt-1 truncate text-xs text-muted-foreground">
-                  {task.key} · {task.project}
+                <p className="truncate text-[13px] font-medium text-ink">
+                  {task.name}
+                </p>
+                <p className="mt-0.5 truncate font-mono text-[11px] text-ink-3">
+                  <span className="font-semibold text-ink-2">{task.key}</span> ·{" "}
+                  {task.project}
                 </p>
               </div>
 
               <div className="flex shrink-0 flex-col items-end gap-1 text-xs">
-                <Badge variant="secondary">
+                <Badge
+                  variant="secondary"
+                  className="rounded-md border-hairline bg-muted/70 px-2 py-0.5 text-[11px] font-medium"
+                >
                   {statusLabels[task.status as TaskStatus] ?? task.status}
                 </Badge>
                 <span
                   className={cn(
-                    "capitalize text-muted-foreground",
+                    "text-[11px] text-ink-3",
                     detail === "due" &&
                       priorityStyles[task.priority as TaskPriority],
                   )}
                 >
                   {detail === "due" ? (
-                    <DueDate value={task.dueAt} />
+                    <DueDate value={task.dueAt} className="text-[11px]" />
                   ) : (
                     formatRelativeTime(task.updatedAt)
                   )}
@@ -89,7 +99,7 @@ export const TaskListCard: FC<Props> = ({
             </Link>
           ))
         ) : (
-          <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+          <p className="rounded-xl border border-dashed border-hairline p-6 text-center text-xs text-ink-3">
             {emptyMessage}
           </p>
         )}

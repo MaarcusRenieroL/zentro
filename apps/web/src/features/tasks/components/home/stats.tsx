@@ -65,24 +65,29 @@ export const TaskStats: FC<Props> = ({ counts }) => {
   ];
 
   return (
-    <section className="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid w-full gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map(({ id, icon: Icon, count, label, timeframe }) => (
-        <Card key={id} className="rounded-lg">
-          <CardHeader className="flex flex-row items-center gap-3 space-y-0">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <Card
+          key={id}
+          className="rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-signal/10 text-signal">
               <Icon className="size-5" aria-hidden="true" />
             </div>
 
             <div className="min-w-0">
-              <CardTitle className="flex items-baseline gap-1 text-base font-semibold">
-                <span>{count}</span>
-                <span className="truncate">{label}</span>
-              </CardTitle>
-              <CardDescription className="truncate">
-                {timeframe}
-              </CardDescription>
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-mono text-xl font-bold tracking-tight text-ink">
+                  {count}
+                </span>
+                <span className="truncate text-xs font-medium text-ink-2">
+                  {label}
+                </span>
+              </div>
+              <p className="truncate text-[11px] text-ink-3">{timeframe}</p>
             </div>
-          </CardHeader>
+          </div>
         </Card>
       ))}
     </section>
