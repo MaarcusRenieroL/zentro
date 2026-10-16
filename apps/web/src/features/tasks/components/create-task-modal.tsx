@@ -30,7 +30,7 @@ import {
 } from "@zentro/ui/shadcn/select";
 import { cn } from "@zentro/ui/lib/utils";
 import { toastError, toastSuccess } from "@zentro/ui/index";
-import { CalendarIcon, PlusIcon, XIcon } from "lucide-react";
+import { AlertCircleIcon, CalendarIcon, PlusIcon, XIcon } from "lucide-react";
 import { Kbd } from "@zentro/ui/components/kbd";
 import {
   type FC,
@@ -178,6 +178,9 @@ const CreateTaskModalInner: FC<Props> = ({
   };
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
+  const [oooMembers, setOooMembers] = useState<
+    Record<string, { untilDate?: string | null }>
+  >({});
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
@@ -212,7 +215,9 @@ const CreateTaskModalInner: FC<Props> = ({
   }, [open, defaultName, defaultDescription, defaultProjectId, setValue]);
 
   const chosenProject = useWatch({ control, name: "projectId" });
+  const chosenAssigneeId = useWatch({ control, name: "assignedToMemberId" });
   const selected = projects.find((project) => project.id === chosenProject);
+  const assigneeOoo = chosenAssigneeId ? oooMembers[chosenAssigneeId] : null;
   const errorCount = Object.keys(errors).length;
 
   useEffect(() => {
@@ -225,11 +230,20 @@ const CreateTaskModalInner: FC<Props> = ({
       setIsLoadingMembers(true);
 
       try {
-        const [projectList, memberList] = await Promise.all([
+        const [projectList, memberList, oooList] = await Promise.all([
           trpc.project.getProjectsByOrgId.query(),
           // Needs members.view; without it tasks are created unassigned.
           trpc.member.getMembers.query().catch(() => []),
+          trpc.member.getOutOfOffice.query().catch(() => []),
         ]);
+
+        if (!isMounted) return;
+
+        const oooRecord: Record<string, { untilDate?: string | null }> = {};
+        for (const item of oooList) {
+          oooRecord[item.memberId] = { untilDate: item.untilDate };
+        }
+        setOooMembers(oooRecord);
 
         if (!isMounted) return;
 
@@ -582,15 +596,36 @@ const CreateTaskModalInner: FC<Props> = ({
                           />
                           Unassigned
                         </SelectItem>
-                        {members.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            <ActorAvatar name={member.name} size={22} />
-                            {member.name}
-                            {member.userId === userId ? " (you)" : ""}
-                          </SelectItem>
-                        ))}
+                        {members.map((member) => {
+                          const isAway = Boolean(oooMembers[member.id]);
+                          return (
+                            <SelectItem key={member.id} value={member.id}>
+                              <ActorAvatar name={member.name} size={22} />
+                              <span>{member.name}</span>
+                              {member.userId === userId ? " (you)" : ""}
+                              {isAway ? (
+                                <span className="ml-1 rounded border border-warning/30 bg-warning-subtle px-1 py-0.2 font-mono text-[10px] font-semibold text-warning-text">
+                                  Away
+                                </span>
+                              ) : null}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
+                    {assigneeOoo ? (
+                      <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning-subtle/50 px-2.5 py-1.5 text-xs text-warning-text">
+                        <AlertCircleIcon className="size-3.5 shrink-0" />
+                        <span>
+                          This teammate is currently{" "}
+                          <strong>Out of Office</strong>
+                          {assigneeOoo.untilDate
+                            ? ` until ${assigneeOoo.untilDate}`
+                            : ""}
+                          . Assignment may delay progress.
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
                 )}
               />

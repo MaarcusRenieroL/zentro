@@ -9,6 +9,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   GaugeIcon,
+  PalmtreeIcon,
   ScaleIcon,
   SparklesIcon,
   UsersIcon,
@@ -77,6 +78,61 @@ export const TeamWorkloadBalancer: FC<Props> = ({
   >({});
   const [localTasks, setLocalTasks] = useState<WorkloadTask[]>(tasks);
   const [reassigningKey, setReassigningKey] = useState<string | null>(null);
+  const [oooMembers, setOooMembers] = useState<
+    Record<string, { untilDate?: string | null }>
+  >({});
+  const [togglingOooMemberId, setTogglingOooMemberId] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    trpc.member.getOutOfOffice
+      .query()
+      .then((list) => {
+        if (!isMounted) return;
+        const map: Record<string, { untilDate?: string | null }> = {};
+        for (const item of list) {
+          map[item.memberId] = { untilDate: item.untilDate };
+        }
+        setOooMembers(map);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [trpc]);
+
+  const toggleMemberOoo = async (memberId: string, isAway: boolean) => {
+    if (togglingOooMemberId) return;
+    setTogglingOooMemberId(memberId);
+
+    const prev = { ...oooMembers };
+    setOooMembers((current) => {
+      const next = { ...current };
+      if (isAway) {
+        next[memberId] = { untilDate: null };
+      } else {
+        delete next[memberId];
+      }
+      return next;
+    });
+
+    try {
+      await trpc.member.toggleOutOfOffice.mutate({
+        memberId,
+        isOutOfOffice: isAway,
+      });
+      toastSuccess(
+        isAway ? "Teammate marked Out of Office" : "Teammate marked Available",
+      );
+    } catch {
+      setOooMembers(prev);
+      toastError("Error", "Could not update Out of Office status");
+    } finally {
+      setTogglingOooMemberId(null);
+    }
+  };
 
   // Sync tasks when props change
   useEffect(() => {
@@ -144,6 +200,7 @@ export const TeamWorkloadBalancer: FC<Props> = ({
       0,
     );
     const utilization = Math.min(200, Math.round((assigned.length / 5) * 100));
+    const isOoo = Boolean(oooMembers[member.memberId]);
 
     return {
       ...member,
@@ -154,6 +211,8 @@ export const TeamWorkloadBalancer: FC<Props> = ({
       utilizationPercent: utilization,
       isOverloaded: assigned.length > 5 || overdue > 1,
       isUnderutilized: assigned.length <= 1,
+      isOoo,
+      oooInfo: oooMembers[member.memberId],
       assignedTasks: assigned,
     };
   });
@@ -162,6 +221,7 @@ export const TeamWorkloadBalancer: FC<Props> = ({
   const underutilizedCount = liveMemberLoads.filter(
     (m) => m.isUnderutilized,
   ).length;
+  const oooCount = liveMemberLoads.filter((m) => m.isOoo).length;
   const totalOpenPoints = openTasks.reduce(
     (sum, t) => sum + (t.estimatePoints ?? 0),
     0,
@@ -313,7 +373,12 @@ export const TeamWorkloadBalancer: FC<Props> = ({
                       <span className="font-semibold text-sm text-ink truncate">
                         {member.name}
                       </span>
-                      {member.isOverloaded ? (
+                      {member.isOoo ? (
+                        <span className="rounded-md bg-warning-subtle border border-warning/30 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-warning-text flex items-center gap-1">
+                          <PalmtreeIcon className="size-3" />
+                          OUT OF OFFICE
+                        </span>
+                      ) : member.isOverloaded ? (
                         <span className="rounded-md bg-danger-subtle border border-danger/30 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-danger-text">
                           OVERLOADED
                         </span>
@@ -366,6 +431,29 @@ export const TeamWorkloadBalancer: FC<Props> = ({
                       </span>
                     ) : null}
                   </div>
+
+                  <button
+                    type="button"
+                    title={
+                      member.isOoo
+                        ? "Mark as Available"
+                        : "Mark as Out of Office"
+                    }
+                    disabled={togglingOooMemberId === member.memberId}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void toggleMemberOoo(member.memberId, !member.isOoo);
+                    }}
+                    className={cn(
+                      "flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors shrink-0",
+                      member.isOoo
+                        ? "border-warning/30 bg-warning-subtle text-warning-text hover:bg-warning-subtle/80"
+                        : "border-hairline bg-surface text-ink-3 hover:text-ink hover:bg-hover",
+                    )}
+                  >
+                    <PalmtreeIcon className="size-3" />
+                    <span>{member.isOoo ? "Away" : "Set Away"}</span>
+                  </button>
 
                   {isExpanded ? (
                     <ChevronUpIcon className="size-4 text-ink-3" />
@@ -463,14 +551,18 @@ export const TeamWorkloadBalancer: FC<Props> = ({
                                     <span
                                       className={cn(
                                         "font-mono text-[10px] px-1.5 py-0.5 rounded shrink-0 font-medium",
-                                        target.isUnderutilized
-                                          ? "text-success-text bg-success-subtle"
-                                          : target.isOverloaded
-                                            ? "text-danger-text bg-danger-subtle"
-                                            : "text-ink-3 bg-sunken",
+                                        target.isOoo
+                                          ? "text-warning-text bg-warning-subtle border border-warning/20"
+                                          : target.isUnderutilized
+                                            ? "text-success-text bg-success-subtle"
+                                            : target.isOverloaded
+                                              ? "text-danger-text bg-danger-subtle"
+                                              : "text-ink-3 bg-sunken",
                                       )}
                                     >
-                                      {target.openCount} open
+                                      {target.isOoo
+                                        ? "Away"
+                                        : `${target.openCount} open`}
                                     </span>
                                   </DropdownMenuItem>
                                 ))}

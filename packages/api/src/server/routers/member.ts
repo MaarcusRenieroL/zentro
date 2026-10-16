@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { auth } from "@zentro/auth";
-import { and, asc, eq } from "@zentro/db/drizzle";
-import { members, roles, users } from "@zentro/db/schema";
+import { and, asc, desc, eq } from "@zentro/db/drizzle";
+import { activityEvents, members, roles, users } from "@zentro/db/schema";
 import { z } from "zod";
 
 import { assertHoldsAll } from "../access";
@@ -227,5 +227,72 @@ export const memberRouter = router({
       });
 
       return { memberId: target.id };
+    }),
+
+  getOutOfOffice: permissionProcedure("members.view").query(async ({ ctx }) => {
+    const { db, activeOrganization } = ctx;
+    const events = await db
+      .select({
+        targetId: activityEvents.targetId,
+        metadata: activityEvents.metadata,
+        createdAt: activityEvents.createdAt,
+      })
+      .from(activityEvents)
+      .where(
+        and(
+          eq(activityEvents.organizationId, activeOrganization.id),
+          eq(activityEvents.targetType, "member"),
+          eq(activityEvents.action, "member.out_of_office"),
+        ),
+      )
+      .orderBy(desc(activityEvents.createdAt));
+
+    const latest = new Map<
+      string,
+      { isOutOfOffice: boolean; untilDate?: string | null }
+    >();
+    for (const ev of events) {
+      if (!latest.has(ev.targetId)) {
+        const meta = (ev.metadata ?? {}) as Record<string, any>;
+        latest.set(ev.targetId, {
+          isOutOfOffice: Boolean(meta.isOutOfOffice),
+          untilDate: (meta.untilDate as string) || null,
+        });
+      }
+    }
+
+    const oooList: Array<{ memberId: string; untilDate?: string | null }> = [];
+    latest.forEach((val, memberId) => {
+      if (val.isOutOfOffice) {
+        oooList.push({ memberId, untilDate: val.untilDate });
+      }
+    });
+
+    return oooList;
+  }),
+
+  toggleOutOfOffice: permissionProcedure("members.view")
+    .input(
+      z.object({
+        memberId: z.string().uuid(),
+        isOutOfOffice: z.boolean(),
+        untilDate: z.string().optional().nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { db, activeOrganization, user } = ctx;
+      const target = await loadTargetMember(ctx, input.memberId);
+      const label = await userLabel(ctx, target.userId);
+
+      await ctx.audit.record(db, {
+        action: "member.out_of_office",
+        target: { id: target.id, label },
+        metadata: {
+          isOutOfOffice: input.isOutOfOffice,
+          untilDate: input.untilDate ?? null,
+        },
+      });
+
+      return { memberId: target.id, isOutOfOffice: input.isOutOfOffice };
     }),
 });
