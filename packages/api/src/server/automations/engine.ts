@@ -5,7 +5,9 @@ type TriggerEvent =
   | "task.status_changed"
   | "task.subtasks_all_done"
   | "task.blockers_resolved"
-  | "task.created";
+  | "task.created"
+  | "task.due_date_approaching"
+  | "task.sla_breach_risk";
 
 type TaskContext = {
   id: string;

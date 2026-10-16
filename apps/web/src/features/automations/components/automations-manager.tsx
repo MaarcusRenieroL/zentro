@@ -47,6 +47,8 @@ const TRIGGER_LABELS: Record<string, string> = {
   "task.subtasks_all_done": "All Subtasks Completed",
   "task.blockers_resolved": "Blockers Cleared",
   "task.created": "New Task Created",
+  "task.due_date_approaching": "SLA & Due Date Approaching (<24h)",
+  "task.sla_breach_risk": "SLA Breach Risk",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -67,6 +69,8 @@ export const AutomationsManager: FC = () => {
     | "task.subtasks_all_done"
     | "task.blockers_resolved"
     | "task.created"
+    | "task.due_date_approaching"
+    | "task.sla_breach_risk"
   >("task.subtasks_all_done");
   const [toStatus, setToStatus] = useState("in-progress");
   const [actionType, setActionType] = useState<
@@ -75,6 +79,7 @@ export const AutomationsManager: FC = () => {
   const [targetStatus, setTargetStatus] = useState("review");
   const [priority, setPriority] = useState("high");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEscalating, setIsEscalating] = useState(false);
 
   const fetchRules = async () => {
     try {
@@ -141,6 +146,27 @@ export const AutomationsManager: FC = () => {
     }
   };
 
+  const handleRunEscalation = async () => {
+    setIsEscalating(true);
+    try {
+      const res = await trpc.automation.escalateDueSLA.mutate();
+      if (res.escalatedCount > 0) {
+        toastSuccess(
+          `Escalated ${res.escalatedCount} task(s) approaching deadline to High priority!`,
+        );
+      } else {
+        toastSuccess(
+          "All open tasks are on schedule; zero SLA breaches detected.",
+        );
+      }
+      void fetchRules();
+    } catch {
+      toastError("Error", "Failed to run SLA escalation check");
+    } finally {
+      setIsEscalating(false);
+    }
+  };
+
   const handleCreateCustom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -197,6 +223,17 @@ export const AutomationsManager: FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleRunEscalation}
+            disabled={isEscalating}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-warning/40 bg-warning-subtle px-3 py-2 text-xs font-semibold text-warning-text hover:bg-warning/20 transition-all cursor-pointer"
+            title="Scan and escalate tasks within 24 hours of deadline"
+          >
+            <ClockIcon className="size-3.5" />
+            <span>{isEscalating ? "Escalating..." : "Run SLA Escalator"}</span>
+          </button>
+
           {rules.length === 0 ? (
             <button
               type="button"
@@ -278,6 +315,12 @@ export const AutomationsManager: FC = () => {
                       All Blocking Dependencies are Cleared
                     </option>
                     <option value="task.created">New Task is Created</option>
+                    <option value="task.due_date_approaching">
+                      SLA & Due Date Approaching (&lt;24 hours)
+                    </option>
+                    <option value="task.sla_breach_risk">
+                      SLA Breach Risk (Overdue & Open)
+                    </option>
                   </select>
 
                   {triggerEvent === "task.status_changed" ? (
