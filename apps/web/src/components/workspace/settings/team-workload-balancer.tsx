@@ -178,19 +178,21 @@ export const TeamWorkloadBalancer: FC<Props> = ({
   return (
     <div className="flex flex-col gap-5">
       {/* Overview Analytics Bar */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="tile p-3.5 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>Avg Capacity</span>
-            <GaugeIcon className="size-4 text-signal" />
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">Avg Capacity</span>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-signal/10 text-signal">
+              <GaugeIcon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-xl font-bold font-mono text-ink">
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="font-mono text-xl font-bold tracking-tight text-ink">
               {avgUtilization}%
             </span>
             <span className="text-xs text-ink-3">utilized</span>
           </div>
-          <div className="h-1.5 w-full bg-sunken rounded-full overflow-hidden mt-1">
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
             <div
               className={cn(
                 "h-full rounded-full transition-all duration-300",
@@ -205,15 +207,17 @@ export const TeamWorkloadBalancer: FC<Props> = ({
           </div>
         </div>
 
-        <div className="tile p-3.5 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>Overallocated</span>
-            <AlertCircleIcon className="size-4 text-rose-500" />
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">Overallocated</span>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500">
+              <AlertCircleIcon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-1.5 mt-1">
+          <div className="mt-1 flex items-baseline gap-1.5">
             <span
               className={cn(
-                "text-xl font-bold font-mono",
+                "font-mono text-xl font-bold tracking-tight",
                 overloadedCount > 0 ? "text-rose-500" : "text-ink",
               )}
             >
@@ -221,43 +225,47 @@ export const TeamWorkloadBalancer: FC<Props> = ({
             </span>
             <span className="text-xs text-ink-3">members</span>
           </div>
-          <p className="text-[11px] text-ink-3 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             {overloadedCount > 0
               ? "Rebalance tasks below"
               : "All within safe limits"}
           </p>
         </div>
 
-        <div className="tile p-3.5 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>Available</span>
-            <CheckCircle2Icon className="size-4 text-emerald-500" />
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">Available</span>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+              <CheckCircle2Icon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-xl font-bold font-mono text-emerald-500">
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="font-mono text-xl font-bold tracking-tight text-emerald-500">
               {underutilizedCount}
             </span>
             <span className="text-xs text-ink-3">can take work</span>
           </div>
-          <p className="text-[11px] text-ink-3 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             Teammates with light backlog
           </p>
         </div>
 
-        <div className="tile p-3.5 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>In-Flight Work</span>
-            <ScaleIcon className="size-4 text-ink-3" />
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">In-Flight Work</span>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-muted/60 text-ink-3">
+              <ScaleIcon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-xl font-bold font-mono text-ink">
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="font-mono text-xl font-bold tracking-tight text-ink">
               {openTasks.length}
             </span>
             <span className="text-xs text-ink-3">
               tasks {totalOpenPoints > 0 ? `(${totalOpenPoints}pts)` : ""}
             </span>
           </div>
-          <p className="text-[11px] text-ink-3 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             Total open tasks across team
           </p>
         </div>

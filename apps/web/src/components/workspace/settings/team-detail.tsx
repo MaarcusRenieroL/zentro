@@ -228,22 +228,22 @@ export function TeamDetail({ teamId }: { teamId: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="tile flex min-w-0 flex-col gap-1 p-4"
+            className="flex min-w-0 flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs"
           >
-            <span className="eyebrow">{stat.label}</span>
+            <span className="eyebrow text-ink-3">{stat.label}</span>
             <span
               className={cn(
-                "font-serif-italic text-[2.25rem] leading-10",
+                "font-mono text-3xl font-bold tracking-tight text-ink",
                 stat.tone && "text-danger-text",
               )}
             >
               {stat.value}
             </span>
-            <span className="truncate text-xs text-ink-2">{stat.note}</span>
+            <span className="truncate text-xs text-ink-3">{stat.note}</span>
           </div>
         ))}
       </div>
