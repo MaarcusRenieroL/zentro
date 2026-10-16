@@ -4,7 +4,7 @@ import { useEffect, useState, type FC, type ReactNode } from "react";
 import { XIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
-import { StatusGlyph } from "@zentro/ui/components/status-glyph";
+import { PriorityMeter, StatusGlyph } from "@zentro/ui/components/status-glyph";
 import { cn } from "@zentro/ui/lib/utils";
 import {
   AlertDialog,
@@ -35,6 +35,7 @@ import { useReachable } from "~/src/components/permissions/permission-provider";
 import { statusLabels } from "~/src/features/tasks/lib/constants";
 import type {
   BulkChange,
+  TaskPriority,
   TaskStatus,
   WorkspaceTask,
 } from "~/src/features/tasks/lib/types";
@@ -147,6 +148,31 @@ export const BulkBar: FC<Props> = ({
           >
             <StatusGlyph status={status} size={12} decorative />
             {statusLabels[status]}
+          </DropdownMenuItem>
+        )),
+      )}
+
+      {menu(
+        "Priority",
+        (["high", "medium", "low"] as TaskPriority[]).map((priority) => (
+          <DropdownMenuItem
+            key={priority}
+            onSelect={() => onChange?.(selected, { priority })}
+          >
+            <PriorityMeter priority={priority} />
+            <span className="capitalize">{priority}</span>
+          </DropdownMenuItem>
+        )),
+      )}
+
+      {menu(
+        "Estimate",
+        [1, 2, 3, 5, 8, null].map((pts) => (
+          <DropdownMenuItem
+            key={pts ?? "clear"}
+            onSelect={() => onChange?.(selected, { estimatePoints: pts })}
+          >
+            {pts !== null ? `${pts} pts` : "Clear estimate"}
           </DropdownMenuItem>
         )),
       )}

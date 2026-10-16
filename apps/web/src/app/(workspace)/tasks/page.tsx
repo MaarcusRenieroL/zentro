@@ -89,7 +89,11 @@ export default function TasksPage() {
         ? task.status !== change.status
         : "dueAt" in change
           ? task.dueAt !== change.dueAt
-          : task.assigneeUserId !== change.assigneeUserId,
+          : "priority" in change
+            ? task.priority !== change.priority
+            : "estimatePoints" in change
+              ? task.estimatePoints !== change.estimatePoints
+              : task.assigneeUserId !== change.assigneeUserId,
     );
 
     if (!targets.length) return;
@@ -105,10 +109,14 @@ export default function TasksPage() {
                 ? new Date(change.dueAt).toDateString()
                 : "",
             }
-          : {
-              assignee: change.assignee,
-              assigneeUserId: change.assigneeUserId,
-            };
+          : "priority" in change
+            ? { priority: change.priority }
+            : "estimatePoints" in change
+              ? { estimatePoints: change.estimatePoints }
+              : {
+                  assignee: change.assignee,
+                  assigneeUserId: change.assigneeUserId,
+                };
 
     setTasks(
       (current) =>
@@ -122,7 +130,11 @@ export default function TasksPage() {
         ? { status: change.status }
         : "dueAt" in change
           ? { dueAt: change.dueAt ? new Date(change.dueAt) : null }
-          : { assignedToMemberId: change.assignedToMemberId };
+          : "priority" in change
+            ? { priority: change.priority }
+            : "estimatePoints" in change
+              ? { estimatePoints: change.estimatePoints }
+              : { assignedToMemberId: change.assignedToMemberId };
     const results = await Promise.allSettled(
       targets.map((task) =>
         trpc.task.updateTaskByKey.mutate({ key: task.key, ...input }),

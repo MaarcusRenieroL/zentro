@@ -2,24 +2,36 @@
 
 import { BlockedChip } from "./blocked-chip";
 import Link from "next/link";
-import { useMemo, useState, type FC, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FC,
+  type ReactNode,
+} from "react";
 import {
   CheckIcon,
   CheckSquareIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ClockIcon,
+  KeyboardIcon,
   PlusIcon,
 } from "lucide-react";
 
+import { Kbd } from "@zentro/ui/components/kbd";
 import { StatusGlyph, PriorityMeter } from "@zentro/ui/components/status-glyph";
 import { cn } from "@zentro/ui/lib/utils";
 
 import { ActorAvatar } from "~/src/components/actor-avatar";
 import { DueDate } from "~/src/components/due-date";
+import { ShortcutsDialog } from "~/src/components/shortcuts-dialog";
 import { statusLabels } from "~/src/features/tasks/lib/constants";
 import type {
   BulkChange,
+  TaskPriority,
   TaskStatus,
   WorkspaceTask,
 } from "~/src/features/tasks/lib/types";
@@ -183,15 +195,25 @@ export const ListView: FC<Props> = ({
   onTaskCreated,
   empty,
 }) => {
+  const router = useRouter();
   const [closed, setClosed] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const focusedRowRef = useRef<HTMLLIElement | null>(null);
 
   const sections = useMemo(
     () => buildSections(sortTasks(tasks, sort), group),
     [tasks, sort, group],
   );
 
-  if (!tasks.length) return empty ?? <EmptyTasks />;
+  const visibleTasks = useMemo(() => {
+    return sections.flatMap((section) => {
+      const isClosed = closed[section.id] ?? section.collapsed;
+      return isClosed ? [] : section.rows;
+    });
+  }, [sections, closed]);
 
   const chosen = tasks.filter((task) => selected.has(task.id));
   const selectable = Boolean(onTasksChange || onTasksDelete);
@@ -204,6 +226,132 @@ export const ListView: FC<Props> = ({
 
       return next;
     });
+
+  useEffect(() => {
+    if (focusedIndex !== null && focusedRowRef.current) {
+      focusedRowRef.current.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [focusedIndex]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest("[role='dialog']") ||
+          target.closest("[role='menu']"))
+      ) {
+        return;
+      }
+
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusedIndex((prev) =>
+          prev === null ? 0 : Math.min(visibleTasks.length - 1, prev + 1),
+        );
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusedIndex((prev) =>
+          prev === null ? visibleTasks.length - 1 : Math.max(0, prev - 1),
+        );
+      } else if (e.key === "x") {
+        e.preventDefault();
+        if (focusedIndex !== null && visibleTasks[focusedIndex]) {
+          toggle(visibleTasks[focusedIndex].id);
+        }
+      } else if (e.key === "A" && e.shiftKey) {
+        e.preventDefault();
+        setSelected(new Set(visibleTasks.map((t) => t.id)));
+      } else if (e.key === "Escape") {
+        if (selected.size > 0) {
+          setSelected(new Set());
+        } else {
+          setFocusedIndex(null);
+        }
+      } else if (e.key === "Enter" || e.key === "o") {
+        if (focusedIndex !== null && visibleTasks[focusedIndex]) {
+          router.push(paths.task(visibleTasks[focusedIndex].key));
+        }
+      } else if (e.key === "s" || e.key === "S") {
+        const targets =
+          chosen.length > 0
+            ? chosen
+            : focusedIndex !== null && visibleTasks[focusedIndex]
+              ? [visibleTasks[focusedIndex]]
+              : [];
+        if (targets.length > 0 && onTasksChange) {
+          e.preventDefault();
+          const statusCycle: TaskStatus[] = [
+            "todo",
+            "in-progress",
+            "review",
+            "done",
+            "backlog",
+          ];
+          const curr = targets[0]?.status ?? "todo";
+          const next =
+            statusCycle[(statusCycle.indexOf(curr) + 1) % statusCycle.length] ??
+            "todo";
+          onTasksChange(targets, { status: next });
+        }
+      } else if (e.key === "p" || e.key === "P") {
+        const targets =
+          chosen.length > 0
+            ? chosen
+            : focusedIndex !== null && visibleTasks[focusedIndex]
+              ? [visibleTasks[focusedIndex]]
+              : [];
+        if (targets.length > 0 && onTasksChange) {
+          e.preventDefault();
+          const prioCycle: TaskPriority[] = ["low", "medium", "high"];
+          const curr = targets[0]?.priority ?? "medium";
+          const next =
+            prioCycle[(prioCycle.indexOf(curr) + 1) % prioCycle.length] ??
+            "medium";
+          onTasksChange(targets, { priority: next });
+        }
+      } else if (e.key === "e" || e.key === "E") {
+        const targets =
+          chosen.length > 0
+            ? chosen
+            : focusedIndex !== null && visibleTasks[focusedIndex]
+              ? [visibleTasks[focusedIndex]]
+              : [];
+        if (targets.length > 0 && onTasksChange) {
+          e.preventDefault();
+          const pointsCycle = [null, 1, 2, 3, 5, 8];
+          const curr = targets[0]?.estimatePoints ?? null;
+          const currIdx = pointsCycle.indexOf(curr);
+          const next = pointsCycle[(currIdx + 1) % pointsCycle.length] ?? null;
+          onTasksChange(targets, { estimatePoints: next });
+        }
+      } else if (e.key === "c" || e.key === "C") {
+        e.preventDefault();
+        setCreateModalOpen(true);
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setShortcutsOpen((prev) => !prev);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    visibleTasks,
+    focusedIndex,
+    chosen,
+    onTasksChange,
+    router,
+    selected.size,
+  ]);
+
+  if (!tasks.length) return empty ?? <EmptyTasks />;
 
   return (
     <div className="flex flex-col gap-1.5" data-testid="task-list">
@@ -263,16 +411,31 @@ export const ListView: FC<Props> = ({
               <ul>
                 {section.rows.map((task) => {
                   const isSelected = selected.has(task.id);
+                  const isFocused =
+                    focusedIndex !== null &&
+                    visibleTasks[focusedIndex]?.id === task.id;
                   const done = task.status === "done";
 
                   return (
                     <li
                       key={task.id}
+                      ref={
+                        isFocused
+                          ? (el) => {
+                              focusedRowRef.current = el;
+                            }
+                          : undefined
+                      }
                       className={cn(
-                        "border-b border-hairline/70 sm:rounded-md sm:hover:bg-hover",
+                        "relative border-b border-hairline/70 transition-colors sm:rounded-md sm:hover:bg-hover",
+                        isFocused &&
+                          "bg-signal-subtle/40 ring-1 ring-signal/50 shadow-xs",
                         isSelected && "bg-selected sm:hover:bg-selected",
                       )}
                     >
+                      {isFocused ? (
+                        <span className="absolute left-0 top-1 bottom-1 w-1 rounded-r-full bg-signal" />
+                      ) : null}
                       <div className="hidden h-(--row-list) items-center gap-3 px-3 sm:flex">
                         {selectable ? (
                           <Checkbox
@@ -385,6 +548,53 @@ export const ListView: FC<Props> = ({
           onClear={() => setSelected(new Set())}
         />
       ) : null}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 pb-1 px-2 text-xs text-ink-3 border-t border-hairline/60">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+            <Kbd className="text-[10px]">J</Kbd>
+            <Kbd className="text-[10px]">K</Kbd> navigate
+          </span>
+          <span className="text-hairline hidden sm:inline">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+            <Kbd className="text-[10px]">X</Kbd> select
+          </span>
+          <span className="text-hairline hidden sm:inline">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+            <Kbd className="text-[10px]">S</Kbd> status
+          </span>
+          <span className="text-hairline hidden sm:inline">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+            <Kbd className="text-[10px]">P</Kbd> priority
+          </span>
+          <span className="text-hairline hidden sm:inline">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+            <Kbd className="text-[10px]">E</Kbd> points
+          </span>
+          <span className="text-hairline hidden sm:inline">•</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[11px]">
+            <Kbd className="text-[10px]">C</Kbd> new
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShortcutsOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs text-ink-3 hover:text-ink cursor-pointer transition-colors"
+        >
+          <KeyboardIcon className="size-3.5" />
+          <span>Shortcuts</span>
+          <Kbd className="text-[10px]">?</Kbd>
+        </button>
+      </div>
+
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+
+      <CreateTaskModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onTaskCreated={onTaskCreated}
+        hideTrigger
+      />
     </div>
   );
 };

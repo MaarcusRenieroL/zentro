@@ -35,7 +35,9 @@ export type BulkChange =
       assignee: string;
       assigneeUserId: string | null;
     }
-  | { dueAt: string | null };
+  | { dueAt: string | null }
+  | { priority: TaskPriority }
+  | { estimatePoints: number | null };
 
 export type ActivityEvent = {
   id: string;
