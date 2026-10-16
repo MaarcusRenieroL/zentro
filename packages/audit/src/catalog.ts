@@ -378,6 +378,15 @@ export const auditCatalog: readonly AuditEventDefinition[] = [
     "A task's status changed.",
   ),
   event(
+    "task.unblocked",
+    "Task unblocked",
+    "tasks",
+    "task",
+    false,
+    "unblocked {target}",
+    "All blockers for this task were completed.",
+  ),
+  event(
     "task.assigned",
     "Task assigned",
     "tasks",

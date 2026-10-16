@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNull } from "@zentro/db/drizzle";
-import { members, tasks, users, type Task } from "@zentro/db/schema";
+import { and, count, eq, isNull, ne } from "@zentro/db/drizzle";
+import { members, tasks, users, workLinks, type Task } from "@zentro/db/schema";
 import type { AuditHandle } from "@zentro/audit/server";
 
 import type { TRPCContext } from "../../types";
@@ -208,5 +208,95 @@ export async function recordTaskChanges(
         to: change.toValue,
       })),
     });
+  }
+}
+
+/**
+ * When a task is completed or deleted, any downstream task it was blocking that
+ * now has zero open blockers left is considered unblocked. We emit a
+ * `task.unblocked` audit event so the assignee receives an inbox notification.
+ */
+export async function triggerDownstreamUnblocks(
+  ctx: TRPCContext,
+  tx: AuditHandle & Pick<TRPCContext["db"], "select">,
+  completedTask: { id: string; key: string; name: string },
+) {
+  const { activeOrganization } = ctx;
+
+  if (!activeOrganization?.id) return;
+
+  const orgId = activeOrganization.id;
+
+  const blockedLinks = await tx
+    .select({
+      targetId: workLinks.targetId,
+    })
+    .from(workLinks)
+    .where(
+      and(
+        eq(workLinks.organizationId, orgId),
+        eq(workLinks.sourceType, "task"),
+        eq(workLinks.sourceId, completedTask.id),
+        eq(workLinks.targetType, "task"),
+        eq(workLinks.kind, "blocks"),
+      ),
+    );
+
+  if (!blockedLinks.length) return;
+
+  for (const link of blockedLinks) {
+    const [targetTask] = await tx
+      .select({
+        id: tasks.id,
+        key: tasks.key,
+        name: tasks.name,
+        status: tasks.status,
+        projectId: tasks.projectId,
+        teamId: tasks.teamId,
+        assignedToMemberId: tasks.assignedToMemberId,
+      })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.id, link.targetId),
+          eq(tasks.organizationId, orgId),
+          isNull(tasks.deletedAt),
+        ),
+      )
+      .limit(1);
+
+    if (!targetTask || targetTask.status === "done") continue;
+
+    const [remaining] = await tx
+      .select({ count: count() })
+      .from(workLinks)
+      .innerJoin(tasks, eq(tasks.id, workLinks.sourceId))
+      .where(
+        and(
+          eq(workLinks.organizationId, orgId),
+          eq(workLinks.targetType, "task"),
+          eq(workLinks.targetId, targetTask.id),
+          eq(workLinks.kind, "blocks"),
+          eq(workLinks.sourceType, "task"),
+          ne(tasks.id, completedTask.id),
+          ne(tasks.status, "done"),
+          isNull(tasks.deletedAt),
+        ),
+      );
+
+    if ((remaining?.count ?? 0) === 0) {
+      await ctx.audit.record(tx, {
+        action: "task.unblocked",
+        target: { id: targetTask.id, label: targetTask.key },
+        projectId: targetTask.projectId,
+        teamId: targetTask.teamId,
+        metadata: {
+          name: targetTask.name,
+          assignedToMemberId: targetTask.assignedToMemberId,
+          unblockedByTaskKey: completedTask.key,
+          unblockedByTaskName: completedTask.name,
+        },
+      });
+    }
   }
 }

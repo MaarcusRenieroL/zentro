@@ -47,6 +47,7 @@ import {
   getCurrentMember,
   getTaskForActiveOrganization,
   recordTaskChanges,
+  triggerDownstreamUnblocks,
 } from "./task-helpers";
 
 function isUniqueViolation(error: unknown) {
@@ -602,7 +603,12 @@ export const taskRouter = router({
   updateTaskByKey: permissionProcedure("tasks.update_own", taskByKey("key"), {
     module: "tasks",
     also: ["tasks.assign"],
-    audit: ["task.updated", "task.status_changed", "task.assigned"],
+    audit: [
+      "task.updated",
+      "task.status_changed",
+      "task.assigned",
+      "task.unblocked",
+    ],
   })
     .input(updateTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
@@ -702,6 +708,11 @@ export const taskRouter = router({
           ctx.audit.skipped("task.updated");
         }
 
+        // When a task is marked done, check downstream blocked tasks and notify
+        if (values.status === "done" && previousTask.status !== "done") {
+          await triggerDownstreamUnblocks(ctx, tx, previousTask);
+        }
+
         // Task keys named in the description link this task to them.
         if (values.description !== undefined) {
           await syncMentions(tx, {
@@ -751,7 +762,7 @@ export const taskRouter = router({
     }),
   deleteTaskByKey: permissionProcedure("tasks.delete_own", taskByKey("key"), {
     module: "tasks",
-    audit: ["task.deleted"],
+    audit: ["task.deleted", "task.unblocked"],
   })
     .input(deleteTaskByKeySchema)
     .mutation(async ({ ctx, input }) => {
@@ -787,6 +798,9 @@ export const taskRouter = router({
           teamId: task.teamId,
           metadata: { name: task.name },
         });
+
+        // Deleting a blocking task also unblocks any downstream tasks
+        await triggerDownstreamUnblocks(ctx, tx, task);
 
         return row;
       });

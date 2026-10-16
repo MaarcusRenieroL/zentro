@@ -2,7 +2,8 @@ export type NotificationKind =
   | "mention"
   | "assignment"
   | "comment"
-  | "approval";
+  | "approval"
+  | "unblock";
 
 export type NotificationItem = {
   id: string;
@@ -28,11 +29,13 @@ export const kindLabels: Record<NotificationKind, string> = {
   assignment: "Assignment",
   comment: "Comment",
   approval: "Approval",
+  unblock: "Unblocked",
 };
 
 export const kindGroups: Array<{ kind: NotificationKind; label: string }> = [
   { kind: "mention", label: "Mentions" },
   { kind: "assignment", label: "Assignments" },
+  { kind: "unblock", label: "Unblocked" },
   { kind: "comment", label: "Comments" },
   { kind: "approval", label: "Approvals" },
 ];
@@ -43,6 +46,7 @@ export function countByKind(items: NotificationItem[]) {
     assignment: 0,
     comment: 0,
     approval: 0,
+    unblock: 0,
   };
 
   for (const item of items) counts[item.kind] += 1;
