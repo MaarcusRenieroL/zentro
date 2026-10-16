@@ -40,8 +40,8 @@ type TabId = "overview" | "tasks" | "graph" | "docs" | "activity";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="tile flex flex-col gap-4 p-6">
-      <h2 className="text-base font-semibold">{title}</h2>
+    <section className="flex flex-col gap-4 rounded-2xl border border-hairline/80 bg-surface/80 p-6 shadow-2xs">
+      <h2 className="text-[15px] font-semibold text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -195,9 +195,9 @@ export const ProjectTabs: FC<Props> = ({
             aria-selected={tab === id}
             onClick={() => setTab(id)}
             className={cn(
-              "-mb-px flex items-center gap-1.5 border-b-2 py-2.5 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "-mb-px flex items-center gap-1.5 border-b-2 py-2.5 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors",
               tab === id
-                ? "border-ink font-medium text-ink"
+                ? "border-signal font-medium text-ink"
                 : "border-transparent text-ink-2 hover:text-ink",
             )}
           >
@@ -225,10 +225,12 @@ export const ProjectTabs: FC<Props> = ({
             <div className="flex flex-col gap-7">
               <section
                 aria-label="Project brief"
-                className="tile px-6 pt-5 pb-6"
+                className="flex flex-col gap-4 rounded-2xl border border-hairline/80 bg-surface/80 p-6 shadow-2xs"
               >
-                <div className="flex flex-wrap items-baseline gap-2.5 pb-3">
-                  <h2 className="text-base font-semibold">Project brief</h2>
+                <div className="flex flex-wrap items-baseline gap-2.5 pb-2 border-b border-hairline/60">
+                  <h2 className="text-[15px] font-semibold text-ink">
+                    Project brief
+                  </h2>
                   {brief ? (
                     <span className="font-mono text-xs text-ink-3">
                       {brief.owner} · updated{" "}

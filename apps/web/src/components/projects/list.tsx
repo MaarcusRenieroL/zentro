@@ -191,11 +191,11 @@ function Tile({
   const pct = total ? Math.round((done / total) * 100) : 0;
 
   return (
-    <article className="tile group relative flex flex-col overflow-hidden transition-colors hover:border-ink-3">
-      <header className="flex h-14 items-center gap-2.5 bg-tint-projects px-3.5">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-hairline/80 bg-surface/80 shadow-2xs transition-all hover:border-signal/40 hover:shadow-xs">
+      <header className="flex h-14 items-center gap-2.5 border-b border-hairline/60 bg-muted/20 px-4">
         <span
           className={cn(
-            "flex size-[30px] items-center justify-center rounded-sm border border-hairline font-mono text-xs",
+            "flex size-[30px] items-center justify-center rounded-lg border border-hairline font-mono text-xs font-semibold",
             tintFor(project.id),
           )}
         >
@@ -205,12 +205,12 @@ function Tile({
         <span className="flex-1" />
         <Star project={project} active={favorite} onToggle={onToggleFavorite} />
       </header>
-      <div className="flex flex-1 flex-col gap-3 px-[18px] pt-3.5 pb-4">
+      <div className="flex flex-1 flex-col gap-3.5 p-5">
         <div className="flex flex-col gap-1.5">
-          <h3 className="flex items-baseline gap-2 text-[17px] font-semibold">
+          <h3 className="flex items-baseline gap-2 text-[16px] font-semibold text-ink">
             <Link
               href={paths.project(project.slug)}
-              className="outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
+              className="outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
             >
               {project.name}
             </Link>
@@ -218,7 +218,7 @@ function Tile({
               {project.taskKeyPrefix ?? project.slug}
             </span>
           </h3>
-          <p className="line-clamp-2 min-h-10 text-sm leading-5 text-ink-2">
+          <p className="line-clamp-2 min-h-10 text-[13px] leading-5 text-ink-2">
             {project.description || "No description provided."}
           </p>
         </div>
@@ -230,27 +230,27 @@ function Tile({
             aria-valuenow={pct}
             aria-valuemin={0}
             aria-valuemax={100}
-            className="h-1 flex-1 overflow-hidden rounded-full bg-sunken"
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted/60"
           >
             <span
-              className="block h-full bg-status-done"
+              className="block h-full rounded-full bg-status-done transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </span>
-          <span className="font-mono text-xs text-ink-2">
+          <span className="font-mono text-xs font-medium text-ink-2">
             {done}/{total}
           </span>
         </div>
 
-        <div className="mt-auto flex items-center gap-2 border-t border-hairline pt-3.5 text-[13px] text-ink-2">
+        <div className="mt-auto flex items-center gap-2 border-t border-hairline/60 pt-3.5 text-xs text-ink-2">
           <span
             aria-hidden="true"
-            className="size-2 rounded-[3px] border border-hairline bg-tint-teams"
+            className="size-2 rounded-full border border-hairline bg-signal/20"
           />
           {project.teamName ?? "Workspace level"}
           <span className="flex-1" />
           <Contributors names={project.contributors ?? []} />
-          <span className="font-mono text-xs text-ink-3">
+          <span className="font-mono text-[11px] text-ink-3">
             {formatUpdated(project.updatedAt)}
           </span>
         </div>

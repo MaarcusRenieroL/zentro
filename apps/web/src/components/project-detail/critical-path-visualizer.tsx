@@ -174,73 +174,81 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
   return (
     <div className="flex flex-col gap-6">
       {/* Top Metrics Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="tile p-4 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>Critical Path</span>
-            <FlameIcon className="size-4 text-signal" />
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">Critical Path</span>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-signal/10 text-signal">
+              <FlameIcon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-bold font-mono text-ink">
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-bold tracking-tight text-ink">
               {metrics.criticalPathLength}
             </span>
             <span className="text-xs text-ink-3">tasks chained</span>
           </div>
-          <p className="text-[11px] text-ink-3 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             Longest bottleneck path determining launch date
           </p>
         </div>
 
-        <div className="tile p-4 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>Dependencies</span>
-            <GitCommitIcon className="size-4 text-ink-3" />
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">Dependencies</span>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-muted/60 text-ink-3">
+              <GitCommitIcon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-bold font-mono text-ink">
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-bold tracking-tight text-ink">
               {metrics.totalDependencies}
             </span>
             <span className="text-xs text-ink-3">blocker links</span>
           </div>
-          <p className="text-[11px] text-ink-3 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             {metrics.blockedTasksCount} tasks currently waiting
           </p>
         </div>
 
-        <div className="tile p-4 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>Bottlenecks</span>
-            <AlertTriangleIcon className="size-4 text-amber-500" />
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">Bottlenecks</span>
+            <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+              <AlertTriangleIcon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-2xl font-bold font-mono text-ink">
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="font-mono text-2xl font-bold tracking-tight text-ink">
               {metrics.bottlenecksCount}
             </span>
             <span className="text-xs text-ink-3">high blast radius</span>
           </div>
-          <p className="text-[11px] text-ink-3 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             Tasks blocking multiple downstream work items
           </p>
         </div>
 
-        <div className="tile p-4 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-ink-3 text-xs">
-            <span>Project Risk</span>
-            <ShieldAlertIcon
+        <div className="flex flex-col gap-1 rounded-2xl border border-hairline/80 bg-surface/80 p-4 shadow-2xs transition-all hover:border-hairline hover:shadow-xs">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span className="font-medium">Project Risk</span>
+            <div
               className={cn(
-                "size-4",
+                "flex size-7 items-center justify-center rounded-lg",
                 metrics.riskLevel === "high"
-                  ? "text-rose-500"
+                  ? "bg-rose-500/10 text-rose-500"
                   : metrics.riskLevel === "moderate"
-                    ? "text-amber-500"
-                    : "text-emerald-500",
+                    ? "bg-amber-500/10 text-amber-500"
+                    : "bg-emerald-500/10 text-emerald-500",
               )}
-            />
+            >
+              <ShieldAlertIcon className="size-3.5" />
+            </div>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="mt-1 flex items-baseline gap-2">
             <span
               className={cn(
-                "text-2xl font-bold uppercase font-mono tracking-tight",
+                "font-mono text-2xl font-bold tracking-tight uppercase",
                 metrics.riskLevel === "high"
                   ? "text-rose-500"
                   : metrics.riskLevel === "moderate"
@@ -251,7 +259,7 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
               {metrics.riskLevel}
             </span>
           </div>
-          <p className="text-[11px] text-ink-3 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             {metrics.riskLevel === "high"
               ? "Overdue or heavy blocker chain detected"
               : metrics.riskLevel === "moderate"
@@ -262,7 +270,7 @@ export const CriticalPathVisualizer: FC<Props> = ({ projectSlug }) => {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 tile p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-hairline/80 bg-surface/80 p-3 shadow-2xs">
         <div className="flex items-center gap-1.5">
           <FilterIcon className="size-3.5 text-ink-3 ml-1" />
           <button
