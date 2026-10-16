@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDaysIcon, Columns3Icon, ListIcon } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
@@ -193,6 +193,29 @@ export const TaskWorkspace: FC<Props> = ({
         }}
       />
     ) : undefined;
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const activeTag = (document.activeElement?.tagName ?? "").toLowerCase();
+      const isInput =
+        activeTag === "input" ||
+        activeTag === "textarea" ||
+        (document.activeElement as HTMLElement)?.isContentEditable;
+
+      if (isInput) return;
+
+      if (e.key === "1") {
+        setView("list");
+      } else if (e.key === "2" && !isMobile) {
+        setView("board");
+      } else if (e.key === "3" && !isMobile) {
+        setView("calendar");
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobile]);
 
   const views = [
     { value: "list", label: "List", Icon: ListIcon },

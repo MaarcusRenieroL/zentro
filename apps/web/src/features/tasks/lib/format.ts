@@ -21,3 +21,18 @@ export function formatShortDate(value: Date | string) {
 
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
+
+export function formatGitBranch(key: string, title: string): string {
+  const slug = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
+  return `${key.toLowerCase()}${slug ? `-${slug}` : ""}`;
+}
+
+export function formatGitCheckoutCommand(key: string, title: string): string {
+  return `git checkout -b ${formatGitBranch(key, title)}`;
+}

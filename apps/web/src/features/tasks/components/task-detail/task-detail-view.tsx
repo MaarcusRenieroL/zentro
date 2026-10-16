@@ -1,7 +1,8 @@
 import { paths } from "~/src/lib/paths";
 
 import Link from "next/link";
-import { LinkIcon } from "lucide-react";
+import { GitBranchIcon, LinkIcon } from "lucide-react";
+import { formatGitCheckoutCommand } from "~/src/features/tasks/lib/format";
 
 import { toastError, toastSuccess } from "@zentro/ui/index";
 import { StatusGlyph } from "@zentro/ui/components/status-glyph";
@@ -204,6 +205,20 @@ function TaskDetailHeader({ task }: { task: TaskDetail }) {
         variant="outline"
         size="xs"
         className="ml-1 h-[26px] rounded-sm border-hairline bg-transparent px-2 text-xs font-normal text-ink-2"
+        onClick={() => {
+          void navigator.clipboard
+            .writeText(formatGitCheckoutCommand(task.key, task.name))
+            .then(() => toastSuccess("Branch command copied"))
+            .catch(() => toastError("Error", "Could not copy branch command"));
+        }}
+      >
+        <GitBranchIcon className="size-3.5" />
+        Copy branch
+      </Button>
+      <Button
+        variant="outline"
+        size="xs"
+        className="h-[26px] rounded-sm border-hairline bg-transparent px-2 text-xs font-normal text-ink-2"
         onClick={() => {
           void navigator.clipboard
             .writeText(window.location.href)
