@@ -658,6 +658,7 @@ export const teamRouter = router({
           name: tasks.name,
           status: tasks.status,
           priority: tasks.priority,
+          estimatePoints: tasks.estimatePoints,
           dueAt: tasks.dueAt,
           projectId: projects.id,
           projectName: projects.name,
@@ -698,6 +699,16 @@ export const teamRouter = router({
         const overdue = assigned.filter(
           (t) => t.dueAt && new Date(t.dueAt).getTime() < now.getTime(),
         ).length;
+        const totalPoints = assigned.reduce(
+          (sum, t) => sum + (t.estimatePoints ?? 0),
+          0,
+        );
+        const utilizationPercent = Math.min(
+          200,
+          Math.round((assigned.length / 5) * 100),
+        );
+        const isOverloaded = assigned.length > 5 || overdue > 1;
+        const isUnderutilized = assigned.length <= 1;
 
         return {
           memberId: member.memberId,
@@ -706,6 +717,10 @@ export const teamRouter = router({
           openCount: assigned.length,
           inProgressCount: inProgress,
           overdueCount: overdue,
+          totalPoints,
+          utilizationPercent,
+          isOverloaded,
+          isUnderutilized,
         };
       });
 
@@ -715,7 +730,7 @@ export const teamRouter = router({
         openTasksCount: openTasks.length,
         doneTasksCount: teamTasks.length - openTasks.length,
         memberWorkload,
-        tasks: teamTasks.slice(0, 30),
+        tasks: teamTasks.slice(0, 100),
       };
     }),
 });

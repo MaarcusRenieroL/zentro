@@ -21,6 +21,11 @@ import { usePermission } from "~/src/components/permissions/permission-provider"
 import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
 import { TeamActivity } from "~/src/components/workspace/activity/activity-feed";
 import { paths } from "~/src/lib/paths";
+import {
+  TeamWorkloadBalancer,
+  type MemberCapacity,
+  type WorkloadTask,
+} from "./team-workload-balancer";
 
 type WorkloadData = {
   team: {
@@ -30,28 +35,8 @@ type WorkloadData = {
   totalTasks: number;
   openTasksCount: number;
   doneTasksCount: number;
-  memberWorkload: Array<{
-    memberId: string;
-    userId: string;
-    name: string;
-    openCount: number;
-    inProgressCount: number;
-    overdueCount: number;
-  }>;
-  tasks: Array<{
-    id: string;
-    key: string;
-    name: string;
-    status: string;
-    priority: string | null;
-    dueAt: Date | string | null;
-    projectId: string;
-    projectName: string;
-    projectSlug: string;
-    assignedToMemberId: string | null;
-    assigneeName: string | null;
-    createdAt: Date | string;
-  }>;
+  memberWorkload: MemberCapacity[];
+  tasks: WorkloadTask[];
 };
 
 type Data = {
@@ -92,6 +77,7 @@ export function TeamDetail({ teamId }: { teamId: string }) {
   const trpc = useTrpcClient();
   const [data, setData] = useState<Data | null>(null);
   const [missing, setMissing] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
   const canEdit = usePermission("teams.update", { teamId });
   const canManage = usePermission("teams.members.manage", { teamId });
 
@@ -133,7 +119,7 @@ export function TeamDetail({ teamId }: { teamId: string }) {
     return () => {
       live = false;
     };
-  }, [trpc, teamId]);
+  }, [trpc, teamId, refreshToken]);
 
   if (missing) {
     return (
@@ -319,69 +305,16 @@ export function TeamDetail({ teamId }: { teamId: string }) {
             )}
           </section>
 
-          <section aria-labelledby="team-members" className="flex flex-col">
-            <h2
-              id="team-members"
-              className="flex items-center gap-2 pb-2 font-semibold"
-            >
-              Members
-              <span className="font-mono text-xs font-normal text-ink-3">
-                {team.members.length}
-              </span>
-            </h2>
-            {team.members.length ? (
-              team.members.map((member) => {
-                const memberLoad = workload?.memberWorkload.find(
-                  (m) => m.memberId === member.memberId,
-                );
-                const count = memberLoad
-                  ? memberLoad.openCount
-                  : openFor(member.userId);
-
-                return (
-                  <div
-                    key={member.memberId}
-                    className="flex items-center gap-3 border-b border-hairline/60 px-1 py-2"
-                  >
-                    <ActorAvatar name={member.name} size={30} />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-sm font-medium">
-                        {member.name}
-                      </span>
-                      <span className="text-xs text-ink-3 capitalize">
-                        {member.role}
-                      </span>
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {memberLoad && memberLoad.overdueCount > 0 ? (
-                        <span className="rounded bg-danger-subtle px-1.5 py-0.5 font-mono text-[11px] text-danger-text">
-                          {memberLoad.overdueCount} overdue
-                        </span>
-                      ) : null}
-                      {memberLoad && memberLoad.inProgressCount > 0 ? (
-                        <span className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[11px] text-ink-2">
-                          {memberLoad.inProgressCount} active
-                        </span>
-                      ) : null}
-                      <span className="flex items-center gap-1.5 font-mono text-xs text-ink-2">
-                        <CircleIcon
-                          aria-hidden="true"
-                          className={cn(
-                            "size-3",
-                            count > 5 ? "text-warning-text" : "text-ink-3",
-                          )}
-                        />
-                        {count} open
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="py-3 text-sm text-ink-2">
-                Nobody is on this team yet.
-              </p>
-            )}
+          <section
+            aria-labelledby="team-workload-balancer"
+            className="flex flex-col"
+          >
+            <TeamWorkloadBalancer
+              teamId={team.id}
+              members={workload?.memberWorkload ?? []}
+              tasks={workload?.tasks ?? []}
+              onTasksUpdated={() => setRefreshToken((t) => t + 1)}
+            />
           </section>
 
           <section aria-labelledby="team-task-stream" className="flex flex-col">
