@@ -401,8 +401,8 @@ export function LivingSpecPanel({
               <div
                 key={task.id}
                 className={cn(
-                  "group relative p-2.5 rounded-lg border border-hairline bg-background/60 hover:bg-background transition-all hover:border-ink/20 shadow-xs",
-                  isDone && "opacity-75 bg-muted/20",
+                  "group relative p-3 rounded-xl border border-hairline/80 bg-surface/80 hover:bg-surface transition-all hover:border-signal/40 hover:shadow-xs shadow-2xs",
+                  isDone && "opacity-70 bg-muted/20",
                 )}
               >
                 <div className="flex items-start gap-2.5">
