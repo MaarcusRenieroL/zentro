@@ -134,6 +134,13 @@
       "when": 1792085000000,
       "tag": "0018_time_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792090000000,
+      "tag": "0019_automations",
+      "breakpoints": true
     }
   ]
 }

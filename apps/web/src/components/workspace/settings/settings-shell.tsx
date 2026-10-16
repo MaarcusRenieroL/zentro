@@ -52,6 +52,11 @@ const groups: Array<{ label: string; items: Item[] }> = [
         permission: "modules.view",
         external: true,
       },
+      {
+        href: paths.automationsSettings(),
+        label: "Automations",
+        permission: "tasks.view",
+      },
     ],
   },
   {

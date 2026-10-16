@@ -17,6 +17,7 @@ import { projectRouter } from "./routers/project";
 import { searchRouter } from "./routers/search";
 import { taskRouter } from "./routers/task";
 import { teamRouter } from "./routers/team";
+import { automationRouter } from "./routers/automation";
 
 export const appRouter = router({
   health: publicProcedure.query(() => {
@@ -27,6 +28,7 @@ export const appRouter = router({
   }),
   activity: activityRouter,
   audit: auditRouter,
+  automation: automationRouter,
   comment: commentRouter,
   docs: docsRouter,
   file: fileRouter,

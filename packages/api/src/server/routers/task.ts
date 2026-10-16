@@ -52,6 +52,7 @@ import {
   recordTaskChanges,
   triggerDownstreamUnblocks,
 } from "./task-helpers";
+import { runTaskAutomations } from "../automations/engine";
 
 function isUniqueViolation(error: unknown) {
   const candidate = error as {
@@ -963,6 +964,7 @@ export const taskRouter = router({
           status: tasks.status,
           priority: tasks.priority,
           assignedToMemberId: tasks.assignedToMemberId,
+          parentTaskId: tasks.parentTaskId,
           assignee: users.name,
           due: tasks.dueAt,
           completedAt: tasks.completedAt,
@@ -976,6 +978,60 @@ export const taskRouter = router({
         .leftJoin(users, eq(users.id, members.userId))
         .where(eq(tasks.id, updatedTask.id))
         .limit(1);
+
+      if (
+        updateValues.status &&
+        updateValues.status !== previousTask.status &&
+        task
+      ) {
+        const actor = await getCurrentMember(ctx);
+        void runTaskAutomations({
+          db,
+          organizationId: activeOrganization.id,
+          event: "task.status_changed",
+          task: {
+            id: task.id,
+            key: task.key,
+            status: task.status,
+            projectId: task.projectId,
+            parentTaskId: task.parentTaskId,
+            assignedToMemberId: task.assignedToMemberId,
+          },
+          actorMemberId: actor?.id,
+          previousStatus: previousTask.status,
+        });
+
+        if (task.parentTaskId && task.status === "done") {
+          const siblingTasks = await db
+            .select({ id: tasks.id, status: tasks.status })
+            .from(tasks)
+            .where(
+              and(
+                eq(tasks.parentTaskId, task.parentTaskId),
+                isNull(tasks.deletedAt),
+              ),
+            );
+          const allSiblingsDone = siblingTasks.every(
+            (t) => t.status === "done",
+          );
+          if (allSiblingsDone) {
+            void runTaskAutomations({
+              db,
+              organizationId: activeOrganization.id,
+              event: "task.subtasks_all_done",
+              task: {
+                id: task.id,
+                key: task.key,
+                status: task.status,
+                projectId: task.projectId,
+                parentTaskId: task.parentTaskId,
+                assignedToMemberId: task.assignedToMemberId,
+              },
+              actorMemberId: actor?.id,
+            });
+          }
+        }
+      }
 
       return task;
     }),

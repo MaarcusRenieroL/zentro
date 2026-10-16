@@ -60,6 +60,7 @@ export const paths = {
   invitationsSettings: () => "/settings/organization/invitations",
   teamSettings: (id: string) => `/settings/organization/teams/${id}`,
   modulesSettings: () => "/settings/organization/modules",
+  automationsSettings: () => "/settings/organization/automations",
   rolesSettings: () => "/settings/organization/roles",
   role: (id: string) => `/settings/organization/roles/${id}`,
   rolesAssignments: () => "/settings/organization/roles/assignments",
