@@ -101,9 +101,9 @@ export function AuthShowcase() {
     >
       <p className="eyebrow">Northwind Labs · right now</p>
 
-      <div className="tile px-[18px] pt-4 pb-2.5">
+      <div className="rounded-2xl border border-hairline/80 bg-surface/80 p-5 shadow-2xs">
         <div className="flex items-center gap-2 pb-2.5">
-          <span className="text-sm font-semibold">Thread</span>
+          <span className="text-sm font-semibold text-ink">Thread</span>
           <span className="font-mono text-xs text-ink-3">
             {thread.length} linked
           </span>
@@ -144,9 +144,9 @@ export function AuthShowcase() {
         </ol>
       </div>
 
-      <div className="tile px-[18px] pt-4 pb-2">
+      <div className="rounded-2xl border border-hairline/80 bg-surface/80 p-5 shadow-2xs">
         <div className="flex items-center gap-2 pb-1.5">
-          <span className="text-sm font-semibold">Team pulse</span>
+          <span className="text-sm font-semibold text-ink">Team pulse</span>
           <div className="flex-1" />
           <span className="size-2 rounded-full bg-status-done motion-safe:animate-[zpulse_2.4s_ease-out_infinite]" />
           <span className="font-mono text-[11px] text-ink-3">LIVE</span>
