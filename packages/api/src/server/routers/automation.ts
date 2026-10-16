@@ -81,7 +81,7 @@ export const automationRouter = router({
       return created;
     }),
 
-  toggle: permissionProcedure("tasks.edit")
+  toggle: permissionProcedure("tasks.update_any")
     .input(z.object({ id: z.string().uuid(), enabled: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;
@@ -195,7 +195,7 @@ export const automationRouter = router({
     return { count: inserted.length, message: "Presets seeded." };
   }),
 
-  escalateDueSLA: permissionProcedure("tasks.edit").mutation(
+  escalateDueSLA: permissionProcedure("tasks.update_any").mutation(
     async ({ ctx }) => {
       const { db, activeOrganization } = ctx;
       const now = new Date();

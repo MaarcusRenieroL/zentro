@@ -612,7 +612,7 @@ export const teamRouter = router({
       });
     }),
 
-  getTeamWorkload: protectedProcedure
+  getTeamWorkload: permissionProcedure("teams.view", teamById("id"))
     .input(getTeamByIdSchema)
     .query(async ({ ctx, input }) => {
       const { db, activeOrganization } = ctx;

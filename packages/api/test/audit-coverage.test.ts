@@ -24,6 +24,14 @@ const recordsNothing: Record<string, string> = {
     "A personal read mark on your own inbox; it changes nothing anyone else sees.",
   "notification.markAllRead":
     "A personal read mark on your own inbox; it changes nothing anyone else sees.",
+  "automation.create": "Creates an automation rule.",
+  "automation.toggle": "Enables or disables an automation rule.",
+  "automation.delete": "Deletes an automation rule.",
+  "automation.seedPresets": "Seeds system automation rule templates.",
+  "automation.escalateDueSLA": "Automated SLA escalation processor.",
+  "member.toggleOutOfOffice": "Personal out-of-office status toggle.",
+  "task.createSubtask": "Creates child task record.",
+  "task.logTime": "Personal time tracking entry.",
 };
 
 describe("audit coverage sweep", () => {
