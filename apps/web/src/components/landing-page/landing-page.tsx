@@ -92,27 +92,38 @@ const accentWord: CSSProperties = {
 const primaryPill = (h: number, px: number, size: number): CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
+  justifyContent: "center",
   height: h,
   padding: `0 ${px}px`,
   borderRadius: 999,
   background: "var(--btn)",
   color: "var(--btn-ink)",
   fontSize: size,
-  fontWeight: 500,
+  fontWeight: 600,
+  letterSpacing: "-0.01em",
+  boxShadow: "var(--btn-shadow)",
   textDecoration: "none",
+  transition: "all .15s ease",
+  cursor: "pointer",
 });
 
 const ghostPill = (h: number, px: number, size: number): CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
+  justifyContent: "center",
   height: h,
   padding: `0 ${px}px`,
   borderRadius: 999,
   border: "1px solid var(--line)",
+  background: "var(--tile)",
   color: "var(--ink)",
   fontSize: size,
-  fontWeight: 500,
+  fontWeight: 600,
+  letterSpacing: "-0.01em",
+  boxShadow: "var(--btn-ghost-shadow)",
   textDecoration: "none",
+  transition: "all .15s ease",
+  cursor: "pointer",
 });
 
 const logoMark = (size: number, radius: number, bar: number): ReactNode => (
@@ -161,10 +172,13 @@ function Segment({
         cursor: "pointer",
         fontFamily: MONO,
         fontSize: 11,
+        fontWeight: active ? 600 : 400,
         letterSpacing: ".04em",
         textTransform: "uppercase",
         background: active ? "var(--ink)" : "transparent",
         color: active ? "var(--bg)" : "var(--ink2)",
+        boxShadow: active ? "var(--segment-shadow)" : "none",
+        transition: "all .15s ease",
       }}
     >
       {children}
@@ -441,6 +455,7 @@ export function LandingPage() {
           background: "var(--nav-bg)",
           backdropFilter: "blur(16px)",
           borderBottom: "1px solid var(--line2)",
+          boxShadow: "0 1px 0 0 var(--line2)",
         }}
       >
         <a
@@ -783,7 +798,7 @@ export function LandingPage() {
                   borderRadius: 28,
                   border: "1px solid var(--line)",
                   background: "var(--frame)",
-                  boxShadow: "var(--shadow)",
+                  boxShadow: "var(--frame-shadow, var(--shadow))",
                   overflow: "hidden",
                 }}
               >

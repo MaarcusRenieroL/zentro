@@ -746,9 +746,20 @@
   --cyan: #56d4e6;
   --green: #57d98a;
   --rose: #fb7a8e;
-  --shadow: none;
+  --shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.08), 0 12px 32px -8px rgb(0 0 0 / 0.65),
+    0 4px 12px -2px rgb(0 0 0 / 0.45);
+  --frame-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.12), 0 32px 80px -16px rgb(0 0 0 / 0.8),
+    0 12px 28px -6px rgb(0 0 0 / 0.55);
   --frame: #0e0e15;
   --knob-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  --btn-shadow:
+    0 1px 2px rgb(0 0 0 / 25%), inset 0 1px 0 rgb(255 255 255 / 20%);
+  --btn-ghost-shadow:
+    0 1px 2px rgb(0 0 0 / 20%), inset 0 1px 0 rgb(255 255 255 / 8%);
+  --segment-shadow:
+    0 1px 3px rgb(0 0 0 / 30%), inset 0 1px 0 rgb(255 255 255 / 15%);
 }
 
 .landing-light {
@@ -783,9 +794,20 @@
   --cyan: #08819e;
   --green: #178a45;
   --rose: #d6284f;
-  --shadow: 0 1px 2px rgb(20 19 24 / 4%), 0 16px 36px -18px rgb(20 19 24 / 14%);
+  --shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.8), 0 1px 3px 0 rgb(20 19 24 / 0.05),
+    0 16px 36px -18px rgb(20 19 24 / 0.12);
+  --frame-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.9),
+    0 32px 80px -16px rgb(20 19 24 / 0.14), 0 8px 24px -4px rgb(20 19 24 / 0.06);
   --frame: #ffffff;
   --knob-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  --btn-shadow:
+    0 1px 2px rgb(20 19 24 / 15%), inset 0 1px 0 rgb(255 255 255 / 20%);
+  --btn-ghost-shadow:
+    0 1px 2px rgb(20 19 24 / 5%), inset 0 1px 0 rgb(255 255 255 / 90%);
+  --segment-shadow:
+    0 1px 3px rgb(20 19 24 / 15%), inset 0 1px 0 rgb(255 255 255 / 20%);
 }
 
 /* Landing motion. Off entirely under reduced motion; content is never left hidden. */
