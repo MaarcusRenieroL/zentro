@@ -22,7 +22,7 @@ export function SettingsHeader({
     <HideWhenFramed
       fallback={
         description ? (
-          <p className="max-w-[640px] text-[15px] leading-[22px] text-ink-2">
+          <p className="w-full text-[15px] leading-[22px] text-ink-2">
             {description}
           </p>
         ) : null
@@ -36,7 +36,7 @@ export function SettingsHeader({
         </span>
         <h2 className="text-[22px] leading-7 font-semibold">{title}</h2>
         {description ? (
-          <p className="max-w-[620px] text-[15px] leading-[22px] text-ink-2">
+          <p className="w-full text-[15px] leading-[22px] text-ink-2">
             {description}
           </p>
         ) : null}

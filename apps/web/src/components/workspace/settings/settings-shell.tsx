@@ -126,7 +126,7 @@ const SettingsNav: FC<{ children: ReactNode }> = ({ children }) => {
           </nav>
         </div>
 
-        <div className="max-w-[780px] min-w-0">{children}</div>
+        <div className="w-full min-w-0">{children}</div>
       </div>
     </FramedContext.Provider>
   );
