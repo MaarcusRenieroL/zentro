@@ -46,26 +46,27 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
 
   return (
     <section className="flex w-full flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Link
-          href={paths.project(project.slug)}
-          className="flex w-fit items-center gap-1.5 rounded-xs text-[13px] text-ink-2 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ChevronLeftIcon className="size-3.5" aria-hidden="true" />
-          {project.name}
-        </Link>
-        <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
-          Project settings
-        </h1>
-      </div>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Link
+            href={paths.project(project.slug)}
+            className="flex w-fit items-center gap-1.5 rounded-xs text-[13px] text-ink-2 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronLeftIcon className="size-3.5" aria-hidden="true" />
+            {project.name}
+          </Link>
+          <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
+            Project settings
+          </h1>
+        </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
         <nav
           aria-label="Project settings"
-          className="hide-scrollbar -mx-4 flex gap-1 overflow-x-auto px-4 lg:mx-0 lg:flex-col lg:px-0"
+          className="hide-scrollbar flex gap-5 overflow-x-auto border-b border-hairline text-[15px]"
         >
           {settingsNavItems.map((item) => {
             const isActive = pathname === item.href;
+            const isDanger = item.label === "Danger zone";
 
             return (
               <Link
@@ -73,14 +74,23 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex h-9 shrink-0 items-center gap-2.5 rounded-md px-2.5 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "-mb-px flex items-center gap-2 border-b-2 py-2.5 whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
                   isActive
-                    ? "bg-selected font-medium text-ink"
-                    : "text-ink-2 hover:bg-hover hover:text-ink",
+                    ? isDanger
+                      ? "border-danger font-medium text-danger-text"
+                      : "border-signal font-medium text-ink"
+                    : "border-transparent text-ink-2 hover:border-hairline hover:text-ink",
                 )}
               >
                 <item.icon
-                  className={cn("size-4", isActive && "text-signal")}
+                  className={cn(
+                    "size-4",
+                    isActive
+                      ? isDanger
+                        ? "text-danger"
+                        : "text-signal"
+                      : "text-ink-3",
+                  )}
                   aria-hidden="true"
                 />
                 {item.label}
@@ -88,9 +98,9 @@ export const SettingsShell: FC<Props> = ({ project, children }) => {
             );
           })}
         </nav>
-
-        <div className="min-w-0">{children}</div>
       </div>
+
+      <div className="max-w-[780px] min-w-0">{children}</div>
     </section>
   );
 };

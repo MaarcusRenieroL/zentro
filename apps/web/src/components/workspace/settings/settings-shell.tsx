@@ -1,18 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { FC, ReactNode } from "react";
 import { ArrowUpRightIcon } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@zentro/ui/shadcn/select";
 
 import { usePermissionMap } from "~/src/components/permissions/permission-provider";
 import { paths } from "~/src/lib/paths";
@@ -28,70 +21,46 @@ type Item = {
   external?: boolean;
 };
 
-// Settings are grouped by what they are for. Members, Roles and Modules live
-// in the Team and Overview areas now, so the rail links out to them (↗).
-const groups: Array<{ label: string; items: Item[] }> = [
+const workspaceTabs: Item[] = [
   {
-    label: "Account",
-    items: [
-      { href: "/settings/account/profile", label: "Profile" },
-      { href: "/settings/account/appearance", label: "Appearance" },
-    ],
+    href: paths.generalSettings(),
+    label: "General",
+    permission: "org.settings.update",
   },
   {
-    label: "Organization",
-    items: [
-      {
-        href: paths.generalSettings(),
-        label: "General",
-        permission: "org.settings.update",
-      },
-      {
-        href: paths.modulesSettings(),
-        label: "Modules",
-        permission: "modules.view",
-        external: true,
-      },
-      {
-        href: paths.automationsSettings(),
-        label: "Automations",
-        permission: "tasks.view",
-      },
-    ],
+    href: paths.membersSettings(),
+    label: "Members",
+    permission: "members.view",
+    external: true,
   },
   {
-    label: "Access",
-    items: [
-      {
-        href: paths.membersSettings(),
-        label: "Members",
-        permission: "members.view",
-        external: true,
-      },
-      {
-        href: paths.rolesSettings(),
-        label: "Roles & access",
-        permission: "roles.view",
-        external: true,
-      },
-    ],
+    href: paths.rolesSettings(),
+    label: "Roles & access",
+    permission: "roles.view",
+    external: true,
   },
   {
-    label: "Security",
-    items: [
-      { href: "/settings/account/security", label: "Password & sessions" },
-    ],
+    href: paths.modulesSettings(),
+    label: "Modules",
+    permission: "modules.view",
+    external: true,
   },
   {
+    href: paths.automationsSettings(),
+    label: "Automations",
+    permission: "tasks.view",
+  },
+  {
+    href: paths.dangerSettings(),
     label: "Danger zone",
-    items: [
-      {
-        href: paths.dangerSettings(),
-        label: "Delete or transfer",
-        permission: "org.delete",
-      },
-    ],
+    permission: "org.delete",
   },
+];
+
+const accountTabs: Item[] = [
+  { href: "/settings/account/profile", label: "Profile" },
+  { href: "/settings/account/appearance", label: "Appearance" },
+  { href: "/settings/account/security", label: "Security" },
 ];
 
 type Props = {
@@ -111,97 +80,95 @@ export const SettingsShell: FC<Props> = ({ children }) => {
   if (inArea(pathname, teamPaths)) return <TeamFrame>{children}</TeamFrame>;
   if (inArea(pathname, adminPaths)) return <AdminFrame>{children}</AdminFrame>;
 
-  return <SettingsRail>{children}</SettingsRail>;
+  return <SettingsNav>{children}</SettingsNav>;
 };
 
-const SettingsRail: FC<{ children: ReactNode }> = ({ children }) => {
+const SettingsNav: FC<{ children: ReactNode }> = ({ children }) => {
   const pathname = usePathname();
-  const router = useRouter();
   const permissions = usePermissionMap();
 
-  const visible = groups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter(
-        (item) => !item.permission || permissions[item.permission],
-      ),
-    }))
-    .filter((group) => group.items.length);
-  const all = visible.flatMap((group) => group.items);
+  const isWorkspace = !pathname.startsWith("/settings/account");
+
+  const currentTabs = (isWorkspace ? workspaceTabs : accountTabs).filter(
+    (item) => !item.permission || permissions[item.permission],
+  );
+
   const isActive = (item: Item) =>
     pathname === item.href ||
     (item.href === paths.generalSettings() &&
       (pathname === paths.settings() ||
         pathname === paths.organizationSettings()));
-  const active = all.find(isActive);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
-      <div className="flex flex-col gap-4 lg:gap-6">
-        <h1 className="font-display text-[length:var(--title-size)] leading-[1.1]">
-          Settings
-        </h1>
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:gap-5">
+        <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
+          <h1 className="font-display text-[1.75rem] leading-8 sm:text-[length:var(--title-size)] sm:leading-9">
+            Settings
+          </h1>
 
-        {/* Below 1024px the pages are one compact menu. */}
-        <div className="lg:hidden">
-          <Select
-            value={active?.href ?? ""}
-            onValueChange={(href) => router.push(href)}
+          <div
+            role="tablist"
+            aria-label="Settings scope"
+            className="flex items-center rounded-lg border border-hairline bg-surface p-0.5 text-xs font-medium"
           >
-            <SelectTrigger className="w-full" aria-label="Settings page">
-              <SelectValue placeholder="Settings" />
-            </SelectTrigger>
-            <SelectContent>
-              {visible.map((group) =>
-                group.items.map((item) => (
-                  <SelectItem key={item.href} value={item.href}>
-                    {group.label === item.label
-                      ? item.label
-                      : `${group.label} · ${item.label}`}
-                  </SelectItem>
-                )),
+            <Link
+              href={paths.generalSettings()}
+              className={cn(
+                "rounded-md px-3 py-1.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                isWorkspace
+                  ? "bg-ink text-ink-inverse shadow-xs"
+                  : "text-ink-2 hover:bg-hover hover:text-ink",
               )}
-            </SelectContent>
-          </Select>
+            >
+              Workspace
+            </Link>
+            <Link
+              href="/settings/account/profile"
+              className={cn(
+                "rounded-md px-3 py-1.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                !isWorkspace
+                  ? "bg-ink text-ink-inverse shadow-xs"
+                  : "text-ink-2 hover:bg-hover hover:text-ink",
+              )}
+            >
+              Account
+            </Link>
+          </div>
         </div>
 
-        <nav aria-label="Settings" className="hidden flex-col gap-5 lg:flex">
-          {visible.map((group) => (
-            <div key={group.label} className="flex flex-col gap-0.5">
-              <span
+        <nav
+          aria-label="Settings sections"
+          className="hide-scrollbar flex gap-5 overflow-x-auto border-b border-hairline text-[15px]"
+        >
+          {currentTabs.map((item) => {
+            const active = isActive(item);
+            const isDanger = item.label === "Danger zone";
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "eyebrow px-2.5 pb-1.5",
-                  group.label === "Danger zone" && "text-danger-text",
+                  "-mb-px flex items-center gap-1.5 border-b-2 py-2.5 whitespace-nowrap outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                  active
+                    ? isDanger
+                      ? "border-danger font-medium text-danger-text"
+                      : "border-signal font-medium text-ink"
+                    : "border-transparent text-ink-2 hover:border-hairline hover:text-ink",
                 )}
               >
-                {group.label}
-              </span>
-              {group.items.map((item) => {
-                const current = active?.href === item.href;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={current ? "page" : undefined}
-                    className={cn(
-                      "flex h-[34px] items-center rounded-[10px] px-2.5 text-sm text-ink-2 outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-ring",
-                      current &&
-                        "bg-hover font-medium text-ink shadow-[inset_0_0_0_1px_var(--hairline)]",
-                    )}
-                  >
-                    {item.label}
-                    {item.external ? (
-                      <ArrowUpRightIcon
-                        aria-hidden="true"
-                        className="ml-auto size-3.5 text-ink-3"
-                      />
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+                {item.label}
+                {item.external ? (
+                  <ArrowUpRightIcon
+                    aria-hidden="true"
+                    className="size-3 text-ink-3"
+                  />
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
       </div>
 
