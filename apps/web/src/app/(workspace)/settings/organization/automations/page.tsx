@@ -3,6 +3,8 @@ import { AuthorizationBoundary } from "~/src/components/workspace/authorization/
 import { AutomationsManager } from "~/src/features/automations/components/automations-manager";
 import { getAuthorizedDashboardContext } from "~/src/lib/dashboard-context";
 
+export const metadata = { title: "Automations" };
+
 export default async function AutomationsSettingsPage(): Promise<JSX.Element> {
   const { authorization } = await getAuthorizedDashboardContext("tasks.view");
 

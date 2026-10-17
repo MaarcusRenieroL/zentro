@@ -5,6 +5,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.resolve(process.cwd(), "../.."),
+  devIndicators: {
+    position: "bottom-right",
+  },
   async redirects() {
     // The old task-scoped project pages showed sample data; projects live at
     // /projects now.

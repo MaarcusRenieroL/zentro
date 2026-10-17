@@ -21,7 +21,7 @@ const labels: Record<string, string> = {
   invitations: "Invitations",
   teams: "Teams",
   modules: "Modules",
-  danger: "Delete or transfer",
+  danger: "Danger zone",
   roles: "Roles & access",
   assignments: "Assignments",
   log: "Permission log",
@@ -33,6 +33,7 @@ const labels: Record<string, string> = {
   profile: "Profile",
   appearance: "Appearance",
   security: "Security",
+  automations: "Automations",
 };
 
 const team = { label: "Team", href: "/settings/organization/members" };
