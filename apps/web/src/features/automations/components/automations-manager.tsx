@@ -206,12 +206,12 @@ export const AutomationsManager: FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Header Banner */}
-      <div className="tile p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
+      <div className="tile p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-signal/10 border border-signal/20 text-signal">
             <ZapIcon className="size-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-base font-semibold text-ink">
               Workflow Automations Engine
             </h2>
@@ -222,7 +222,7 @@ export const AutomationsManager: FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleRunEscalation}

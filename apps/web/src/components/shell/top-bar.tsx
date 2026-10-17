@@ -147,12 +147,12 @@ export function TopBar({
       <span className="min-w-0 flex-1 truncate text-base font-semibold md:hidden">
         {current?.label}
       </span>
-      <div className="ml-auto flex items-center gap-1.5 md:gap-2.5">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 md:gap-2.5">
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
           aria-label="Open command palette"
-          className="hidden h-8 w-[280px] items-center gap-2 rounded-lg border border-hairline bg-surface/80 px-2.5 text-left text-xs text-ink-3 shadow-2xs outline-none transition-all hover:border-ink-3 hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring lg:flex"
+          className="hidden h-8 w-44 md:w-56 xl:w-[280px] items-center gap-2 rounded-lg border border-hairline bg-surface/80 px-2.5 text-left text-xs text-ink-3 shadow-2xs outline-none transition-all hover:border-ink-3 hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring lg:flex"
         >
           <SearchIcon className="size-3.5 text-ink-3" aria-hidden="true" />
           <span className="flex-1 truncate">Search or jump to...</span>
