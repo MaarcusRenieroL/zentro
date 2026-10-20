@@ -6,12 +6,16 @@ import {
   ilike,
   inArray,
   isNull,
+  like,
   ne,
   or,
   sql,
 } from "@zentro/db/drizzle";
 import {
   activityEvents,
+  chatChannels,
+  chatMembers,
+  chatMessages,
   docComments,
   docs,
   members,
@@ -310,6 +314,90 @@ export const notificationRouter = router({
         quote: excerpt(row.body),
         createdAt: row.createdAt,
         href: `/tasks/${row.key}`,
+      });
+    }
+
+    // Chat: messages that mention you, and direct messages to you.
+    const chatRows = (await ctx.permissions.can("chat.view"))
+      ? await db
+          .select({
+            id: chatMessages.id,
+            body: chatMessages.body,
+            createdAt: chatMessages.createdAt,
+            channelId: chatMessages.channelId,
+            channelName: chatChannels.name,
+            kind: chatChannels.kind,
+            notify: chatMembers.notify,
+            mutedUntil: chatMembers.mutedUntil,
+            actor: users.name,
+          })
+          .from(chatMessages)
+          .innerJoin(
+            chatMembers,
+            and(
+              eq(chatMembers.channelId, chatMessages.channelId),
+              eq(chatMembers.memberId, me.id),
+            ),
+          )
+          .innerJoin(chatChannels, eq(chatChannels.id, chatMessages.channelId))
+          .leftJoin(members, eq(members.id, chatMessages.authorMemberId))
+          .leftJoin(users, eq(users.id, members.userId))
+          .where(
+            and(
+              eq(chatMessages.organizationId, activeOrganization.id),
+              isNull(chatMessages.deletedAt),
+              isNull(chatMessages.parentId),
+              ne(chatMessages.authorMemberId, me.id),
+              gte(chatMessages.createdAt, since),
+              or(
+                eq(chatChannels.kind, "dm"),
+                like(chatMessages.body, `%<@${me.id}>%`),
+                sql`${chatMessages.body} ~ '<!(channel|here)>'`,
+              ),
+            ),
+          )
+          .orderBy(desc(chatMessages.createdAt))
+          .limit(LIMIT)
+      : [];
+
+    for (const row of chatRows) {
+      // Muted conversations stay quiet.
+      if (
+        row.notify === "mute" ||
+        (row.mutedUntil && row.mutedUntil > new Date())
+      ) {
+        continue;
+      }
+
+      const mentioned =
+        row.body.includes(`<@${me.id}>`) || /<!(channel|here)>/.test(row.body);
+
+      if (row.kind === "channel" && row.notify === "mentions" && !mentioned) {
+        continue;
+      }
+
+      items.push({
+        id: `chat:${row.id}`,
+        kind: mentioned ? "mention" : "comment",
+        actor: row.actor ?? "Someone",
+        verb: mentioned
+          ? "mentioned you in"
+          : row.kind === "dm"
+            ? "sent you a message in"
+            : "wrote in",
+        object: row.kind === "dm" ? "Direct message" : `#${row.channelName}`,
+        objectIsKey: false,
+        title: null,
+        quote: excerpt(
+          row.body
+            .replace(/<@[0-9a-f-]{36}>/g, "@you")
+            .replace(/<!(channel|here)>/g, "@$1"),
+        ),
+        createdAt: row.createdAt,
+        href:
+          row.kind === "dm"
+            ? `/chat/dm/${row.channelId}?m=${row.id}`
+            : `/chat/${row.channelName}?m=${row.id}`,
       });
     }
 
