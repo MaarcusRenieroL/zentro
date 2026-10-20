@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, or, sql } from "@zentro/db/drizzle";
 import {
   chatChannels,
   chatMembers,
+  chatMessages,
   members,
   sessions,
   users,
@@ -256,3 +257,33 @@ export function normalizeChannelName(name: string) {
 
 /** Conversations that are live (not archived), for lists. */
 export const liveChannel = isNull(chatChannels.archivedAt);
+
+/** A message in a conversation the caller can read, or a not-found error. */
+export async function readableMessage(
+  ctx: OrganizationContext,
+  messageId: string,
+) {
+  const [message] = await ctx.db
+    .select({
+      id: chatMessages.id,
+      channelId: chatMessages.channelId,
+      body: chatMessages.body,
+    })
+    .from(chatMessages)
+    .where(
+      and(
+        eq(chatMessages.id, messageId),
+        eq(chatMessages.organizationId, ctx.activeOrganization.id),
+        isNull(chatMessages.deletedAt),
+      ),
+    )
+    .limit(1);
+
+  if (!message) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Message not found." });
+  }
+
+  await readableChannel(ctx, message.channelId);
+
+  return message;
+}

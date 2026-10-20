@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray, isNull, or, type SQL } from "@zentro/db/drizzle";
 import {
+  chatChannels,
+  chatMessages,
   docs,
   members,
   projects,
@@ -11,6 +13,7 @@ import {
 import { z } from "zod";
 
 import { visibleDocsCondition } from "../access";
+import { currentMemberId, readableChannelIds } from "../chat";
 import { docById, taskByKey } from "../resources";
 import {
   denialFor,
@@ -33,7 +36,7 @@ export type LinkedItem = {
   relation: LinkRelation;
   /** Made by a mention in text, so it is removed by editing the text. */
   auto: boolean;
-  type: "task" | "doc";
+  type: "task" | "doc" | "message";
   id: string;
   title: string;
   /** Task key, or the doc's project key. */
@@ -45,7 +48,7 @@ export type LinkedItem = {
   href: string;
 };
 
-type Ref = { type: "task" | "doc"; id: string };
+type Ref = { type: "task" | "doc" | "message"; id: string };
 
 const uuid = z.string().uuid();
 
@@ -104,7 +107,45 @@ export async function linksOf(
     .map(other)
     .filter((ref) => ref.type === "doc")
     .map((ref) => ref.id);
+  const messageIds = rows
+    .map(other)
+    .filter((ref) => ref.type === "message")
+    .map((ref) => ref.id);
   const enabled = await ctx.enabledModules();
+
+  // Chat messages that name this task, from conversations the caller can read.
+  const messageRows =
+    messageIds.length && enabled.has("chat")
+      ? await (async () => {
+          const readable = await readableChannelIds(
+            ctx,
+            await currentMemberId(ctx),
+          );
+
+          if (!readable.length) return [];
+
+          return db
+            .select({
+              id: chatMessages.id,
+              body: chatMessages.body,
+              channelId: chatMessages.channelId,
+              channelName: chatChannels.name,
+              kind: chatChannels.kind,
+            })
+            .from(chatMessages)
+            .innerJoin(
+              chatChannels,
+              eq(chatChannels.id, chatMessages.channelId),
+            )
+            .where(
+              and(
+                inArray(chatMessages.id, messageIds),
+                inArray(chatMessages.channelId, readable),
+                isNull(chatMessages.deletedAt),
+              ),
+            );
+        })()
+      : [];
 
   const [taskRows, docRows] = await Promise.all([
     taskIds.length && enabled.has("tasks")
@@ -184,6 +225,32 @@ export async function linksOf(
           priority: task.priority,
           estimatePoints: task.estimatePoints,
           href: `/tasks/${task.key}`,
+        });
+      }
+    } else if (ref.type === "message") {
+      const message = messageRows.find((entry) => entry.id === ref.id);
+
+      if (message) {
+        const text = message.body
+          .replace(/<@[0-9a-f-]{36}>/g, "@someone")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        items.push({
+          ...base,
+          type: "message",
+          id: message.id,
+          title: text.length > 90 ? `${text.slice(0, 87)}…` : text,
+          key:
+            message.kind === "dm"
+              ? "Direct message"
+              : `#${message.channelName}`,
+          status: null,
+          assignee: null,
+          href:
+            message.kind === "dm"
+              ? `/chat/dm/${message.channelId}?m=${message.id}`
+              : `/chat/${message.channelName}?m=${message.id}`,
         });
       }
     } else {

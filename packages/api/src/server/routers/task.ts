@@ -43,6 +43,7 @@ import {
   router,
 } from "../trpc";
 import { syncMentions } from "../mentions";
+import { readableMessage } from "../chat";
 import { resolveTarget } from "./link";
 import { loadProjectById, projectFromInput, taskByKey } from "../resources";
 import {
@@ -66,7 +67,7 @@ function isUniqueViolation(error: unknown) {
 export const taskRouter = router({
   createTask: permissionProcedure("tasks.create", projectFromInput, {
     module: "tasks",
-    also: ["tasks.assign", "docs.view"],
+    also: ["tasks.assign", "docs.view", "chat.view"],
     audit: ["task.created"],
   })
     .input(createTaskSchema)
@@ -82,6 +83,11 @@ export const taskRouter = router({
       // Created from a doc: the doc must be one the caller can see.
       const linkDoc = input.linkDocId
         ? await resolveTarget(ctx, { type: "doc", id: input.linkDocId })
+        : null;
+
+      // Created from a chat message: the caller must be able to read it.
+      const linkMessage = input.linkMessageId
+        ? await readableMessage(ctx, input.linkMessageId)
         : null;
 
       const create = () =>
@@ -203,6 +209,18 @@ export const taskRouter = router({
               ...(linkDoc ? { linkedTo: linkDoc.label } : {}),
             },
           });
+
+          if (linkMessage) {
+            await tx.insert(workLinks).values({
+              organizationId: activeOrganization.id,
+              sourceType: "message",
+              sourceId: linkMessage.id,
+              targetType: "task",
+              targetId: task.id,
+              kind: "relates",
+              createdByMemberId: member.id,
+            });
+          }
 
           if (linkDoc) {
             await tx.insert(workLinks).values({

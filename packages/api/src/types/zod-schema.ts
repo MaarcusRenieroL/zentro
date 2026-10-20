@@ -151,6 +151,8 @@ export const createTaskSchema = z.object({
   /** A doc to link the new task to, when it is created from that doc. */
   linkDocId: z.string().uuid().optional(),
   parentTaskId: z.string().uuid().optional().nullable(),
+  /** A chat message to link the new task to, when made from that message. */
+  linkMessageId: z.string().uuid().optional(),
   projectId: z
     .string({ error: "Pick a project so this task gets a key like ZEN-18." })
     .uuid("Pick a project so this task gets a key like ZEN-18."),
