@@ -71,6 +71,8 @@ type Props = {
   hideTrigger?: boolean;
   /** Created from a doc: the new task is linked to it. */
   linkDocId?: string;
+  /** Created from a chat message: starts with its text, linked back to it. */
+  linkMessageId?: string;
 };
 
 const unassignedValue = "unassigned";
@@ -167,6 +169,7 @@ const CreateTaskModalInner: FC<Props> = ({
   onOpenChange,
   hideTrigger = false,
   linkDocId,
+  linkMessageId,
 }) => {
   const trpc = useTrpcClient();
   const userId = useCurrentUserId();
@@ -306,6 +309,7 @@ const CreateTaskModalInner: FC<Props> = ({
         assignedToMemberId: values.assignedToMemberId || null,
         dueAt: values.dueAt || null,
         ...(linkDocId ? { linkDocId } : {}),
+        ...(linkMessageId ? { linkMessageId } : {}),
       });
 
       toastSuccess("Task created", `${task.key} is ready.`);
