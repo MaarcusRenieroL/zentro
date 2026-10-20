@@ -10,6 +10,7 @@ import { fileRouter } from "./routers/file";
 import { chatChannelProcedures } from "./routers/chat";
 import { chatMessageProcedures } from "./routers/chat-messages";
 import { favoriteRouter } from "./routers/favorite";
+import { filesRouterProcedures } from "./routers/files";
 import { invitationRouter } from "./routers/invitation";
 import { linkRouter } from "./routers/link";
 import { notificationRouter } from "./routers/notification";
@@ -36,6 +37,7 @@ export const appRouter = router({
   file: fileRouter,
   chat: router({ ...chatChannelProcedures, ...chatMessageProcedures }),
   favorite: favoriteRouter,
+  files: router(filesRouterProcedures),
   invitation: invitationRouter,
   link: linkRouter,
   member: memberRouter,

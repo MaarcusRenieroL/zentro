@@ -19,6 +19,8 @@ const mutations = procedures.filter(({ def }) => def.type === "mutation");
 // Mutations that legitimately record no event, each with the reason. A new
 // mutation must declare `meta.audit` or be added here on purpose.
 const recordsNothing: Record<string, string> = {
+  "files.register":
+    "Records an upload; sharing it is a message in a conversation.",
   "chat.send":
     "Messages are the conversation itself; channel and membership changes are audited.",
   "chat.edit": "Editing your own message; the message shows it was edited.",

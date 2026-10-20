@@ -52,3 +52,4 @@ AUDIT_REPORT.md
 playwright-report/
 test-results/
 .neon
+.uploads/
