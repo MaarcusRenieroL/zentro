@@ -13,7 +13,8 @@ export type AuditTargetType =
   | "module"
   | "session"
   | "user"
-  | "audit";
+  | "audit"
+  | "channel";
 
 /** Where an event belongs: a module id, or the platform itself. */
 export type AuditModule =
@@ -22,6 +23,7 @@ export type AuditModule =
   | "projects"
   | "tasks"
   | "docs"
+  | "chat"
   | "dashboard";
 
 export type AuditEventDefinition = {

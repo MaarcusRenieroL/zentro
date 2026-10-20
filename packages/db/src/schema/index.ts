@@ -13,3 +13,5 @@ export * from "./notification";
 export * from "./link";
 export * from "./favorite";
 export * from "./automation";
+export * from "./chat";
+export * from "./file";

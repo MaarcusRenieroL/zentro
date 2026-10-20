@@ -20,6 +20,7 @@ const targetTypes = [
   "team",
   "project",
   "task",
+  "channel",
   "doc",
   "comment",
   "role",

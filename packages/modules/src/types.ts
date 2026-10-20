@@ -1,4 +1,10 @@
-export type ModuleId = "dashboard" | "settings" | "projects" | "tasks" | "docs";
+export type ModuleId =
+  | "dashboard"
+  | "settings"
+  | "projects"
+  | "tasks"
+  | "docs"
+  | "chat";
 
 export type ModuleNavLink = {
   label: string;

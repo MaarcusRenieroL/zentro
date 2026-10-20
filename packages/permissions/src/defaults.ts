@@ -39,6 +39,13 @@ const taskWork = [
   "tasks.activity.view",
 ];
 
+const chatWork = [
+  "chat.view",
+  "chat.post",
+  "chat.channels.create",
+  "chat.files.upload",
+];
+
 const docWork = [
   "docs.view",
   "docs.create",
@@ -83,6 +90,7 @@ export function getSystemRoleDefinitions(): SystemRoleDefinition[] {
         "projects.view",
         ...taskWork,
         ...docWork,
+        ...chatWork,
         "modules.view",
       ],
       editable: true,

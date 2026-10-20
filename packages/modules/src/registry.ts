@@ -1,4 +1,5 @@
 import {
+  chatPermissions,
   docsPermissions,
   projectsPermissions,
   settingsPermissions,
@@ -256,6 +257,48 @@ export const moduleRegistry: readonly ModuleManifest[] = [
                 href: "/docs/trash",
                 permission: "docs.view",
                 icon: "Trash2",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "chat",
+    name: "Chat",
+    description:
+      "Channels and direct messages next to the work, linked to tasks and projects.",
+    icon: "MessageSquare",
+    basePath: "/chat",
+    core: false,
+    defaultEnabled: true,
+    dependsOn: [],
+    permissionNamespaces: ["chat"],
+    permissions: chatPermissions,
+    nav: [
+      {
+        id: "work",
+        label: "Work",
+        order: 20,
+        items: [
+          {
+            label: "Chat",
+            href: "/chat",
+            permission: "chat.view",
+            icon: "MessageSquare",
+            children: [
+              {
+                label: "Mentions",
+                href: "/chat/mentions",
+                permission: "chat.view",
+                icon: "AtSign",
+              },
+              {
+                label: "Search messages",
+                href: "/chat/search",
+                permission: "chat.view",
+                icon: "Search",
               },
             ],
           },

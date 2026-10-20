@@ -141,6 +141,13 @@
       "when": 1792090000000,
       "tag": "0019_automations",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792464409113,
+      "tag": "0020_chat",
+      "breakpoints": true
     }
   ]
 }

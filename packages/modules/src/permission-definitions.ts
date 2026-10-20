@@ -461,3 +461,43 @@ export const platformPermissions: PermissionDefinition[] = [
     { uiOnly: "Comments cannot be deleted yet." },
   ),
 ];
+
+// Chat belongs to the whole organization: channels are found and joined
+// there, so its keys have no team or project scope.
+export const chatPermissions: PermissionDefinition[] = [
+  definePermission(
+    "chat.view",
+    "View chat",
+    "Read public channels and the conversations the user is in.",
+    "Chat",
+    ["organization"],
+  ),
+  definePermission(
+    "chat.post",
+    "Send messages",
+    "Post, reply and react in channels and direct messages.",
+    "Chat",
+    ["organization"],
+  ),
+  definePermission(
+    "chat.channels.create",
+    "Create channels",
+    "Start new channels and direct messages.",
+    "Chat",
+    ["organization"],
+  ),
+  definePermission(
+    "chat.files.upload",
+    "Share files",
+    "Attach files and images to messages.",
+    "Chat",
+    ["organization"],
+  ),
+  definePermission(
+    "chat.channels.manage",
+    "Manage any channel",
+    "Rename, archive and change the members of any channel, not only ones the user runs.",
+    "Chat",
+    ["organization"],
+  ),
+];
