@@ -13,7 +13,7 @@ export function taskKeysIn(text: string | null | undefined): string[] {
   return [...new Set(text.match(taskKeyPattern) ?? [])].slice(0, 100);
 }
 
-type Source = { type: "task" | "doc"; id: string };
+type Source = { type: "task" | "doc" | "message"; id: string };
 
 /**
  * Keeps "mentions" links in step with the task keys a text names. A doc's
@@ -28,7 +28,7 @@ export async function syncMentions(
     memberId: string | null;
     source: Source;
     text: string | null | undefined;
-    via: "content" | "description" | "comment";
+    via: "content" | "description" | "comment" | "chat";
     mode: "replace" | "append";
   },
 ) {

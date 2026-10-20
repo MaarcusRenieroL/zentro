@@ -19,6 +19,18 @@ const mutations = procedures.filter(({ def }) => def.type === "mutation");
 // Mutations that legitimately record no event, each with the reason. A new
 // mutation must declare `meta.audit` or be added here on purpose.
 const recordsNothing: Record<string, string> = {
+  "chat.send":
+    "Messages are the conversation itself; channel and membership changes are audited.",
+  "chat.edit": "Editing your own message; the message shows it was edited.",
+  "chat.remove": "Deleting a message leaves a placeholder in the conversation.",
+  "chat.react": "Reactions are part of the conversation, not administration.",
+  "chat.pin": "Pins are shown in the channel to everyone in it.",
+  "chat.markRead": "A personal read mark.",
+  "chat.markMentionsRead": "A personal read mark.",
+  "chat.setPreferences": "Personal notification and pin settings.",
+  "chat.openDm": "Starting a direct message between the people in it.",
+  "chat.requestAccess":
+    "Sends a direct message to a channel admin; nothing changes until they add the person.",
   "favorite.toggle": "A personal star; it changes nothing anyone else sees.",
   "notification.markRead":
     "A personal read mark on your own inbox; it changes nothing anyone else sees.",

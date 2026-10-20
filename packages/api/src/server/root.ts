@@ -7,6 +7,8 @@ import { auditRouter } from "./routers/audit";
 import { commentRouter } from "./routers/comment";
 import { docsRouter } from "./routers/doc";
 import { fileRouter } from "./routers/file";
+import { chatChannelProcedures } from "./routers/chat";
+import { chatMessageProcedures } from "./routers/chat-messages";
 import { favoriteRouter } from "./routers/favorite";
 import { invitationRouter } from "./routers/invitation";
 import { linkRouter } from "./routers/link";
@@ -32,6 +34,7 @@ export const appRouter = router({
   comment: commentRouter,
   docs: docsRouter,
   file: fileRouter,
+  chat: router({ ...chatChannelProcedures, ...chatMessageProcedures }),
   favorite: favoriteRouter,
   invitation: invitationRouter,
   link: linkRouter,
