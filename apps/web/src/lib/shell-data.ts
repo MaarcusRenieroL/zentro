@@ -10,6 +10,7 @@ const order = [
   "tasks",
   "projects",
   "docs",
+  "chat",
   "team",
   "overview",
   "settings",

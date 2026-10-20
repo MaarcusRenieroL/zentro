@@ -1,5 +1,6 @@
 "use client";
 
+import { useChatBadge } from "~/src/components/chat/chat-store";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef } from "react";
@@ -76,6 +77,7 @@ export function AppSidebar({
   taskCount,
 }: Props) {
   const pathname = usePathname();
+  const chatBadge = useChatBadge(modules.some((item) => item.id === "chat"));
   const active = findActiveModule(modules, pathname);
   const listRef = useRef<HTMLUListElement>(null);
   const box = useActiveBox(listRef, '[data-active="true"]');
@@ -186,6 +188,11 @@ export function AppSidebar({
                           {item.id === "tasks" && taskCount ? (
                             <span className="font-mono text-[11px] font-semibold px-1.5 py-0.2 rounded-full bg-signal/10 text-signal group-data-[collapsible=icon]:hidden">
                               {taskCount}
+                            </span>
+                          ) : null}
+                          {item.id === "chat" && chatBadge ? (
+                            <span className="rounded-full bg-ink px-1.5 font-mono text-[11px] leading-[18px] text-ink-inverse group-data-[collapsible=icon]:hidden">
+                              {chatBadge}
                             </span>
                           ) : null}
                           {item.id === "overview" ? (

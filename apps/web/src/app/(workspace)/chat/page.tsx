@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 
-import { ComingSoon } from "~/src/components/system/coming-soon";
-import { getDashboardContext } from "~/src/lib/dashboard-context";
-
 export const metadata: Metadata = { title: "Chat" };
 
-export default async function ChatPage() {
-  const { session } = await getDashboardContext();
-
-  return <ComingSoon kind="chat" email={session.user.email} />;
+// The channel list lives in the layout; on desktop this is the empty pane.
+export default function ChatPage() {
+  return (
+    <div className="hidden flex-1 flex-col items-center justify-center gap-2 px-6 text-center md:flex">
+      <p className="eyebrow">Chat</p>
+      <h2 className="font-serif-italic text-[2rem] leading-10">
+        Pick a conversation.
+      </h2>
+      <p className="max-w-sm text-[15px] text-ink-2">
+        Choose a channel or message from the list, or start a new one.
+      </p>
+    </div>
+  );
 }
