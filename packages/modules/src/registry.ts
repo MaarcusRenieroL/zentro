@@ -1,6 +1,7 @@
 import {
   chatPermissions,
   docsPermissions,
+  filesPermissions,
   projectsPermissions,
   settingsPermissions,
   tasksPermissions,
@@ -301,6 +302,33 @@ export const moduleRegistry: readonly ModuleManifest[] = [
                 icon: "Search",
               },
             ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "files",
+    name: "Files",
+    description: "One library for every file your team shares.",
+    icon: "Folder",
+    basePath: "/files",
+    core: false,
+    defaultEnabled: true,
+    dependsOn: [],
+    permissionNamespaces: ["files"],
+    permissions: filesPermissions,
+    nav: [
+      {
+        id: "work",
+        label: "Work",
+        order: 20,
+        items: [
+          {
+            label: "Files",
+            href: "/files",
+            permission: "files.view",
+            icon: "Folder",
           },
         ],
       },

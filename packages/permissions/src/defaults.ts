@@ -46,6 +46,8 @@ const chatWork = [
   "chat.files.upload",
 ];
 
+const fileWork = ["files.view", "files.upload", "files.delete_own"];
+
 const docWork = [
   "docs.view",
   "docs.create",
@@ -91,6 +93,7 @@ export function getSystemRoleDefinitions(): SystemRoleDefinition[] {
         ...taskWork,
         ...docWork,
         ...chatWork,
+        ...fileWork,
         "modules.view",
       ],
       editable: true,

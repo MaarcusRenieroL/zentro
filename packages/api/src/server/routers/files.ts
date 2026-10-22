@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray, isNull, sql } from "@zentro/db/drizzle";
+import { and, desc, eq, ilike, inArray, isNull, sql } from "@zentro/db/drizzle";
 import {
   chatAttachments,
   chatChannels,
@@ -18,6 +18,9 @@ import { permissionProcedure, type OrganizationContext } from "../trpc";
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
 const uuid = z.string().uuid();
+
+const filesProcedure = (permission: string) =>
+  permissionProcedure(permission, undefined, { module: "files" });
 
 const chatProcedure = (permission: string) =>
   permissionProcedure(permission, undefined, { module: "chat" });
@@ -75,6 +78,37 @@ export async function canReadFile(ctx: OrganizationContext, fileId: string) {
     : [];
 
   return attached ? file : null;
+}
+
+async function manageableFile(ctx: OrganizationContext, id: string) {
+  const memberId = await currentMemberId(ctx);
+  const [file] = await ctx.db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, id),
+        eq(files.organizationId, ctx.activeOrganization.id),
+        isNull(files.deletedAt),
+      ),
+    )
+    .limit(1);
+
+  if (!file) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "File not found." });
+  }
+
+  if (
+    file.uploadedByMemberId !== memberId &&
+    !(await ctx.permissions.can("files.delete_any"))
+  ) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You can only change files you uploaded.",
+    });
+  }
+
+  return file;
 }
 
 export const filesRouterProcedures = {
@@ -226,5 +260,98 @@ export const filesRouterProcedures = {
         .limit(100);
 
       return rows.map((row) => ({ ...row, url: `/api/files/${row.id}` }));
+    }),
+
+  /** The organization's file library, newest first. */
+  library: filesProcedure("files.view")
+    .input(
+      z
+        .object({
+          search: z.string().trim().max(120).optional(),
+          kind: z.enum(["all", "image", "document", "other"]).default("all"),
+        })
+        .default({ kind: "all" }),
+    )
+    .query(async ({ ctx, input }) => {
+      const memberId = await currentMemberId(ctx);
+      const canDeleteAny = await ctx.permissions.can("files.delete_any");
+      const canDeleteOwn = await ctx.permissions.can("files.delete_own");
+      const escaped = input.search?.replace(/[\\%_]/g, "\\$&");
+
+      const rows = await ctx.db
+        .select({
+          id: files.id,
+          name: files.name,
+          mimeType: files.mimeType,
+          size: files.size,
+          width: files.width,
+          height: files.height,
+          createdAt: files.createdAt,
+          uploadedByMemberId: files.uploadedByMemberId,
+          uploader: users.name,
+        })
+        .from(files)
+        .leftJoin(members, eq(members.id, files.uploadedByMemberId))
+        .leftJoin(users, eq(users.id, members.userId))
+        .where(
+          and(
+            eq(files.organizationId, ctx.activeOrganization.id),
+            isNull(files.deletedAt),
+            escaped ? ilike(files.name, `%${escaped}%`) : undefined,
+            input.kind === "image"
+              ? ilike(files.mimeType, "image/%")
+              : undefined,
+            input.kind === "document"
+              ? sql`(${files.mimeType} like 'text/%' or ${files.mimeType} like 'application/%')`
+              : undefined,
+            input.kind === "other"
+              ? sql`(${files.mimeType} not like 'image/%' and ${files.mimeType} not like 'text/%' and ${files.mimeType} not like 'application/%')`
+              : undefined,
+          ),
+        )
+        .orderBy(desc(files.createdAt))
+        .limit(300);
+
+      return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        mimeType: row.mimeType,
+        size: row.size,
+        width: row.width,
+        height: row.height,
+        createdAt: row.createdAt,
+        uploadedBy: row.uploader ?? null,
+        url: `/api/files/${row.id}`,
+        canManage:
+          canDeleteAny || (canDeleteOwn && row.uploadedByMemberId === memberId),
+      }));
+    }),
+
+  /** Renames a file the caller owns or may manage. */
+  rename: filesProcedure("files.delete_own")
+    .input(z.object({ id: uuid, name: z.string().trim().min(1).max(255) }))
+    .mutation(async ({ ctx, input }) => {
+      const file = await manageableFile(ctx, input.id);
+
+      await ctx.db
+        .update(files)
+        .set({ name: input.name })
+        .where(eq(files.id, file.id));
+
+      return { id: file.id };
+    }),
+
+  /** Removes a file from the library (it is kept where messages use it). */
+  remove: filesProcedure("files.delete_own")
+    .input(z.object({ id: uuid }))
+    .mutation(async ({ ctx, input }) => {
+      const file = await manageableFile(ctx, input.id);
+
+      await ctx.db
+        .update(files)
+        .set({ deletedAt: new Date() })
+        .where(eq(files.id, file.id));
+
+      return { id: file.id };
     }),
 };

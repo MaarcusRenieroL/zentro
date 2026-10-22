@@ -501,3 +501,34 @@ export const chatPermissions: PermissionDefinition[] = [
     ["organization"],
   ),
 ];
+
+export const filesPermissions: PermissionDefinition[] = [
+  definePermission(
+    "files.view",
+    "View files",
+    "Browse the organization's file library.",
+    "Files",
+    org,
+  ),
+  definePermission(
+    "files.upload",
+    "Upload files",
+    "Add files to the library.",
+    "Files",
+    org,
+  ),
+  definePermission(
+    "files.delete_own",
+    "Delete own files",
+    "Rename and delete files the user uploaded.",
+    "Files",
+    org,
+  ),
+  definePermission(
+    "files.delete_any",
+    "Delete any file",
+    "Rename and delete any file in the library.",
+    "Files",
+    org,
+  ),
+];
