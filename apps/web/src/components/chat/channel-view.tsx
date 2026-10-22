@@ -4,13 +4,17 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  BarChart3Icon,
   BellIcon,
   BellOffIcon,
   HashIcon,
   LockIcon,
+  MoreHorizontalIcon,
   PinIcon,
   SearchIcon,
   SettingsIcon,
+  SparklesIcon,
+  VideoIcon,
   WifiOffIcon,
 } from "lucide-react";
 
@@ -18,8 +22,14 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@zentro/api/server";
 import { useTrpcClient } from "@zentro/api/react";
 import { cn } from "@zentro/ui/lib/utils";
-import { toastError } from "@zentro/ui/index";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import { Button } from "@zentro/ui/shadcn/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@zentro/ui/shadcn/dropdown-menu";
 import {
   Popover,
   PopoverContent,
@@ -30,11 +40,28 @@ import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 import { CreateTaskModal } from "~/src/features/tasks/components/create-task-modal";
 import { usePermission } from "~/src/components/permissions/permission-provider";
 
+import { ChannelInfoBar, TypingLine } from "./channel-extras";
 import { ChannelSettingsDialog } from "./channel-settings-dialog";
+import {
+  EmojiManagerDialog,
+  ForwardDialog,
+  PollDialog,
+  SummaryDialog,
+} from "./chat-dialogs-extra";
 import { useChatSidebar } from "./chat-store";
-import { Composer, type Draft, type Person } from "./composer";
+import {
+  Composer,
+  type Draft,
+  type Person,
+  type SlashCommand,
+} from "./composer";
 import { FilePreviewDialog } from "./file-preview";
-import { dayHeading, MessageBody, messageTime } from "./message-body";
+import {
+  dayHeading,
+  MessageBody,
+  messageTime,
+  untilLabel,
+} from "./message-body";
 import {
   Avatar,
   MessageItem,
@@ -102,6 +129,86 @@ export function usePeople() {
   return people;
 }
 
+/** "30m", "2h", "tomorrow", "monday": when a command should happen. */
+function parseWhen(word: string): Date | null {
+  const lower = word.toLowerCase();
+  const relative = /^(\d{1,3})(m|min|h|hr)$/.exec(lower);
+
+  if (relative) {
+    const amount = Number(relative[1]);
+
+    return new Date(
+      Date.now() + amount * (relative[2]!.startsWith("h") ? 3_600_000 : 60_000),
+    );
+  }
+
+  const date = new Date();
+
+  if (lower === "tomorrow") {
+    date.setDate(date.getDate() + 1);
+    date.setHours(9, 0, 0, 0);
+
+    return date;
+  }
+
+  if (lower === "monday") {
+    date.setDate(date.getDate() + ((8 - date.getDay()) % 7 || 7));
+    date.setHours(9, 0, 0, 0);
+
+    return date;
+  }
+
+  return null;
+}
+
+const slugOf = (title: string) =>
+  `${
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 80) || "doc"
+  }-${Math.random().toString(36).slice(2, 6)}`;
+
+/** A message body as plain text, with mentions written as names. */
+function plainText(body: string, names: Record<string, string>) {
+  return body
+    .replace(
+      /<@([0-9a-f-]{36})>/g,
+      (_, id: string) => `@${names[id] ?? "someone"}`,
+    )
+    .replace(/<!(channel|here)>/g, "@$1");
+}
+
+function localView(
+  base: Pick<MessageView, "id" | "channelId" | "clientId" | "body"> & {
+    author: { memberId: string; name: string };
+  },
+): MessageView {
+  return {
+    ...base,
+    parentId: null,
+    kind: "message",
+    meta: null,
+    author: { ...base.author, presence: "active", status: null },
+    saved: null,
+    poll: null,
+    forwarded: null,
+    entities: [],
+    links: [],
+    mine: true,
+    createdAt: new Date(),
+    editedAt: null,
+    deleted: false,
+    pinned: false,
+    names: {},
+    reactions: [],
+    attachments: [],
+    tasks: [],
+    replies: null,
+  };
+}
+
 /** One conversation: header, messages, composer and its thread. */
 export function ChannelView({ name, id }: { name?: string; id?: string }) {
   const trpc = useTrpcClient();
@@ -130,6 +237,24 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
   const [taskFrom, setTaskFrom] = useState<MessageView | null>(null);
   const [highlight, setHighlight] = useState<string | null>(anchor);
   const [retryIn, setRetryIn] = useState(8);
+  const [forwardOf, setForwardOf] = useState<MessageView | null>(null);
+  const [summary, setSummary] = useState(false);
+  const [poll, setPoll] = useState<{
+    question: string;
+    options?: string[];
+  } | null>(null);
+  const [emojiManager, setEmojiManager] = useState(false);
+  const [newTask, setNewTask] = useState<string | null>(null);
+  const [typers, setTypers] = useState<string[]>([]);
+  const [readers, setReaders] = useState<
+    Array<{ memberId: string; name: string; lastReadAt: Date | string }>
+  >([]);
+  // When the person last read this conversation, from before they opened it.
+  const [readMark, setReadMark] = useState<Date | null>(null);
+  const readMarkFor = useRef<string | null>(null);
+  const scrolledToUnread = useRef(false);
+  const unfurled = useRef(new Set<string>());
+  const lastTyping = useRef(0);
   const list = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
   const channelId = channel?.id;
@@ -151,10 +276,34 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
     setLocal([]);
     setThread(null);
     setError(null);
+    setReadMark(null);
+    setTypers([]);
+    setReaders([]);
+    readMarkFor.current = null;
+    scrolledToUnread.current = false;
     void loadChannel();
   }, [loadChannel]);
 
   const full = channel?.access === "full" ? channel : null;
+
+  // A link like ?thread=<id> opens that thread beside the conversation.
+  const threadParam = search.get("thread");
+
+  useEffect(() => {
+    if (full && threadParam) setThread(threadParam);
+    // Only when the link or the conversation changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [full?.id, threadParam]);
+
+  // Remember where the person had read up to, before opening marks it read.
+  useEffect(() => {
+    if (!full || readMarkFor.current === full.id) return;
+
+    readMarkFor.current = full.id;
+    setReadMark(
+      full.joined && full.lastReadAt ? new Date(full.lastReadAt) : null,
+    );
+  }, [full]);
 
   /** The newest page, merged over what is already loaded. */
   const refresh = useCallback(
@@ -258,8 +407,19 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
       return;
     }
 
+    // Opening a conversation with unread messages lands on the first one.
+    const divider = document.getElementById("unread-divider");
+
+    if (divider && !scrolledToUnread.current) {
+      scrolledToUnread.current = true;
+      stickToBottom.current = false;
+      divider.scrollIntoView({ block: "start" });
+
+      return;
+    }
+
     if (stickToBottom.current) element.scrollTop = element.scrollHeight;
-  }, [messages, local, anchor]);
+  }, [messages, local, anchor, readMark]);
 
   useEffect(() => {
     if (!highlight) return;
@@ -353,28 +513,96 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
   const me = people.find((person) => person.isMe);
   const meId = me?.memberId ?? "";
 
+  // Who is typing, and who has read what: light polling while this is open.
+  useEffect(() => {
+    if (!channelId || !full) return;
+
+    let live = true;
+    const poll = () => {
+      if (document.visibilityState !== "visible") return;
+
+      trpc.chat.typingNow
+        .query({ channelId })
+        .then((names) => live && setTypers(names))
+        .catch(() => undefined);
+    };
+    const id = setInterval(poll, 3000);
+
+    return () => {
+      live = false;
+      clearInterval(id);
+    };
+  }, [trpc, channelId, full]);
+
+  useEffect(() => {
+    if (!channelId || !full) return;
+
+    let live = true;
+    const load = () => {
+      if (document.visibilityState !== "visible") return;
+
+      trpc.chat.readState
+        .query({ channelId })
+        .then((rows) => live && setReaders(rows))
+        .catch(() => undefined);
+    };
+
+    load();
+
+    const id = setInterval(load, 8000);
+
+    return () => {
+      live = false;
+      clearInterval(id);
+    };
+  }, [trpc, channelId, full]);
+
+  // Fetch previews for links in messages that have none yet, once each.
+  useEffect(() => {
+    if (!messages) return;
+
+    const pending = messages.filter(
+      (message) =>
+        !message.deleted &&
+        !message.links.length &&
+        /https?:\/\/[^\s<]+/.test(message.body) &&
+        !unfurled.current.has(message.id) &&
+        !message.id.startsWith("local-"),
+    );
+
+    if (!pending.length) return;
+
+    for (const message of pending) unfurled.current.add(message.id);
+
+    void Promise.all(
+      pending.slice(0, 5).map((message) =>
+        trpc.chat.unfurl.mutate({ messageId: message.id }).catch(() => ({
+          fetched: 0,
+        })),
+      ),
+    ).then((results) => {
+      if (results.some((result) => result.fetched > 0)) void refresh();
+    });
+  }, [messages, trpc, refresh]);
+
+  const typed = () => {
+    if (!channelId || Date.now() - lastTyping.current < 3000) return;
+
+    lastTyping.current = Date.now();
+    void trpc.chat.typing.mutate({ channelId }).catch(() => undefined);
+  };
+
   const send = async (draft: Draft) => {
     if (!channelId || !me) return;
 
     const localId = crypto.randomUUID();
-    const view: MessageView = {
+    const view = localView({
       id: `local-${localId}`,
       channelId,
-      parentId: null,
       clientId: localId,
-      author: { memberId: me.memberId, name: me.name, presence: "active" },
-      mine: true,
       body: draft.body,
-      createdAt: new Date(),
-      editedAt: null,
-      deleted: false,
-      pinned: false,
-      names: {},
-      reactions: [],
-      attachments: [],
-      tasks: [],
-      replies: null,
-    };
+      author: { memberId: me.memberId, name: me.name },
+    });
     const item: Local = { localId, state: "sending", draft, view };
 
     stickToBottom.current = true;
@@ -388,6 +616,236 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
       await refresh();
     } catch (caught) {
       toastError(caught, fail);
+    }
+  };
+
+  /** Starts a doc from a message and its thread, then opens it. */
+  const makeDoc = async (message: MessageView) => {
+    try {
+      const replies =
+        message.replies && message.replies.count > 0
+          ? (await trpc.chat.thread.query({ messageId: message.id })).replies
+          : [];
+      const first = plainText(message.body, message.names).split("\n")[0] ?? "";
+      const title = first.trim().slice(0, 80) || "Notes from chat";
+      const where = full?.kind === "dm" ? "a direct message" : `#${full?.name}`;
+      const line = (entry: MessageView) =>
+        `**${entry.author?.name ?? "Someone"}** (${new Date(entry.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}): ${plainText(entry.body, entry.names)}`;
+      const content = [
+        `# ${title}`,
+        `_From ${where}. ${window.location.origin}/chat/${full?.kind === "dm" ? `dm/${channelId}` : full?.name}?m=${message.id}_`,
+        "",
+        line(message),
+        ...replies.map(line),
+      ].join("\n\n");
+      const slug = slugOf(title);
+
+      await trpc.docs.create.mutate({ title, content, slug });
+      toastSuccess("Doc created");
+      router.push(`/docs/${slug}`);
+    } catch (error) {
+      toastError(error, "Could not create the doc");
+    }
+  };
+
+  const postPlain = async (body: string) => {
+    if (!channelId) return;
+
+    await trpc.chat.send.mutate({
+      channelId,
+      body,
+      clientId: crypto.randomUUID(),
+      fileIds: [],
+    });
+    await refresh();
+    void sidebar.refresh();
+  };
+
+  const commands: SlashCommand[] = [
+    {
+      name: "task",
+      usage: "<title>",
+      description: "Create a task",
+      run: (args) => setNewTask(args),
+    },
+    {
+      name: "doc",
+      usage: "<title>",
+      description: "Create a doc and share it here",
+      run: async (args) => {
+        const title = args || "Untitled";
+        const slug = slugOf(title);
+
+        await trpc.docs.create.mutate({ title, content: "", slug });
+        await postPlain(
+          `Created a doc: ${window.location.origin}/docs/${slug}`,
+        );
+        toastSuccess("Doc created and shared");
+      },
+    },
+    {
+      name: "poll",
+      usage: "Question | option | option",
+      description: "Ask the channel to vote",
+      run: async (args) => {
+        const [question = "", ...options] = args
+          .split("|")
+          .map((part) => part.trim());
+        const filled = options.filter(Boolean);
+
+        if (question && filled.length >= 2 && channelId) {
+          await trpc.chat.createPoll.mutate({
+            channelId,
+            question,
+            options: filled.slice(0, 8),
+          });
+          await refresh();
+        } else {
+          setPoll({ question, options: filled.length ? filled : undefined });
+        }
+      },
+    },
+    {
+      name: "huddle",
+      usage: "",
+      description: "Start a video huddle",
+      run: async () => {
+        if (!channelId) return;
+
+        const { url } = await trpc.chat.startHuddle.mutate({ channelId });
+
+        await refresh();
+        window.open(url, "_blank", "noopener");
+      },
+    },
+    {
+      name: "summarize",
+      usage: "",
+      description: "Summarize recent messages",
+      run: () => setSummary(true),
+    },
+    {
+      name: "schedule",
+      usage: "<30m|2h|tomorrow|monday> <message>",
+      description: "Send a message later",
+      run: async (args) => {
+        const [when = "", ...rest] = args.split(/\s+/);
+        const at = parseWhen(when);
+        const body = rest.join(" ").trim();
+
+        if (!at || !body || !channelId) {
+          throw new Error(
+            "Use /schedule 30m <message>, or 2h, tomorrow, monday.",
+          );
+        }
+
+        await trpc.chat.schedule.mutate({ channelId, body, sendAt: at });
+        toastSuccess(`Scheduled for ${untilLabel(at)}`);
+        void sidebar.refresh();
+      },
+    },
+    {
+      name: "status",
+      usage: "<emoji> <text>",
+      description: "Set your status",
+      run: async (args) => {
+        const match = /^(\p{Extended_Pictographic}\S*)?\s*(.*)$/u.exec(args);
+
+        await trpc.chat.statusSet.mutate({
+          emoji: match?.[1] ?? null,
+          text: match?.[2]?.trim() || null,
+          clearInMinutes: null,
+          dndMinutes: null,
+        });
+        toastSuccess(args ? "Status updated" : "Status cleared");
+      },
+    },
+    {
+      name: "dnd",
+      usage: "<30m|2h|off>",
+      description: "Pause notifications",
+      run: async (args) => {
+        const until = parseWhen(args);
+
+        await trpc.chat.statusSet.mutate({
+          emoji: null,
+          text: null,
+          clearInMinutes: null,
+          dndMinutes:
+            args === "off" || !until
+              ? 0
+              : Math.max(
+                  1,
+                  Math.round((until.getTime() - Date.now()) / 60_000),
+                ),
+        });
+        await sidebar.refresh();
+        toastSuccess(
+          args === "off" || !until
+            ? "Do not disturb is off"
+            : "Do not disturb is on",
+        );
+      },
+    },
+    {
+      name: "assign",
+      usage: "[TASK-KEY] @person",
+      description: "Assign a task",
+      run: async (args) => {
+        // In a task's own discussion the key is the task itself.
+        const key =
+          /\b[A-Z][A-Z0-9]{1,9}-\d{1,6}\b/.exec(args)?.[0] ??
+          (full?.link?.type === "task" ? full.link.key : null);
+        const who = /<@([0-9a-f-]{36})>/.exec(args)?.[1];
+
+        if (!key || !who) throw new Error("Use /assign MA-6 @person.");
+
+        await trpc.task.updateTaskByKey.mutate({
+          key,
+          assignedToMemberId: who,
+        });
+        toastSuccess(`${key} assigned`);
+        await postPlain(
+          `assigned ${key} to ${args.replace(/\b[A-Z][A-Z0-9]{1,9}-\d{1,6}\b/, "").trim()}`,
+        );
+      },
+    },
+    {
+      name: "done",
+      usage: "[TASK-KEY]",
+      description: "Mark a task done",
+      run: async (args) => {
+        const key =
+          /\b[A-Z][A-Z0-9]{1,9}-\d{1,6}\b/.exec(args)?.[0] ??
+          (full?.link?.type === "task" ? full.link.key : null);
+
+        if (!key) throw new Error("Use /done MA-6.");
+
+        await trpc.task.updateTaskByKey.mutate({ key, status: "done" });
+        toastSuccess(`${key} marked done`);
+      },
+    },
+    {
+      name: "shrug",
+      usage: "[message]",
+      description: "Add ¯\\_(ツ)_/¯",
+      run: (args) => postPlain(`${args} ¯\\_(ツ)_/¯`.trim()),
+    },
+  ];
+
+  const schedule = async (draft: Draft, at: Date) => {
+    if (!channelId) return;
+
+    try {
+      await trpc.chat.schedule.mutate({
+        channelId,
+        body: draft.body,
+        sendAt: at,
+      });
+      toastSuccess(`Scheduled for ${untilLabel(at)}`);
+      void sidebar.refresh();
+    } catch (error) {
+      toastError(error, "Could not schedule the message");
     }
   };
 
@@ -427,6 +885,52 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
       setLocal((current) =>
         current.filter((entry) => entry.view.id !== message.id),
       ),
+    onSave: (message, saved) =>
+      void run(async () => {
+        await trpc.chat.saveMessage.mutate({ messageId: message.id, saved });
+        toastSuccess(saved ? "Saved for later" : "Removed from saved");
+        void sidebar.refresh();
+      }, "Could not save the message"),
+    onRemind: (message, at) =>
+      void run(async () => {
+        await trpc.chat.setReminder.mutate({
+          messageId: message.id,
+          remindAt: at,
+        });
+        toastSuccess(
+          at ? `I’ll remind you ${untilLabel(at)}` : "Reminder cleared",
+        );
+        void sidebar.refresh();
+      }, "Could not set the reminder"),
+    onMarkUnread: (message) =>
+      void run(async () => {
+        if (!channelId) return;
+
+        await trpc.chat.markUnread.mutate({
+          channelId,
+          messageId: message.id,
+        });
+        setReadMark(new Date(new Date(message.createdAt).getTime() - 1));
+        scrolledToUnread.current = true;
+        lastCount.current = messages?.length ?? 0;
+        void sidebar.refresh();
+        toastSuccess("Marked unread from this message");
+      }, "Could not mark it unread"),
+    onForward: (message) => setForwardOf(message),
+    onVote: (pollId, optionIndex) =>
+      void run(
+        () => trpc.chat.votePoll.mutate({ pollId, optionIndex }),
+        "Could not record your vote",
+      ),
+    onClosePoll: (pollId) =>
+      void run(
+        () => trpc.chat.closePoll.mutate({ pollId }),
+        "Could not close the poll",
+      ),
+    onTranslate: async (message, language) =>
+      (await trpc.chat.translate.mutate({ messageId: message.id, language }))
+        .text,
+    onMakeDoc: (message) => void makeDoc(message),
   };
 
   const rows = useMemo(() => {
@@ -507,6 +1011,27 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
   }
 
   const data = channel;
+  // The first message from someone else that came in since last visit.
+  const firstUnread =
+    readMark && messages
+      ? messages.find(
+          (message) =>
+            new Date(message.createdAt) > readMark &&
+            !message.mine &&
+            message.kind !== "event",
+        )
+      : undefined;
+  const lastMine = [...(messages ?? [])]
+    .reverse()
+    .find((message) => message.mine);
+  const seenBy = lastMine
+    ? readers
+        .filter(
+          (reader) =>
+            new Date(reader.lastReadAt) >= new Date(lastMine.createdAt),
+        )
+        .map((reader) => reader.name)
+    : [];
   const isDm = data.kind === "dm";
   const others = data.people.filter((person) => person.memberId !== meId);
   const canPost = data.canPost;
@@ -586,6 +1111,48 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
               </span>
             </button>
           ) : null}
+          {canPost ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="hidden sm:inline-flex"
+                aria-label="Start a huddle"
+                title="Start a huddle"
+                onClick={() =>
+                  void run(async () => {
+                    const { url } = await trpc.chat.startHuddle.mutate({
+                      channelId: data.id,
+                    });
+
+                    window.open(url, "_blank", "noopener");
+                  }, "Could not start a huddle")
+                }
+              >
+                <VideoIcon className="size-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="hidden sm:inline-flex"
+                aria-label="Create a poll"
+                title="Create a poll"
+                onClick={() => setPoll({ question: "" })}
+              >
+                <BarChart3Icon className="size-4" />
+              </Button>
+            </>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="hidden sm:inline-flex"
+            aria-label="Summarize this conversation"
+            title="Summarize"
+            onClick={() => setSummary(true)}
+          >
+            <SparklesIcon className="size-4" />
+          </Button>
           <PinsButton
             channelId={data.id}
             count={data.pinCount}
@@ -596,12 +1163,59 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
             asChild
             variant="ghost"
             size="icon-sm"
+            className="hidden sm:inline-flex"
             aria-label="Search this channel"
           >
             <Link href={`/chat/search?in=${data.id}`}>
               <SearchIcon className="size-4" />
             </Link>
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="sm:hidden"
+                aria-label="More channel actions"
+              >
+                <MoreHorizontalIcon className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {canPost ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      void run(async () => {
+                        const { url } = await trpc.chat.startHuddle.mutate({
+                          channelId: data.id,
+                        });
+
+                        window.open(url, "_blank", "noopener");
+                      }, "Could not start a huddle")
+                    }
+                  >
+                    <VideoIcon className="size-4" />
+                    Start a huddle
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPoll({ question: "" })}>
+                    <BarChart3Icon className="size-4" />
+                    Create a poll
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+              <DropdownMenuItem onClick={() => setSummary(true)}>
+                <SparklesIcon className="size-4" />
+                Summarize
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/chat/search?in=${data.id}`}>
+                  <SearchIcon className="size-4" />
+                  Search this channel
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {!isDm ? (
             <Button
               variant="ghost"
@@ -613,6 +1227,15 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
             </Button>
           ) : null}
         </header>
+
+        {!isDm ? (
+          <ChannelInfoBar
+            channelId={data.id}
+            canvas={data.canvas}
+            canEdit={data.joined && canPost}
+            onChanged={() => void loadChannel()}
+          />
+        ) : null}
 
         {offline || loadError ? (
           <div
@@ -646,6 +1269,34 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
             stickToBottom.current =
               element.scrollHeight - element.scrollTop - element.clientHeight <
               80;
+          }}
+          onKeyDown={(event) => {
+            const target = event.target as HTMLElement;
+
+            // Arrow keys walk the messages once one has focus.
+            if (!target.matches("[data-message]")) return;
+
+            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+              const all = [
+                ...event.currentTarget.querySelectorAll<HTMLElement>(
+                  "[data-message]",
+                ),
+              ];
+              const next =
+                all[all.indexOf(target) + (event.key === "ArrowDown" ? 1 : -1)];
+
+              if (next) {
+                event.preventDefault();
+                next.focus();
+                next.scrollIntoView({ block: "nearest" });
+              }
+            } else if (event.key === "Escape") {
+              document
+                .querySelector<HTMLTextAreaElement>(
+                  "section[aria-label] textarea[aria-label^='Message']",
+                )
+                ?.focus();
+            }
           }}
           className="min-h-0 flex-1 overflow-y-auto py-2"
         >
@@ -734,16 +1385,39 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
                         />
                       </div>
                     ) : null}
+                    {firstUnread?.id === message.id ? (
+                      <div
+                        id="unread-divider"
+                        role="separator"
+                        aria-label="New messages"
+                        className="flex items-center gap-3 px-5 py-1"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="h-px flex-1 bg-danger"
+                        />
+                        <span className="font-mono text-[11px] text-danger-text">
+                          New
+                        </span>
+                      </div>
+                    ) : null}
                     <MessageItem
                       message={message}
                       meId={meId}
-                      grouped={grouped}
+                      grouped={grouped && firstUnread?.id !== message.id}
                       highlighted={highlight === message.id}
                       canPost={canPost}
                       canModerate={data.canManage}
                       local={state}
                       actions={actions}
                     />
+                    {lastMine?.id === message.id && seenBy.length && !state ? (
+                      <p className="pr-5 text-right font-mono text-[11px] text-ink-3">
+                        {isDm && seenBy.length === 1
+                          ? "Seen"
+                          : `Seen by ${seenBy.slice(0, 3).join(", ")}${seenBy.length > 3 ? ` +${seenBy.length - 3}` : ""}`}
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}
@@ -751,7 +1425,8 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
           )}
         </div>
 
-        <div className="px-5 pt-1 pb-4">
+        <div className="px-5 pt-0.5 pb-4">
+          <TypingLine names={typers} />
           <Composer
             placeholder={
               isDm ? `Message ${data.title}` : `Message #${data.name}`
@@ -766,6 +1441,11 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
             }
             offline={offline}
             onSend={send}
+            onTyped={typed}
+            commands={commands}
+            draftScope={{ channelId: data.id, key: data.id }}
+            onSchedule={schedule}
+            onManageEmoji={() => setEmojiManager(true)}
             autoFocus
           />
         </div>
@@ -814,6 +1494,48 @@ export function ChannelView({ name, id }: { name?: string; id?: string }) {
             void loadChannel();
             void sidebar.refresh();
           }}
+        />
+      ) : null}
+
+      {forwardOf ? (
+        <ForwardDialog message={forwardOf} onClose={() => setForwardOf(null)} />
+      ) : null}
+
+      {summary ? (
+        <SummaryDialog
+          channelId={data.id}
+          title={isDm ? data.title : `#${data.name}`}
+          onClose={() => setSummary(false)}
+        />
+      ) : null}
+
+      {poll ? (
+        <PollDialog
+          channelId={data.id}
+          initialQuestion={poll.question}
+          initialOptions={poll.options}
+          onClose={() => setPoll(null)}
+          onCreated={() => void refresh()}
+        />
+      ) : null}
+
+      {emojiManager ? (
+        <EmojiManagerDialog
+          canManage={data.canManage}
+          onClose={() => setEmojiManager(false)}
+        />
+      ) : null}
+
+      {newTask !== null ? (
+        <CreateTaskModal
+          key="new-task"
+          hideTrigger
+          open
+          onOpenChange={(open) => {
+            if (!open) setNewTask(null);
+          }}
+          defaultName={newTask}
+          onTaskCreated={() => setNewTask(null)}
         />
       ) : null}
 

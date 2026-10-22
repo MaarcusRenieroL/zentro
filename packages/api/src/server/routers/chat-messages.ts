@@ -18,13 +18,20 @@ import {
 import {
   chatAttachments,
   chatChannels,
+  chatLinkPreviews,
   chatMembers,
   chatMessages,
+  chatPolls,
+  chatPollVotes,
   chatReactions,
+  chatSaved,
+  docs,
   files,
   members,
+  projects,
   tasks,
   users,
+  workLinks,
 } from "@zentro/db/schema";
 import { z } from "zod";
 
@@ -39,6 +46,10 @@ import {
   type Profile,
 } from "../chat";
 import { syncMentions, taskKeysIn } from "../mentions";
+import { runMessageAutomations } from "../automations/engine";
+import { postChatMessage } from "../chat-post";
+import { visibleDocsCondition } from "../access";
+import { externalUrls } from "../chat-unfurl";
 import { permissionProcedure, type OrganizationContext } from "../trpc";
 
 const uuid = z.string().uuid();
@@ -67,12 +78,84 @@ export type ChatTaskRef = {
   assignee: string | null;
 };
 
+/** An internal page a message links to, shown as a card. */
+export type ChatEntityRef =
+  | {
+      type: "doc";
+      id: string;
+      title: string;
+      subtitle: string | null;
+      href: string;
+    }
+  | {
+      type: "project";
+      id: string;
+      title: string;
+      subtitle: string | null;
+      status: string;
+      href: string;
+    }
+  | {
+      type: "file";
+      id: string;
+      title: string;
+      subtitle: string | null;
+      mimeType: string;
+      href: string;
+    }
+  | {
+      type: "message";
+      id: string;
+      title: string;
+      subtitle: string | null;
+      excerpt: string;
+      href: string;
+    }
+  // Exists, but the viewer cannot open it: nothing about it is shown.
+  | { type: "missing"; href: string };
+
+export type ChatPollView = {
+  id: string;
+  question: string;
+  multiple: boolean;
+  closed: boolean;
+  total: number;
+  options: Array<{
+    label: string;
+    votes: number;
+    mine: boolean;
+    voters: string[];
+  }>;
+};
+
+export type ChatLinkPreview = {
+  url: string;
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  siteName: string | null;
+};
+
 export type ChatMessageView = {
   id: string;
   channelId: string;
   parentId: string | null;
   clientId: string | null;
-  author: Pick<Profile, "memberId" | "name" | "presence"> | null;
+  kind: "message" | "poll" | "event" | "huddle";
+  meta: Record<string, unknown> | null;
+  author: Pick<Profile, "memberId" | "name" | "presence" | "status"> | null;
+  /** Saved by the caller, with the reminder if there is one. */
+  saved: { remindAt: Date | null } | null;
+  poll: ChatPollView | null;
+  forwarded: {
+    id: string;
+    channelId: string;
+    channelName: string | null;
+    authorName: string;
+    excerpt: string;
+  } | null;
+  entities: ChatEntityRef[];
+  links: ChatLinkPreview[];
   mine: boolean;
   body: string;
   createdAt: Date;
@@ -91,6 +174,268 @@ export type ChatMessageView = {
   tasks: ChatTaskRef[];
   replies: { count: number; lastAt: Date | null; people: string[] } | null;
 };
+
+const internalRef =
+  /(?:https?:\/\/([^\s/<>]+))?\/(docs|projects|files)\/([A-Za-z0-9_-]{2,80})(?![A-Za-z0-9_/-])/g;
+const reservedDocSlugs = new Set([
+  "my-docs",
+  "recent",
+  "projects",
+  "trash",
+  "search",
+]);
+
+function ownHosts() {
+  const hosts = new Set<string>(["localhost:3000", "localhost:3100"]);
+
+  for (const value of [
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_BASE_URL,
+  ]) {
+    try {
+      if (value) hosts.add(new URL(value).host);
+    } catch {
+      // ignore a malformed setting
+    }
+  }
+
+  return hosts;
+}
+
+/** Docs, projects and files a body links to by address. */
+export function internalRefsIn(body: string) {
+  const hosts = ownHosts();
+  const refs: Array<{ kind: "docs" | "projects" | "files"; key: string }> = [];
+
+  for (const match of body.matchAll(internalRef)) {
+    const [, host, kind, key] = match;
+
+    if (host && !hosts.has(host)) continue;
+    if (kind === "docs" && reservedDocSlugs.has(key!)) continue;
+
+    refs.push({ kind: kind as "docs" | "projects" | "files", key: key! });
+  }
+
+  return refs.filter(
+    (ref, index) =>
+      refs.findIndex((r) => r.kind === ref.kind && r.key === ref.key) === index,
+  );
+}
+
+const messageLink =
+  /(?:https?:\/\/([^\s/<>]+))?\/chat\/(?:dm\/)?[\w-]+\?(?:[^\s<>]*&)?m=([0-9a-f-]{36})/g;
+
+/** Ids of chat messages a body links to by address. */
+export function messageLinksIn(body: string) {
+  const hosts = ownHosts();
+  const ids: string[] = [];
+
+  for (const match of body.matchAll(messageLink)) {
+    const [, host, id] = match;
+
+    if (host && !hosts.has(host)) continue;
+
+    ids.push(id!);
+  }
+
+  return [...new Set(ids)].slice(0, 3);
+}
+
+/** Cards for the docs, projects and files bodies link to, for this viewer. */
+async function resolveEntities(
+  ctx: OrganizationContext,
+  rows: Row[],
+  memberId: string,
+): Promise<Map<string, ChatEntityRef>> {
+  const refs = rows.flatMap((row) => internalRefsIn(row.body));
+  const found = new Map<string, ChatEntityRef>();
+  const messageIds = [
+    ...new Set(rows.flatMap((row) => messageLinksIn(row.body))),
+  ];
+
+  if (messageIds.length) {
+    const readable = new Set(await readableChannelIds(ctx, memberId));
+    const linked = await ctx.db
+      .select({
+        id: chatMessages.id,
+        body: chatMessages.body,
+        channelId: chatMessages.channelId,
+        authorMemberId: chatMessages.authorMemberId,
+        deletedAt: chatMessages.deletedAt,
+        channelName: chatChannels.name,
+      })
+      .from(chatMessages)
+      .innerJoin(chatChannels, eq(chatChannels.id, chatMessages.channelId))
+      .where(
+        and(
+          eq(chatMessages.organizationId, ctx.activeOrganization.id),
+          inArray(chatMessages.id, messageIds),
+        ),
+      );
+    const authors = await memberProfiles(
+      ctx,
+      linked
+        .map((row) => row.authorMemberId)
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    for (const row of linked) {
+      const href = row.channelName
+        ? `/chat/${row.channelName}?m=${row.id}`
+        : `/chat/dm/${row.channelId}?m=${row.id}`;
+
+      found.set(
+        `messages:${row.id}`,
+        row.deletedAt || !readable.has(row.channelId)
+          ? { type: "missing", href }
+          : {
+              type: "message",
+              id: row.id,
+              title:
+                (row.authorMemberId
+                  ? authors.get(row.authorMemberId)?.name
+                  : null) ?? "Someone",
+              subtitle: row.channelName
+                ? `#${row.channelName}`
+                : "Direct message",
+              excerpt: excerptOf(row.body),
+              href,
+            },
+      );
+    }
+  }
+
+  if (!refs.length) return found;
+
+  const orgId = ctx.activeOrganization.id;
+  const docSlugs = refs.filter((r) => r.kind === "docs").map((r) => r.key);
+  const projectSlugs = refs
+    .filter((r) => r.kind === "projects")
+    .map((r) => r.key);
+  const fileIds = refs
+    .filter((r) => r.kind === "files" && /^[0-9a-f-]{36}$/.test(r.key))
+    .map((r) => r.key);
+  const enabled = await ctx.enabledModules();
+
+  if (docSlugs.length && enabled.has("docs")) {
+    const [all, visible] = await Promise.all([
+      ctx.db
+        .select({ id: docs.id, slug: docs.slug, title: docs.title })
+        .from(docs)
+        .where(
+          and(
+            eq(docs.organizationId, orgId),
+            inArray(docs.slug, docSlugs),
+            isNull(docs.deletedAt),
+          ),
+        ),
+      ctx.db
+        .select({ id: docs.id })
+        .from(docs)
+        .where(
+          and(
+            eq(docs.organizationId, orgId),
+            inArray(docs.slug, docSlugs),
+            isNull(docs.deletedAt),
+            await visibleDocsCondition(ctx.permissions, "docs.view"),
+          ),
+        ),
+    ]);
+    const canOpen = new Set(visible.map((row) => row.id));
+
+    for (const doc of all) {
+      found.set(
+        `docs:${doc.slug}`,
+        canOpen.has(doc.id)
+          ? {
+              type: "doc",
+              id: doc.id,
+              title: doc.title || "Untitled",
+              subtitle: "Doc",
+              href: `/docs/${doc.slug}`,
+            }
+          : { type: "missing", href: `/docs/${doc.slug}` },
+      );
+    }
+  }
+
+  if (projectSlugs.length && enabled.has("projects")) {
+    const viewable = new Set(
+      await ctx.permissions.viewableProjectIds("projects.view"),
+    );
+    const all = await ctx.db
+      .select({
+        id: projects.id,
+        slug: projects.slug,
+        name: projects.name,
+        key: projects.taskKeyPrefix,
+        status: projects.status,
+      })
+      .from(projects)
+      .where(
+        and(
+          eq(projects.organizationId, orgId),
+          inArray(projects.slug, projectSlugs),
+        ),
+      );
+
+    for (const project of all) {
+      found.set(
+        `projects:${project.slug}`,
+        viewable.has(project.id)
+          ? {
+              type: "project",
+              id: project.id,
+              title: project.name,
+              subtitle: project.key ? `Project · ${project.key}` : "Project",
+              status: project.status,
+              href: `/projects/${project.slug}`,
+            }
+          : { type: "missing", href: `/projects/${project.slug}` },
+      );
+    }
+  }
+
+  if (fileIds.length) {
+    const all = await ctx.db
+      .select({
+        id: files.id,
+        name: files.name,
+        mimeType: files.mimeType,
+        size: files.size,
+      })
+      .from(files)
+      .where(
+        and(
+          eq(files.organizationId, orgId),
+          inArray(files.id, fileIds),
+          isNull(files.deletedAt),
+        ),
+      );
+
+    for (const file of all) {
+      found.set(`files:${file.id}`, {
+        type: "file",
+        id: file.id,
+        title: file.name,
+        subtitle: `${Math.max(1, Math.round(file.size / 1024))} KB`,
+        mimeType: file.mimeType,
+        href: `/api/files/${file.id}`,
+      });
+    }
+  }
+
+  return found;
+}
+
+function excerptOf(body: string) {
+  const text = body
+    .replace(/<@[0-9a-f-]{36}>/g, "@someone")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text.length > 160 ? `${text.slice(0, 157)}…` : text;
+}
 
 /** Everything a message needs on screen, for a batch of rows at once. */
 export async function hydrateMessages(
@@ -133,7 +478,9 @@ export async function hydrateMessages(
           .select({
             parentId: chatMessages.parentId,
             count: sql<number>`count(*)`.mapWith(Number),
-            lastAt: sql<Date>`max(${chatMessages.createdAt})`,
+            lastAt: sql<Date>`max(${chatMessages.createdAt})`.mapWith(
+              chatMessages.createdAt,
+            ),
             people: sql<
               string[]
             >`array_agg(distinct ${chatMessages.authorMemberId}::text)`,
@@ -164,11 +511,25 @@ export async function hydrateMessages(
   const profiles = await memberProfiles(ctx, [...peopleIds]);
   const nameOf = (id: string) => profiles.get(id)?.name ?? "Someone";
 
+  // Tasks made from a message by its "Create task" action are linked to it.
+  const createdLinks = await ctx.db
+    .select({ messageId: workLinks.sourceId, taskId: workLinks.targetId })
+    .from(workLinks)
+    .where(
+      and(
+        eq(workLinks.organizationId, ctx.activeOrganization.id),
+        eq(workLinks.sourceType, "message"),
+        eq(workLinks.targetType, "task"),
+        eq(workLinks.kind, "relates"),
+        inArray(workLinks.sourceId, ids),
+      ),
+    );
+
   // Task keys become cards, but only for tasks the caller can see.
   const keys = [...new Set(rows.flatMap((row) => taskKeysIn(row.body)))];
   const enabled = await ctx.enabledModules();
   const viewable =
-    keys.length && enabled.has("tasks")
+    (keys.length || createdLinks.length) && enabled.has("tasks")
       ? await ctx.permissions.viewableProjectIds("tasks.view")
       : [];
   const taskRows = viewable.length
@@ -186,12 +547,93 @@ export async function hydrateMessages(
         .where(
           and(
             eq(tasks.organizationId, ctx.activeOrganization.id),
-            inArray(tasks.key, keys),
+            or(
+              keys.length ? inArray(tasks.key, keys) : undefined,
+              createdLinks.length
+                ? inArray(
+                    tasks.id,
+                    createdLinks.map((link) => link.taskId),
+                  )
+                : undefined,
+            ),
             inArray(tasks.projectId, viewable),
             isNull(tasks.deletedAt),
           ),
         )
     : [];
+
+  const readableIds = new Set(await readableChannelIds(ctx, memberId));
+  const forwardIds = rows
+    .map((row) => row.forwardedFromId)
+    .filter((id): id is string => Boolean(id));
+  const urls = [...new Set(rows.flatMap((row) => externalUrls(row.body)))];
+  const [savedRows, pollRows, forwardRows, previewRows, entityMap] =
+    await Promise.all([
+      ctx.db
+        .select({
+          messageId: chatSaved.messageId,
+          remindAt: chatSaved.remindAt,
+        })
+        .from(chatSaved)
+        .where(
+          and(
+            eq(chatSaved.memberId, memberId),
+            inArray(chatSaved.messageId, ids),
+          ),
+        ),
+      ctx.db.select().from(chatPolls).where(inArray(chatPolls.messageId, ids)),
+      forwardIds.length
+        ? ctx.db
+            .select({
+              id: chatMessages.id,
+              channelId: chatMessages.channelId,
+              body: chatMessages.body,
+              authorMemberId: chatMessages.authorMemberId,
+              deletedAt: chatMessages.deletedAt,
+              channelName: chatChannels.name,
+            })
+            .from(chatMessages)
+            .innerJoin(
+              chatChannels,
+              eq(chatChannels.id, chatMessages.channelId),
+            )
+            .where(inArray(chatMessages.id, forwardIds))
+        : [],
+      urls.length
+        ? ctx.db
+            .select()
+            .from(chatLinkPreviews)
+            .where(
+              and(
+                eq(chatLinkPreviews.organizationId, ctx.activeOrganization.id),
+                inArray(chatLinkPreviews.url, urls),
+                eq(chatLinkPreviews.failed, false),
+              ),
+            )
+        : [],
+      resolveEntities(ctx, rows, memberId),
+    ]);
+  const voteRows = pollRows.length
+    ? await ctx.db
+        .select()
+        .from(chatPollVotes)
+        .where(
+          inArray(
+            chatPollVotes.pollId,
+            pollRows.map((poll) => poll.id),
+          ),
+        )
+    : [];
+  const voterProfiles = await memberProfiles(
+    ctx,
+    voteRows.map((vote) => vote.memberId),
+  );
+  const forwardAuthors = await memberProfiles(
+    ctx,
+    forwardRows
+      .map((row) => row.authorMemberId)
+      .filter((id): id is string => Boolean(id)),
+  );
 
   return rows.map((row) => {
     const deleted = Boolean(row.deletedAt);
@@ -226,13 +668,94 @@ export async function hydrateMessages(
       channelId: row.channelId,
       parentId: row.parentId,
       clientId: row.clientId,
+      kind: (row.kind ?? "message") as ChatMessageView["kind"],
+      meta: row.meta ?? null,
       author: author
         ? {
             memberId: author.memberId,
             name: author.name,
             presence: author.presence,
+            status: author.status,
           }
         : null,
+      saved: (() => {
+        const saved = savedRows.find((entry) => entry.messageId === row.id);
+
+        return saved ? { remindAt: saved.remindAt } : null;
+      })(),
+      poll: (() => {
+        const poll = pollRows.find((entry) => entry.messageId === row.id);
+
+        if (!poll || deleted) return null;
+
+        const votes = voteRows.filter((vote) => vote.pollId === poll.id);
+
+        return {
+          id: poll.id,
+          question: poll.question,
+          multiple: poll.multiple,
+          closed: Boolean(poll.closedAt),
+          total: new Set(votes.map((vote) => vote.memberId)).size,
+          options: poll.options.map((label, index) => {
+            const forOption = votes.filter(
+              (vote) => vote.optionIndex === index,
+            );
+
+            return {
+              label,
+              votes: forOption.length,
+              mine: forOption.some((vote) => vote.memberId === memberId),
+              voters: forOption
+                .map((vote) => voterProfiles.get(vote.memberId)?.name)
+                .filter((name): name is string => Boolean(name))
+                .slice(0, 8),
+            };
+          }),
+        };
+      })(),
+      forwarded: (() => {
+        const source = forwardRows.find(
+          (entry) => entry.id === row.forwardedFromId,
+        );
+
+        // Only people who can read the original see where it came from.
+        if (!source || source.deletedAt || !readableIds.has(source.channelId)) {
+          return null;
+        }
+
+        return {
+          id: source.id,
+          channelId: source.channelId,
+          channelName: source.channelName,
+          authorName:
+            (source.authorMemberId
+              ? forwardAuthors.get(source.authorMemberId)?.name
+              : null) ?? "Someone",
+          excerpt: excerptOf(source.body),
+        };
+      })(),
+      entities: deleted
+        ? []
+        : [
+            ...messageLinksIn(row.body).map((id) =>
+              entityMap.get(`messages:${id}`),
+            ),
+            ...internalRefsIn(row.body).map((ref) =>
+              entityMap.get(`${ref.kind}:${ref.key}`),
+            ),
+          ].filter((entry): entry is ChatEntityRef => entry !== undefined),
+      links: deleted
+        ? []
+        : externalUrls(row.body)
+            .map((url) => previewRows.find((entry) => entry.url === url))
+            .filter((entry) => entry !== undefined && entry.title !== null)
+            .map((entry) => ({
+              url: entry!.url,
+              title: entry!.title,
+              description: entry!.description,
+              image: entry!.image,
+              siteName: entry!.siteName,
+            })),
       mine: row.authorMemberId === memberId,
       body: deleted ? "" : row.body,
       createdAt: row.createdAt,
@@ -258,9 +781,19 @@ export async function hydrateMessages(
             })),
       tasks: deleted
         ? []
-        : taskKeysIn(row.body)
-            .map((key) => taskRows.find((task) => task.key === key))
-            .filter((task) => task !== undefined),
+        : [
+            ...taskKeysIn(row.body).map((key) =>
+              taskRows.find((task) => task.key === key),
+            ),
+            ...createdLinks
+              .filter((link) => link.messageId === row.id)
+              .map((link) => taskRows.find((task) => task.id === link.taskId)),
+          ]
+            .filter((task) => task !== undefined)
+            .filter(
+              (task, index, all) =>
+                all.findIndex((other) => other.id === task.id) === index,
+            ),
       replies:
         options.withReplies && reply
           ? {
@@ -481,64 +1014,31 @@ export const chatMessageProcedures = {
       }
 
       const fileIds = await claimFiles(ctx, access.memberId, input.fileIds);
-      const row = await ctx.db.transaction(async (tx) => {
-        // Posting in a public channel joins it.
-        if (!access.membership) {
-          await tx
-            .insert(chatMembers)
-            .values({ channelId: input.channelId, memberId: access.memberId })
-            .onConflictDoNothing();
-        }
-
-        const now = new Date();
-        const [message] = await tx
-          .insert(chatMessages)
-          .values({
-            organizationId: ctx.activeOrganization.id,
-            channelId: input.channelId,
-            authorMemberId: access.memberId,
-            parentId: input.parentId ?? null,
-            clientId: input.clientId ?? null,
-            body,
-            createdAt: now,
-          })
-          .returning();
-
-        if (fileIds.length) {
-          await tx.insert(chatAttachments).values(
-            fileIds.map((fileId, position) => ({
-              messageId: message!.id,
-              fileId,
-              position,
-            })),
-          );
-        }
-
-        await tx
-          .update(chatChannels)
-          .set({ lastMessageAt: now })
-          .where(eq(chatChannels.id, input.channelId));
-        // What you send, you have read.
-        await tx
-          .update(chatMembers)
-          .set({ lastReadAt: now })
-          .where(
-            and(
-              eq(chatMembers.channelId, input.channelId),
-              eq(chatMembers.memberId, access.memberId),
-            ),
-          );
-        // Task keys in a message link it to those tasks ("Discussed in").
-        await syncMentions(tx, {
+      const row = await ctx.db.transaction((tx) =>
+        postChatMessage(tx, {
           organizationId: ctx.activeOrganization.id,
+          channelId: input.channelId,
           memberId: access.memberId,
-          source: { type: "message", id: message!.id },
-          text: body,
-          via: "chat",
-          mode: "replace",
-        });
+          body,
+          parentId: input.parentId,
+          clientId: input.clientId,
+          fileIds,
+          // Posting in a public channel joins it.
+          join: !access.membership,
+        }),
+      );
 
-        return message!;
+      // Rules that watch chat run after the message is saved.
+      await runMessageAutomations({
+        db: ctx.db,
+        organizationId: ctx.activeOrganization.id,
+        message: {
+          id: row.id,
+          channelId: row.channelId,
+          parentId: row.parentId,
+          body: row.body,
+          authorMemberId: row.authorMemberId,
+        },
       });
 
       return (

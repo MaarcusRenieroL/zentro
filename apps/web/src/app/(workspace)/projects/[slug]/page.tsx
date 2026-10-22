@@ -17,6 +17,7 @@ import {
 } from "~/src/components/project-detail/project-contributors";
 import type { ProjectListItem } from "~/src/components/projects/list";
 import { usePermission } from "~/src/components/permissions/permission-provider";
+import { DiscussionPanel } from "~/src/components/chat/discussion-panel";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { ProjectSummary } from "~/src/components/project-detail/project-summary";
 import { ProjectTabs } from "~/src/components/project-detail/project-tabs";
@@ -184,8 +185,10 @@ export default function ProjectPage() {
                 projectId={project.id}
                 projectName={project.name}
                 projectSlug={project.slug}
+                discussion={{ type: "project", id: project.id }}
               />
             </section>
+            <DiscussionPanel type="project" id={project.id} />
           </>
         }
       />

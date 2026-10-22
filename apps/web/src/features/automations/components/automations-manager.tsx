@@ -49,12 +49,15 @@ const TRIGGER_LABELS: Record<string, string> = {
   "task.created": "New Task Created",
   "task.due_date_approaching": "SLA & Due Date Approaching (<24h)",
   "task.sla_breach_risk": "SLA Breach Risk",
+  "chat.message_contains": "A Chat Message Contains…",
 };
 
 const ACTION_LABELS: Record<string, string> = {
   update_status: "Update Status",
   assign_actor: "Auto-Assign to Actor",
   set_priority: "Set Priority",
+  post_to_channel: "Post to a Chat Channel",
+  create_task: "Create a Task from the Message",
 };
 
 export const AutomationsManager: FC = () => {
@@ -71,11 +74,26 @@ export const AutomationsManager: FC = () => {
     | "task.created"
     | "task.due_date_approaching"
     | "task.sla_breach_risk"
+    | "chat.message_contains"
   >("task.subtasks_all_done");
   const [toStatus, setToStatus] = useState("in-progress");
   const [actionType, setActionType] = useState<
-    "update_status" | "assign_actor" | "set_priority"
+    | "update_status"
+    | "assign_actor"
+    | "set_priority"
+    | "post_to_channel"
+    | "create_task"
   >("update_status");
+  const [contains, setContains] = useState("");
+  const [triggerChannelId, setTriggerChannelId] = useState("");
+  const [postChannelId, setPostChannelId] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [channels, setChannels] = useState<Array<{ id: string; name: string }>>(
+    [],
+  );
+  const [projectOptions, setProjectOptions] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
   const [targetStatus, setTargetStatus] = useState("review");
   const [priority, setPriority] = useState("high");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,6 +112,34 @@ export const AutomationsManager: FC = () => {
 
   useEffect(() => {
     void fetchRules();
+
+    // Chat channels and projects for the new rule kinds. Either list may be
+    // empty when that module is off or not available to this person.
+    void trpc.chat.sidebar
+      .query()
+      .then((data) =>
+        setChannels(
+          data.channels
+            .filter(
+              (channel) =>
+                channel.kind === "channel" && !channel.archived && channel.name,
+            )
+            .map((channel) => ({ id: channel.id, name: channel.name! })),
+        ),
+      )
+      .catch(() => undefined);
+    void trpc.project.getProjectsByOrgId
+      .query()
+      .then((rows) =>
+        setProjectOptions(
+          (rows as Array<{ id: string; name: string }>).map((row) => ({
+            id: row.id,
+            name: row.name,
+          })),
+        ),
+      )
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleToggle = async (rule: AutomationRule) => {
@@ -174,13 +220,22 @@ export const AutomationsManager: FC = () => {
     setIsSubmitting(true);
     try {
       const triggerConfig =
-        triggerEvent === "task.status_changed" ? { toStatus } : {};
+        triggerEvent === "task.status_changed"
+          ? { toStatus }
+          : triggerEvent === "chat.message_contains"
+            ? {
+                contains: contains.trim(),
+                ...(triggerChannelId ? { channelId: triggerChannelId } : {}),
+              }
+            : {};
       const actionConfig =
         actionType === "update_status"
           ? { targetStatus }
           : actionType === "set_priority"
             ? { priority }
-            : {};
+            : actionType === "post_to_channel"
+              ? { channelId: postChannelId }
+              : {};
 
       await trpc.automation.create.mutate({
         name: name.trim(),
@@ -189,6 +244,7 @@ export const AutomationsManager: FC = () => {
         triggerConfig,
         actionType,
         actionConfig,
+        projectId: actionType === "create_task" ? projectId || null : null,
       });
 
       toastSuccess(`Created automation "${name.trim()}"`);
@@ -196,8 +252,13 @@ export const AutomationsManager: FC = () => {
       setDescription("");
       setCreateOpen(false);
       void fetchRules();
-    } catch {
-      toastError("Error", "Failed to create automation rule");
+    } catch (error) {
+      toastError(
+        "Error",
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to create automation rule",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -321,7 +382,36 @@ export const AutomationsManager: FC = () => {
                     <option value="task.sla_breach_risk">
                       SLA Breach Risk (Overdue & Open)
                     </option>
+                    <option value="chat.message_contains">
+                      A Chat Message Contains Some Words
+                    </option>
                   </select>
+
+                  {triggerEvent === "chat.message_contains" ? (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        value={contains}
+                        onChange={(e) => setContains(e.target.value)}
+                        placeholder="Words to look for, e.g. bug:"
+                        aria-label="Words the message contains"
+                        className="h-8 rounded-lg border border-hairline bg-surface px-2.5 text-xs outline-none"
+                      />
+                      <select
+                        value={triggerChannelId}
+                        onChange={(e) => setTriggerChannelId(e.target.value)}
+                        aria-label="Only in this channel"
+                        className="h-8 rounded-lg border border-hairline bg-surface px-2 text-xs outline-none cursor-pointer"
+                      >
+                        <option value="">In any conversation</option>
+                        {channels.map((channel) => (
+                          <option key={channel.id} value={channel.id}>
+                            Only in #{channel.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
 
                   {triggerEvent === "task.status_changed" ? (
                     <div className="flex items-center gap-2">
@@ -355,7 +445,47 @@ export const AutomationsManager: FC = () => {
                       Auto-Assign Task to Active Member
                     </option>
                     <option value="set_priority">Set Task Priority</option>
+                    <option value="post_to_channel">
+                      Post a Note to a Chat Channel
+                    </option>
+                    {triggerEvent === "chat.message_contains" ? (
+                      <option value="create_task">
+                        Create a Task from the Message
+                      </option>
+                    ) : null}
                   </select>
+
+                  {actionType === "post_to_channel" ? (
+                    <select
+                      value={postChannelId}
+                      onChange={(e) => setPostChannelId(e.target.value)}
+                      aria-label="Channel to post in"
+                      className="h-8 rounded-lg border border-hairline bg-surface px-2 text-xs outline-none cursor-pointer"
+                    >
+                      <option value="">Pick a channel…</option>
+                      {channels.map((channel) => (
+                        <option key={channel.id} value={channel.id}>
+                          #{channel.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+
+                  {actionType === "create_task" ? (
+                    <select
+                      value={projectId}
+                      onChange={(e) => setProjectId(e.target.value)}
+                      aria-label="Project for the new tasks"
+                      className="h-8 rounded-lg border border-hairline bg-surface px-2 text-xs outline-none cursor-pointer"
+                    >
+                      <option value="">Pick a project…</option>
+                      {projectOptions.map((project) => (
+                        <option key={project.id} value={project.id}>
+                          {project.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
 
                   {actionType === "update_status" ? (
                     <div className="flex items-center gap-2">

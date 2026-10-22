@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
+import { MessageSquareIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
 import { StatusGlyph } from "@zentro/ui/components/status-glyph";
@@ -10,6 +11,7 @@ import { cn } from "@zentro/ui/lib/utils";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 import { formatDueDate } from "@zentro/utils";
 
+import { useReachable } from "~/src/components/permissions/permission-provider";
 import { paths } from "~/src/lib/paths";
 
 type Related = {
@@ -39,6 +41,8 @@ type Props = {
   extra?: Array<{ id: string; label: string }>;
   /** Drawn above the line, with how many items are linked. */
   header?: (count: number) => ReactNode;
+  /** Shows the conversation about this item, when there is one. */
+  discussion?: { type: "task" | "doc" | "project"; id: string };
 };
 
 const shortDate = (value: Date | string) =>
@@ -138,8 +142,39 @@ export function LinkedThread({
   currentId,
   extra = [],
   header,
+  discussion,
 }: Props) {
   const trpc = useTrpcClient();
+  const chatReachable = useReachable("chat.view");
+  const [chat, setChat] = useState<{
+    name: string;
+    messages: number;
+    unread: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!discussion || !chatReachable) return;
+
+    let live = true;
+
+    trpc.chat.discussion
+      .query(discussion)
+      .then((data) => {
+        if (live && data.exists) {
+          setChat({
+            name: data.name,
+            messages: data.messages,
+            unread: data.unread,
+          });
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+  }, [trpc, discussion?.type, discussion?.id, chatReachable]);
+
   const [related, setRelated] = useState<Related[] | null>(null);
   const [project, setProject] = useState<{
     prefix: string | null;
@@ -199,6 +234,7 @@ export function LinkedThread({
   const count =
     (projectName && current.kind !== "project" ? 1 : 0) +
     1 +
+    (chat ? 1 : 0) +
     (related?.length ?? 0) +
     extra.length;
 
@@ -261,6 +297,26 @@ export function LinkedThread({
             />
           </div>
         </ThreadItem>
+
+        {chat ? (
+          <ThreadItem className="pb-1">
+            <Link href={`/chat/${chat.name}`} className={itemLink}>
+              <Entry
+                kind="Discussion"
+                chip={
+                  <span
+                    aria-hidden="true"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-[6px] border border-hairline bg-tint-teams text-ink"
+                  >
+                    <MessageSquareIcon className="size-3" />
+                  </span>
+                }
+                title={`#${chat.name}`}
+                sub={`${chat.messages} ${chat.messages === 1 ? "message" : "messages"}${chat.unread ? ` · ${chat.unread} new` : ""}`}
+              />
+            </Link>
+          </ThreadItem>
+        ) : null}
 
         {related === null ? (
           <ThreadItem>

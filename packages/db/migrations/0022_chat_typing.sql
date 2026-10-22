@@ -1,0 +1,1 @@
+ALTER TABLE "chatMember" ADD COLUMN "typingAt" timestamp;

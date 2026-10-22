@@ -78,6 +78,7 @@ import {
 } from "../../../lib/docs";
 import { ActorAvatar } from "~/src/components/actor-avatar";
 import { StarButton } from "~/src/components/favorites/star-button";
+import { DiscussionPanel } from "~/src/components/chat/discussion-panel";
 import { LinkedWork } from "~/src/components/links/linked-work";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import {
@@ -1416,8 +1417,11 @@ export function NotionEditorPage({ slug }: { slug: string }) {
                 currentId={doc.id}
                 projectId={doc.projectId}
                 projectName={doc.projectName}
+                discussion={{ type: "doc", id: doc.id }}
               />
             </section>
+
+            <DiscussionPanel type="doc" id={doc.id} />
 
             <CommentsPanel
               docId={doc.id}

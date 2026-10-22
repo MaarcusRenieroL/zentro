@@ -3,17 +3,24 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  ActivityIcon,
   AlertCircleIcon,
+  BellRingIcon,
+  BookmarkIcon,
   CheckSquareIcon,
   CopyIcon,
+  CornerUpRightIcon,
   FileIcon,
   FileTextIcon,
+  LanguagesIcon,
+  MailOpenIcon,
   MessageSquareIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PinIcon,
   SmilePlusIcon,
   Trash2Icon,
+  XIcon,
 } from "lucide-react";
 
 import type { inferRouterOutputs } from "@trpc/server";
@@ -27,6 +34,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@zentro/ui/shadcn/dropdown-menu";
 import {
@@ -39,10 +49,18 @@ import { ActorAvatar } from "~/src/components/actor-avatar";
 import { paths } from "~/src/lib/paths";
 
 import {
+  EntityCard,
+  ForwardedBlock,
+  HuddleCard,
+  LinkPreviewCard,
+  PollCard,
+} from "./message-cards";
+import {
   fileSize,
   MessageBody,
   messageTime,
   relativeAgo,
+  untilLabel,
 } from "./message-body";
 
 type Outputs = inferRouterOutputs<AppRouter>;
@@ -211,7 +229,57 @@ export type MessageActions = {
   onOpenFile: (file: AttachmentView, all: AttachmentView[]) => void;
   onRetry?: (message: MessageView) => void;
   onDiscard?: (message: MessageView) => void;
+  onSave?: (message: MessageView, saved: boolean) => void;
+  /** Remind the caller at a time, or null to clear the reminder. */
+  onRemind?: (message: MessageView, at: Date | null) => void;
+  onMarkUnread?: (message: MessageView) => void;
+  onForward?: (message: MessageView) => void;
+  onVote?: (pollId: string, index: number) => void;
+  onClosePoll?: (pollId: string) => void;
+  /** Translated text for a message, or a rejection with the reason. */
+  onTranslate?: (message: MessageView, language: string) => Promise<string>;
+  /** Start a doc from this message and its thread. */
+  onMakeDoc?: (message: MessageView) => void;
 };
+
+const reminderChoices: Array<[string, () => Date]> = [
+  ["In 20 minutes", () => new Date(Date.now() + 20 * 60_000)],
+  ["In 1 hour", () => new Date(Date.now() + 60 * 60_000)],
+  ["In 3 hours", () => new Date(Date.now() + 3 * 60 * 60_000)],
+  [
+    "Tomorrow at 9:00",
+    () => {
+      const date = new Date();
+
+      date.setDate(date.getDate() + 1);
+      date.setHours(9, 0, 0, 0);
+
+      return date;
+    },
+  ],
+  [
+    "Next Monday at 9:00",
+    () => {
+      const date = new Date();
+
+      date.setDate(date.getDate() + ((8 - date.getDay()) % 7 || 7));
+      date.setHours(9, 0, 0, 0);
+
+      return date;
+    },
+  ],
+];
+
+const languages = [
+  "English",
+  "Spanish",
+  "French",
+  "German",
+  "Portuguese",
+  "Hindi",
+  "Japanese",
+  "Chinese",
+];
 
 export function MessageItem({
   message,
@@ -236,7 +304,15 @@ export function MessageItem({
   actions: MessageActions;
 }) {
   const [editing, setEditing] = useState(false);
+  // The toolbar only shows on hover; keep it mounted while a menu anchored to
+  // it is open, or the menu loses its anchor when the pointer moves into it.
+  const [toolbarPinned, setToolbarPinned] = useState(false);
   const [draft, setDraft] = useState(message.body);
+  const [translation, setTranslation] = useState<{
+    language: string;
+    text: string | null;
+    error?: string;
+  } | null>(null);
   const names = message.names;
   const keys = new Set(message.tasks.map((task) => task.key));
   const authorName = message.author?.name ?? "Someone";
@@ -250,6 +326,44 @@ export function MessageItem({
     );
   }
 
+  if (message.kind === "event") {
+    // An activity post: one quiet line, not a conversation turn.
+    return (
+      <article
+        id={`message-${message.id}`}
+        className="flex items-center gap-3 px-4 py-1 text-[13px] text-ink-2"
+      >
+        <span className="flex w-9 shrink-0 justify-center">
+          <ActivityIcon className="size-3.5 text-ink-3" aria-hidden="true" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="font-medium text-ink">{authorName}</span>{" "}
+          <MessageBody
+            body={message.body}
+            names={names}
+            meId={meId}
+            taskKeys={keys}
+          />
+        </span>
+        <time
+          dateTime={new Date(message.createdAt).toISOString()}
+          className="font-mono text-[11px] text-ink-3"
+        >
+          {messageTime(message.createdAt)}
+        </time>
+      </article>
+    );
+  }
+
+  const translate = (language: string) => {
+    setTranslation({ language, text: null });
+    void Promise.resolve(actions.onTranslate?.(message, language))
+      .then((text) => setTranslation({ language, text: text ?? "" }))
+      .catch((error: Error) =>
+        setTranslation({ language, text: null, error: error.message }),
+      );
+  };
+
   const copyLink = () => {
     const url = new URL(window.location.href);
 
@@ -262,9 +376,41 @@ export function MessageItem({
   return (
     <article
       id={`message-${message.id}`}
+      data-message={message.id}
       data-highlighted={highlighted || undefined}
+      tabIndex={local ? undefined : 0}
+      aria-label={`Message from ${authorName}`}
+      onKeyDown={(event) => {
+        // Shortcuts only when the message itself has focus, never in a field.
+        if (event.target !== event.currentTarget || editing || local) return;
+
+        if (event.key === "e" && message.mine && actions.onEdit) {
+          event.preventDefault();
+          setDraft(message.body);
+          setEditing(true);
+        } else if (
+          event.key === "r" &&
+          !inThread &&
+          canPost &&
+          actions.onReply
+        ) {
+          event.preventDefault();
+          actions.onReply(message);
+        } else if (event.key === "s" && actions.onSave) {
+          event.preventDefault();
+          actions.onSave(message, !message.saved);
+        } else if (event.key === "u" && actions.onMarkUnread) {
+          event.preventDefault();
+          actions.onMarkUnread(message);
+        } else if (event.key === "+" || event.key === "=") {
+          if (canPost) {
+            event.preventDefault();
+            actions.onReact(message, "👍");
+          }
+        }
+      }}
       className={cn(
-        "group relative flex gap-3 px-4 py-1 hover:bg-hover/60",
+        "group relative flex gap-3 px-4 py-1 outline-none hover:bg-hover/60 focus-visible:bg-hover/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
         grouped ? "" : "pt-3",
         highlighted && "bg-signal-subtle/60",
         local === "failed" && "bg-danger-subtle/40",
@@ -284,6 +430,15 @@ export function MessageItem({
         {grouped ? null : (
           <div className="flex items-baseline gap-2">
             <span className="text-[15px] font-semibold">{authorName}</span>
+            {message.author?.status?.emoji ? (
+              <span
+                title={message.author.status.text ?? undefined}
+                aria-label={message.author.status.text ?? "Status"}
+                className="text-sm"
+              >
+                {message.author.status.emoji}
+              </span>
+            ) : null}
             <time
               dateTime={new Date(message.createdAt).toISOString()}
               className="font-mono text-[11px] text-ink-3"
@@ -292,6 +447,26 @@ export function MessageItem({
             </time>
             {message.pinned ? (
               <PinIcon className="size-3 text-ink-3" aria-label="Pinned" />
+            ) : null}
+            {message.saved ? (
+              <span
+                className="flex items-center gap-1 text-[11px] text-signal-strong"
+                title={
+                  message.saved.remindAt
+                    ? `Reminder ${untilLabel(message.saved.remindAt)}`
+                    : "Saved for later"
+                }
+              >
+                {message.saved.remindAt ? (
+                  <BellRingIcon className="size-3" aria-hidden="true" />
+                ) : (
+                  <BookmarkIcon
+                    className="size-3 fill-current"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="sr-only">Saved</span>
+              </span>
             ) : null}
           </div>
         )}
@@ -320,8 +495,10 @@ export function MessageItem({
               <span>Esc to cancel · ↵ to save</span>
             </div>
           </div>
-        ) : message.body ? (
-          <p className="text-[15px] leading-6">
+        ) : message.body &&
+          message.kind !== "poll" &&
+          message.kind !== "huddle" ? (
+          <div className="text-[15px] leading-6">
             <MessageBody
               body={message.body}
               names={names}
@@ -331,7 +508,60 @@ export function MessageItem({
             {message.editedAt ? (
               <span className="ml-1.5 text-[11px] text-ink-3">(edited)</span>
             ) : null}
-          </p>
+          </div>
+        ) : null}
+
+        {translation ? (
+          <div className="mt-1.5 flex max-w-xl items-start gap-2 rounded-lg border border-hairline bg-sunken/60 px-3 py-2 text-[14px]">
+            <LanguagesIcon
+              className="mt-0.5 size-3.5 shrink-0 text-ink-3"
+              aria-hidden="true"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="block font-mono text-[11px] text-ink-3">
+                Translated to {translation.language}
+              </span>
+              {translation.error ? (
+                <span className="text-danger-text">{translation.error}</span>
+              ) : translation.text === null ? (
+                <span className="text-ink-3">Translating…</span>
+              ) : (
+                <MessageBody
+                  body={translation.text}
+                  names={names}
+                  meId={meId}
+                />
+              )}
+            </span>
+            <button
+              type="button"
+              aria-label="Dismiss translation"
+              onClick={() => setTranslation(null)}
+              className="rounded-xs text-ink-3 hover:text-ink"
+            >
+              <XIcon className="size-3.5" />
+            </button>
+          </div>
+        ) : null}
+
+        {message.forwarded ? (
+          <ForwardedBlock forwarded={message.forwarded} />
+        ) : null}
+
+        {message.poll ? (
+          <PollCard
+            poll={message.poll}
+            canVote={canPost && Boolean(actions.onVote)}
+            canClose={
+              (message.mine || canModerate) && Boolean(actions.onClosePoll)
+            }
+            onVote={(index) => actions.onVote?.(message.poll!.id, index)}
+            onClose={() => actions.onClosePoll?.(message.poll!.id)}
+          />
+        ) : null}
+
+        {message.kind === "huddle" && typeof message.meta?.url === "string" ? (
+          <HuddleCard url={message.meta.url} />
         ) : null}
 
         {message.attachments.length ? (
@@ -343,6 +573,14 @@ export function MessageItem({
 
         {message.tasks.map((task) => (
           <TaskCard key={task.id} task={task} />
+        ))}
+
+        {message.entities.map((entity, index) => (
+          <EntityCard key={`${entity.type}-${index}`} entity={entity} />
+        ))}
+
+        {message.links.map((link) => (
+          <LinkPreviewCard key={link.url} link={link} />
         ))}
 
         {message.reactions.length ? (
@@ -369,6 +607,7 @@ export function MessageItem({
             {canPost ? (
               <ReactionPicker
                 onPick={(value) => actions.onReact(message, value)}
+                onOpenChange={setToolbarPinned}
                 trigger={
                   <button
                     type="button"
@@ -434,7 +673,12 @@ export function MessageItem({
       </div>
 
       {!local && !editing ? (
-        <div className="absolute -top-3 right-4 z-10 hidden items-center rounded-md border border-hairline bg-surface p-0.5 shadow-sm group-focus-within:flex group-hover:flex">
+        <div
+          className={cn(
+            "absolute -top-3 right-4 z-10 items-center rounded-md border border-hairline bg-surface p-0.5 shadow-sm group-focus-within:flex group-hover:flex",
+            toolbarPinned ? "flex" : "hidden",
+          )}
+        >
           {canPost ? (
             <>
               {quickReactions.slice(0, 3).map((value) => (
@@ -474,7 +718,7 @@ export function MessageItem({
               <MessageSquareIcon className="size-4" />
             </Button>
           ) : null}
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={setToolbarPinned}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -485,7 +729,7 @@ export function MessageItem({
                 <MoreHorizontalIcon className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56">
               {actions.onCreateTask ? (
                 <DropdownMenuItem
                   onClick={() => actions.onCreateTask?.(message)}
@@ -494,6 +738,81 @@ export function MessageItem({
                   Create task
                 </DropdownMenuItem>
               ) : null}
+              {actions.onMakeDoc && !inThread ? (
+                <DropdownMenuItem onClick={() => actions.onMakeDoc?.(message)}>
+                  <FileTextIcon className="size-4" />
+                  Turn into doc
+                </DropdownMenuItem>
+              ) : null}
+              {actions.onSave ? (
+                <DropdownMenuItem
+                  onClick={() => actions.onSave?.(message, !message.saved)}
+                >
+                  <BookmarkIcon className="size-4" />
+                  {message.saved ? "Remove from saved" : "Save for later"}
+                </DropdownMenuItem>
+              ) : null}
+              {actions.onRemind ? (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <BellRingIcon className="size-4" />
+                    Remind me
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-52">
+                    {reminderChoices.map(([label, at]) => (
+                      <DropdownMenuItem
+                        key={label}
+                        onClick={() => actions.onRemind?.(message, at())}
+                      >
+                        {label}
+                      </DropdownMenuItem>
+                    ))}
+                    {message.saved?.remindAt ? (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => actions.onRemind?.(message, null)}
+                        >
+                          Clear reminder
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              ) : null}
+              {actions.onMarkUnread ? (
+                <DropdownMenuItem
+                  onClick={() => actions.onMarkUnread?.(message)}
+                >
+                  <MailOpenIcon className="size-4" />
+                  Mark unread from here
+                </DropdownMenuItem>
+              ) : null}
+              {actions.onForward ? (
+                <DropdownMenuItem onClick={() => actions.onForward?.(message)}>
+                  <CornerUpRightIcon className="size-4" />
+                  Forward…
+                </DropdownMenuItem>
+              ) : null}
+              {actions.onTranslate && message.body ? (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <LanguagesIcon className="size-4" />
+                    Translate to…
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-44">
+                    {languages.map((language) => (
+                      <DropdownMenuItem
+                        key={language}
+                        onClick={() => translate(language)}
+                      >
+                        {language}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              ) : null}
+              <DropdownMenuSeparator />
               {actions.onPin && !inThread ? (
                 <DropdownMenuItem onClick={() => actions.onPin?.(message)}>
                   <PinIcon className="size-4" />
@@ -537,15 +856,21 @@ export function MessageItem({
 
 function ReactionPicker({
   onPick,
+  onOpenChange,
   trigger,
 }: {
   onPick: (emoji: string) => void;
+  onOpenChange?: (open: boolean) => void;
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const changeOpen = (next: boolean) => {
+    setOpen(next);
+    onOpenChange?.(next);
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={changeOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent align="end" className="flex w-auto gap-1 p-1.5">
         {[...quickReactions, "😄", "🤔", "🚀", "❤️"].map((value) => (
@@ -554,7 +879,7 @@ function ReactionPicker({
             type="button"
             onClick={() => {
               onPick(value);
-              setOpen(false);
+              changeOpen(false);
             }}
             className="rounded-sm p-1 text-lg hover:bg-hover"
           >

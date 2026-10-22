@@ -42,6 +42,7 @@ import {
   permissionProcedure,
   router,
 } from "../trpc";
+import { memberName, postTaskEvent } from "../chat-events";
 import { syncMentions } from "../mentions";
 import { readableMessage } from "../chat";
 import { resolveTarget } from "./link";
@@ -245,8 +246,10 @@ export const taskRouter = router({
           return task;
         });
 
+      let created: Awaited<ReturnType<typeof create>>;
+
       try {
-        return await create();
+        created = await create();
       } catch (error) {
         // Safety net: the advisory lock should prevent duplicate keys, but a
         // unique violation is retried once in case another writer slipped by.
@@ -254,8 +257,22 @@ export const taskRouter = router({
           throw error;
         }
 
-        return create();
+        created = await create();
       }
+
+      await postTaskEvent(db, {
+        organizationId: activeOrganization.id,
+        actorMemberId: created.createdByMemberId,
+        event: "created",
+        task: {
+          id: created.id,
+          key: created.key,
+          name: created.name,
+          projectId: created.projectId,
+        },
+      });
+
+      return created;
     }),
   getTasksByOrgId: listProcedure("tasks.view", "tasks")
     .input(getTasksSchema.optional().default({}))
@@ -568,7 +585,7 @@ export const taskRouter = router({
         });
       }
 
-      return await db.transaction(async (tx) => {
+      const createdSubtask = await db.transaction(async (tx) => {
         await tx.execute(
           sql`select pg_advisory_xact_lock(hashtextextended(${parentTask.projectId}, 0))`,
         );
@@ -621,6 +638,20 @@ export const taskRouter = router({
 
         return subtask;
       });
+
+      await postTaskEvent(db, {
+        organizationId: activeOrganization.id,
+        actorMemberId: createdSubtask.createdByMemberId,
+        event: "created",
+        task: {
+          id: createdSubtask.id,
+          key: createdSubtask.key,
+          name: createdSubtask.name,
+          projectId: createdSubtask.projectId,
+        },
+      });
+
+      return createdSubtask;
     }),
   getOverview: listProcedure("tasks.view", "tasks").query(async ({ ctx }) => {
     const { db, user, activeOrganization } = ctx;
@@ -996,6 +1027,38 @@ export const taskRouter = router({
         .leftJoin(users, eq(users.id, members.userId))
         .where(eq(tasks.id, updatedTask.id))
         .limit(1);
+
+      if (task) {
+        const actorForChat = await getCurrentMember(ctx);
+        const chatTask = {
+          id: task.id,
+          key: task.key,
+          name: task.name,
+          projectId: task.projectId,
+        };
+
+        if (updateValues.status === "done" && previousTask.status !== "done") {
+          await postTaskEvent(db, {
+            organizationId: activeOrganization.id,
+            actorMemberId: actorForChat?.id ?? null,
+            event: "done",
+            task: chatTask,
+          });
+        }
+
+        if (
+          values.assignedToMemberId &&
+          values.assignedToMemberId !== previousTask.assignedToMemberId
+        ) {
+          await postTaskEvent(db, {
+            organizationId: activeOrganization.id,
+            actorMemberId: actorForChat?.id ?? null,
+            event: "assigned",
+            task: chatTask,
+            assigneeName: await memberName(db, values.assignedToMemberId),
+          });
+        }
+      }
 
       if (
         updateValues.status &&

@@ -8,6 +8,8 @@ import type { DashboardData } from "~/src/lib/dashboard-data";
 import type { OverviewData, OverviewRow } from "~/src/lib/overview-data";
 import { paths } from "~/src/lib/paths";
 
+import { MostDiscussed } from "./most-discussed";
+
 type Props = {
   data: OverviewData;
   activity: DashboardData["recentActivity"];
@@ -386,6 +388,8 @@ export const OverviewBoard: FC<Props> = ({ data, activity, canSeeAudit }) => {
             </p>
           )}
         </section>
+
+        <MostDiscussed />
       </div>
     </div>
   );

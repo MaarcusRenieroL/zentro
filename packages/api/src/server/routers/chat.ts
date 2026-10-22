@@ -11,10 +11,16 @@ import {
 } from "@zentro/db/drizzle";
 import {
   chatChannels,
+  chatDrafts,
   chatMembers,
   chatMessages,
+  chatSaved,
+  chatScheduled,
+  chatThreadFollows,
+  docs,
   members,
   projects,
+  tasks,
   teams,
 } from "@zentro/db/schema";
 import { z } from "zod";
@@ -26,6 +32,7 @@ import {
   normalizeChannelName,
   readableChannel,
 } from "../chat";
+import { runChatJobsLazily } from "../chat-jobs";
 import { loadProjectById } from "../resources";
 import {
   denialFor,
@@ -42,7 +49,18 @@ const channelName = z
   .transform(normalizeChannelName)
   .refine((name) => name.length >= 2, "Use at least 2 letters or numbers.")
   .refine(
-    (name) => !["mentions", "search", "dm", "new", "browse"].includes(name),
+    (name) =>
+      ![
+        "mentions",
+        "search",
+        "dm",
+        "new",
+        "browse",
+        "saved",
+        "threads",
+        "drafts",
+        "catch-up",
+      ].includes(name),
     "That name is reserved.",
   );
 const link = z
@@ -104,6 +122,26 @@ async function linkLabels(
   const teamIds = rows
     .filter((row) => row.linkType === "team" && row.linkId)
     .map((row) => row.linkId!);
+  const taskIds = rows
+    .filter((row) => row.linkType === "task" && row.linkId)
+    .map((row) => row.linkId!);
+  const docIds = rows
+    .filter((row) => row.linkType === "doc" && row.linkId)
+    .map((row) => row.linkId!);
+  const [taskRows, docRows] = await Promise.all([
+    taskIds.length
+      ? ctx.db
+          .select({ id: tasks.id, name: tasks.name, key: tasks.key })
+          .from(tasks)
+          .where(inArray(tasks.id, taskIds))
+      : [],
+    docIds.length
+      ? ctx.db
+          .select({ id: docs.id, title: docs.title, slug: docs.slug })
+          .from(docs)
+          .where(inArray(docs.id, docIds))
+      : [],
+  ]);
   const [projectRows, teamRows] = await Promise.all([
     projectIds.length
       ? ctx.db
@@ -125,6 +163,34 @@ async function linkLabels(
   ]);
 
   return (linkType: string | null, linkId: string | null) => {
+    if (linkType === "task") {
+      const task = taskRows.find((entry) => entry.id === linkId);
+
+      return task
+        ? {
+            type: "task" as const,
+            id: task.id,
+            name: task.name,
+            key: task.key,
+            href: `/tasks/${task.key}`,
+          }
+        : null;
+    }
+
+    if (linkType === "doc") {
+      const doc = docRows.find((entry) => entry.id === linkId);
+
+      return doc
+        ? {
+            type: "doc" as const,
+            id: doc.id,
+            name: doc.title || "Untitled",
+            key: null,
+            href: `/docs/${doc.slug}`,
+          }
+        : null;
+    }
+
     if (linkType === "project") {
       const project = projectRows.find((entry) => entry.id === linkId);
 
@@ -193,7 +259,62 @@ export const chatChannelProcedures = {
    * A muted conversation still counts, but never shows as a mention badge.
    */
   sidebar: chatProcedure("chat.view").query(async ({ ctx }) => {
+    // Scheduled messages and reminders are delivered from here at most once
+    // a minute, so they work without a cron job; the daily cron adds the rest.
+    await runChatJobsLazily(ctx.db);
+
     const memberId = await currentMemberId(ctx);
+    const [reminders, drafts, scheduled, followed] = await Promise.all([
+      ctx.db
+        .select({ count: sql<number>`count(*)`.mapWith(Number) })
+        .from(chatSaved)
+        .where(
+          and(
+            eq(chatSaved.memberId, memberId),
+            isNull(chatSaved.completedAt),
+            sql`${chatSaved.remindAt} <= now()`,
+          ),
+        ),
+      ctx.db
+        .select({ count: sql<number>`count(*)`.mapWith(Number) })
+        .from(chatDrafts)
+        .where(eq(chatDrafts.memberId, memberId)),
+      ctx.db
+        .select({ count: sql<number>`count(*)`.mapWith(Number) })
+        .from(chatScheduled)
+        .where(
+          and(
+            eq(chatScheduled.memberId, memberId),
+            isNull(chatScheduled.sentAt),
+            isNull(chatScheduled.canceledAt),
+          ),
+        ),
+      ctx.db
+        .select({ count: sql<number>`count(*)`.mapWith(Number) })
+        .from(chatThreadFollows)
+        .innerJoin(
+          chatMessages,
+          eq(chatMessages.parentId, chatThreadFollows.parentId),
+        )
+        .where(
+          and(
+            eq(chatThreadFollows.memberId, memberId),
+            eq(chatThreadFollows.following, true),
+            isNull(chatMessages.deletedAt),
+            sql`${chatMessages.createdAt} > ${chatThreadFollows.lastReadAt}`,
+            sql`${chatMessages.authorMemberId} is distinct from ${memberId}`,
+          ),
+        ),
+    ]);
+    const extras = {
+      dueReminders: reminders[0]?.count ?? 0,
+      drafts: drafts[0]?.count ?? 0,
+      scheduled: scheduled[0]?.count ?? 0,
+      threadsUnread: followed[0]?.count ?? 0,
+    };
+    const dnd = Boolean(
+      (await memberProfiles(ctx, [memberId])).get(memberId)?.dnd,
+    );
     const mine = await ctx.db
       .select({ channel: chatChannels, membership: chatMembers })
       .from(chatMembers)
@@ -206,7 +327,7 @@ export const chatChannelProcedures = {
       )
       .orderBy(asc(chatChannels.name));
 
-    if (!mine.length) return { channels: [], totalUnread: 0 };
+    if (!mine.length) return { channels: [], totalUnread: 0, extras };
 
     const channelIds = mine.map((row) => row.channel.id);
     const counts = await ctx.db
@@ -304,7 +425,8 @@ export const chatChannelProcedures = {
       };
     });
 
-    return { channels, totalUnread };
+    // Do not disturb silences the badge, not the unread marks in the list.
+    return { channels, totalUnread: dnd ? 0 : totalUnread, extras, dnd };
   }),
 
   /** Public channels the caller is not in, to browse and join. */
@@ -448,6 +570,8 @@ export const chatChannelProcedures = {
             : (channel.name ?? ""),
         topic: channel.topic,
         description: channel.description,
+        canvas: channel.canvas,
+        retentionDays: channel.retentionDays,
         visibility: channel.visibility as "public" | "private",
         link: labelOf(channel.linkType, channel.linkId),
         archivedAt: channel.archivedAt,

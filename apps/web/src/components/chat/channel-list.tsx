@@ -5,18 +5,25 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
   AtSignIcon,
+  BellOffIcon,
+  BookmarkIcon,
   ChevronDownIcon,
+  FileEditIcon,
   HashIcon,
   LockIcon,
+  MessageSquareIcon,
+  NewspaperIcon,
   PencilIcon,
   PlusIcon,
   SearchIcon,
+  SmileIcon,
 } from "lucide-react";
 
 import { cn } from "@zentro/ui/lib/utils";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
+import { StatusDialog } from "./chat-dialogs-extra";
 import { useChatSidebar, type SidebarChannel } from "./chat-store";
 import { Avatar } from "./message-item";
 
@@ -143,12 +150,23 @@ export function ChannelList({
 }) {
   const pathname = usePathname();
   const { data, error, refresh } = useChatSidebar();
+  const [statusOpen, setStatusOpen] = useState(false);
+  const extras = data?.extras;
   const channels = data?.channels ?? [];
   const live = channels.filter((channel) => !channel.archived);
   const pinned = live.filter((channel) => channel.pinned);
   const rest = live.filter((channel) => !channel.pinned);
+  const discussion = rest.filter(
+    (channel) =>
+      channel.kind === "channel" &&
+      (channel.link?.type === "task" || channel.link?.type === "doc"),
+  );
   const team = rest.filter(
-    (channel) => channel.kind === "channel" && channel.link?.type !== "project",
+    (channel) =>
+      channel.kind === "channel" &&
+      channel.link?.type !== "project" &&
+      channel.link?.type !== "task" &&
+      channel.link?.type !== "doc",
   );
   const project = rest.filter(
     (channel) => channel.kind === "channel" && channel.link?.type === "project",
@@ -181,6 +199,21 @@ export function ChannelList({
         <Button
           variant="ghost"
           size="icon-sm"
+          aria-label={
+            data?.dnd ? "Status: do not disturb is on" : "Set your status"
+          }
+          title="Status and do not disturb"
+          onClick={() => setStatusOpen(true)}
+        >
+          {data?.dnd ? (
+            <BellOffIcon className="size-4 text-danger-text" />
+          ) : (
+            <SmileIcon className="size-4" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           aria-label="New direct message"
           onClick={onNewDm}
         >
@@ -197,20 +230,49 @@ export function ChannelList({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-4">
-        <Link
-          href="/chat/mentions"
-          aria-current={pathname === "/chat/mentions" ? "page" : undefined}
-          className={cn(
-            row,
-            pathname === "/chat/mentions"
-              ? "bg-selected font-medium"
-              : "text-ink-2 hover:bg-hover hover:text-ink",
-          )}
-        >
-          <AtSignIcon className="size-4 shrink-0" aria-hidden="true" />
-          Mentions
-          <Count value={mentionTotal} strong />
-        </Link>
+        {(
+          [
+            [
+              "/chat/threads",
+              MessageSquareIcon,
+              "Threads",
+              extras?.threadsUnread ?? 0,
+              true,
+            ],
+            ["/chat/mentions", AtSignIcon, "Mentions", mentionTotal, true],
+            [
+              "/chat/saved",
+              BookmarkIcon,
+              "Saved",
+              extras?.dueReminders ?? 0,
+              true,
+            ],
+            [
+              "/chat/drafts",
+              FileEditIcon,
+              "Drafts & scheduled",
+              (extras?.drafts ?? 0) + (extras?.scheduled ?? 0),
+              false,
+            ],
+            ["/chat/catch-up", NewspaperIcon, "Catch up", 0, false],
+          ] as const
+        ).map(([href, Icon, label, count, strong]) => (
+          <Link
+            key={href}
+            href={href}
+            aria-current={pathname === href ? "page" : undefined}
+            className={cn(
+              row,
+              pathname === href
+                ? "bg-selected font-medium"
+                : "text-ink-2 hover:bg-hover hover:text-ink",
+            )}
+          >
+            <Icon className="size-4 shrink-0" aria-hidden="true" />
+            {label}
+            <Count value={count} strong={strong} />
+          </Link>
+        ))}
         <Link
           href="/chat/search"
           aria-current={pathname === "/chat/search" ? "page" : undefined}
@@ -301,6 +363,18 @@ export function ChannelList({
               </Group>
             ) : null}
 
+            {discussion.length ? (
+              <Group label="Discussions">
+                {discussion.map((channel) => (
+                  <ChannelRow
+                    key={channel.id}
+                    channel={channel}
+                    active={isActive(channel)}
+                  />
+                ))}
+              </Group>
+            ) : null}
+
             <Group
               label="Direct messages"
               action={plus("New direct message", onNewDm)}
@@ -334,6 +408,9 @@ export function ChannelList({
           </>
         ) : null}
       </div>
+      {statusOpen ? (
+        <StatusDialog onClose={() => setStatusOpen(false)} />
+      ) : null}
     </nav>
   );
 }

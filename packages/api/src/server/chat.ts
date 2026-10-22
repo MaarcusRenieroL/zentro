@@ -4,6 +4,7 @@ import {
   chatChannels,
   chatMembers,
   chatMessages,
+  chatStatuses,
   members,
   sessions,
   users,
@@ -170,18 +171,47 @@ export async function memberProfiles(
     ctx,
     rows.map((row) => row.userId),
   );
-
-  return new Map(
-    rows.map((row) => [
+  const statusRows = await ctx.db
+    .select()
+    .from(chatStatuses)
+    .where(
+      inArray(
+        chatStatuses.memberId,
+        rows.map((row) => row.memberId),
+      ),
+    );
+  const now = Date.now();
+  const statusOf = new Map(
+    statusRows.map((row) => [
       row.memberId,
       {
-        memberId: row.memberId,
-        userId: row.userId,
-        name: row.name || row.email,
-        email: row.email,
-        presence: presence.get(row.userId) ?? "offline",
+        status:
+          (row.emoji || row.text) &&
+          (!row.expiresAt || row.expiresAt.getTime() > now)
+            ? { emoji: row.emoji, text: row.text }
+            : null,
+        dnd: Boolean(row.dndUntil && row.dndUntil.getTime() > now),
       },
     ]),
+  );
+
+  return new Map(
+    rows.map((row) => {
+      const extra = statusOf.get(row.memberId);
+
+      return [
+        row.memberId,
+        {
+          memberId: row.memberId,
+          userId: row.userId,
+          name: row.name || row.email,
+          email: row.email,
+          presence: presence.get(row.userId) ?? "offline",
+          status: extra?.status ?? null,
+          dnd: extra?.dnd ?? false,
+        },
+      ];
+    }),
   );
 }
 
@@ -191,6 +221,10 @@ export type Profile = {
   name: string;
   email: string;
   presence: Presence;
+  /** A custom status ("In a meeting"), when one is set and has not expired. */
+  status: { emoji: string | null; text: string | null } | null;
+  /** Do not disturb: notifications are paused. */
+  dnd: boolean;
 };
 
 export type Presence = "active" | "away" | "offline";
@@ -205,7 +239,7 @@ export async function presenceOf(
   const rows = await ctx.db
     .select({
       userId: sessions.userId,
-      at: sql<Date>`max(${sessions.updatedAt})`,
+      at: sql<Date>`max(${sessions.updatedAt})`.mapWith(sessions.updatedAt),
     })
     .from(sessions)
     .where(inArray(sessions.userId, [...new Set(userIds)]))

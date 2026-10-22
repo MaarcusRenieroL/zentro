@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { inferRouterOutputs } from "@trpc/server";
@@ -14,6 +13,7 @@ import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 import { useChatSidebar } from "./chat-store";
 import { dayHeading, MessageBody, messageTime } from "./message-body";
 import { Avatar } from "./message-item";
+import { JumpRow } from "./chat-lists";
 
 type Mention = inferRouterOutputs<AppRouter>["chat"]["mentions"][number];
 
@@ -155,10 +155,10 @@ export function MentionsView() {
         <section key={day.label} className="flex flex-col pt-4">
           <h3 className="eyebrow px-3 pb-1.5">{day.label}</h3>
           {day.rows.map((item) => (
-            <Link
+            <JumpRow
               key={item.id}
               href={`/chat/${item.channelName ?? `dm/${item.channelId}`}?m=${item.id}`}
-              className="flex gap-3 rounded-lg border-t border-hairline/60 px-3 py-3 hover:bg-hover"
+              label={`Open message from ${item.author?.name ?? "someone"}`}
             >
               <span
                 aria-hidden="true"
@@ -168,7 +168,7 @@ export function MentionsView() {
                 )}
               />
               <Avatar name={item.author?.name ?? "Someone"} size={32} />
-              <div className="min-w-0 flex-1">
+              <div className="pointer-events-none min-w-0 flex-1">
                 <p className="text-sm">
                   <span className="font-semibold">{item.author?.name}</span>{" "}
                   <span className="text-ink-2">in</span>{" "}
@@ -178,14 +178,14 @@ export function MentionsView() {
                       : "a direct message"}
                   </span>
                 </p>
-                <p className="line-clamp-2 text-[15px] leading-6">
+                <div className="line-clamp-2 relative text-[15px] leading-6 [&_a]:pointer-events-auto [&_a]:relative">
                   <MessageBody body={item.body} names={item.names} />
-                </p>
+                </div>
               </div>
               <span className="font-mono text-xs text-ink-3">
                 {messageTime(item.createdAt)}
               </span>
-            </Link>
+            </JumpRow>
           ))}
         </section>
       ))}

@@ -8,6 +8,8 @@ import { commentRouter } from "./routers/comment";
 import { docsRouter } from "./routers/doc";
 import { fileRouter } from "./routers/file";
 import { chatChannelProcedures } from "./routers/chat";
+import { chatLinkProcedures } from "./routers/chat-links";
+import { chatExtraProcedures } from "./routers/chat-extras";
 import { chatMessageProcedures } from "./routers/chat-messages";
 import { favoriteRouter } from "./routers/favorite";
 import { filesRouterProcedures } from "./routers/files";
@@ -35,7 +37,12 @@ export const appRouter = router({
   comment: commentRouter,
   docs: docsRouter,
   file: fileRouter,
-  chat: router({ ...chatChannelProcedures, ...chatMessageProcedures }),
+  chat: router({
+    ...chatChannelProcedures,
+    ...chatMessageProcedures,
+    ...chatExtraProcedures,
+    ...chatLinkProcedures,
+  }),
   favorite: favoriteRouter,
   files: router(filesRouterProcedures),
   invitation: invitationRouter,

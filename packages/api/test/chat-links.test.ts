@@ -48,9 +48,17 @@ describe("chat connects to tasks and the inbox", () => {
     expect(
       sidebar.channels.find((entry) => entry.id === channel.id)?.link,
     ).toMatchObject({ type: "project", name: "Billing" });
-    expect(
-      await owner.chat.linkedTo({ type: "project", id: projectId }),
-    ).toMatchObject([{ name: "billing", joined: true }]);
+    // The project already had a channel of its own; "billing" is a second.
+    const linked = await owner.chat.linkedTo({
+      type: "project",
+      id: projectId,
+    });
+
+    expect(linked.map((entry) => entry.name).sort()).toEqual([
+      "billing",
+      "project-billing-chat",
+    ]);
+    expect(linked.every((entry) => entry.joined)).toBe(true);
   });
 
   it("turns a task key in a message into a card and a link on the task", async () => {

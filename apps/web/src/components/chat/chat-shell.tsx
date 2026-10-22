@@ -8,6 +8,7 @@ import { ChevronLeftIcon } from "lucide-react";
 import { cn } from "@zentro/ui/lib/utils";
 
 import { ChannelList } from "./channel-list";
+import { CustomEmojiProvider } from "./custom-emoji";
 import {
   BrowseChannelsDialog,
   NewChannelDialog,
@@ -42,43 +43,47 @@ export function ChatShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="-mx-4 -mt-5 -mb-12 flex h-[calc(100svh-3.5rem)] min-h-[480px] overflow-hidden border-t border-hairline md:-mx-(--gutter) md:-mt-7 md:-mb-16 md:border-x-0">
-      <div
-        className={cn(
-          "w-full shrink-0 flex-col border-r border-hairline bg-sunken/40 md:flex md:w-[272px]",
-          onIndex ? "flex" : "hidden",
-        )}
-      >
-        <ChannelList
-          onNewChannel={() => setDialog("channel")}
-          onNewDm={() => setDialog("dm")}
-          onBrowse={() => setDialog("browse")}
-        />
-      </div>
-
-      <div
-        className={cn(
-          "min-w-0 flex-1 flex-col bg-canvas md:flex",
-          onIndex ? "hidden" : "flex",
-        )}
-      >
-        <Link
-          href="/chat"
-          className="flex items-center gap-1 border-b border-hairline px-3 py-2 text-sm text-ink-2 md:hidden"
+    <CustomEmojiProvider>
+      <div className="-mx-4 -mt-5 -mb-12 flex h-[calc(100svh-3.5rem)] min-h-[480px] overflow-hidden border-t border-hairline md:-mx-(--gutter) md:-mt-7 md:-mb-16 md:border-x-0">
+        <div
+          className={cn(
+            "w-full shrink-0 flex-col border-r border-hairline bg-sunken/40 md:flex md:w-[272px]",
+            onIndex ? "flex" : "hidden",
+          )}
         >
-          <ChevronLeftIcon className="size-4" aria-hidden="true" />
-          Chat
-        </Link>
-        {children}
-      </div>
+          <ChannelList
+            onNewChannel={() => setDialog("channel")}
+            onNewDm={() => setDialog("dm")}
+            onBrowse={() => setDialog("browse")}
+          />
+        </div>
 
-      {dialog === "channel" ? (
-        <NewChannelDialog onClose={() => setDialog(null)} />
-      ) : null}
-      {dialog === "dm" ? <NewDmDialog onClose={() => setDialog(null)} /> : null}
-      {dialog === "browse" ? (
-        <BrowseChannelsDialog onClose={() => setDialog(null)} />
-      ) : null}
-    </div>
+        <div
+          className={cn(
+            "min-w-0 flex-1 flex-col bg-canvas md:flex",
+            onIndex ? "hidden" : "flex",
+          )}
+        >
+          <Link
+            href="/chat"
+            className="flex items-center gap-1 border-b border-hairline px-3 py-2 text-sm text-ink-2 md:hidden"
+          >
+            <ChevronLeftIcon className="size-4" aria-hidden="true" />
+            Chat
+          </Link>
+          {children}
+        </div>
+
+        {dialog === "channel" ? (
+          <NewChannelDialog onClose={() => setDialog(null)} />
+        ) : null}
+        {dialog === "dm" ? (
+          <NewDmDialog onClose={() => setDialog(null)} />
+        ) : null}
+        {dialog === "browse" ? (
+          <BrowseChannelsDialog onClose={() => setDialog(null)} />
+        ) : null}
+      </div>
+    </CustomEmojiProvider>
   );
 }

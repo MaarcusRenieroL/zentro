@@ -10,6 +10,7 @@ import {
 } from "../../types/zod-schema";
 import { listProcedure, permissionProcedure, router } from "../trpc";
 import { assignCreatorLeadRole } from "../access";
+import { createProjectChannel } from "../chat-events";
 import { buildChanges } from "@zentro/audit";
 import { loadProjectBySlug, projectBySlug } from "../resources";
 import {
@@ -161,6 +162,15 @@ export const projectRouter = router({
 
         return created;
       });
+
+      // A project starts with somewhere to talk, when chat is on.
+      if ((await ctx.enabledModules()).has("chat")) {
+        await createProjectChannel(db, {
+          organizationId: activeOrganization.id,
+          userId: user.id,
+          project: { id: project.id, slug: project.slug, name: project.name },
+        });
+      }
 
       return project;
     }),

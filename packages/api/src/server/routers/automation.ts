@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, desc, eq, isNotNull, lte, ne, sql } from "@zentro/db/drizzle";
 import { automations, projects, tasks } from "@zentro/db/schema";
+import { channelAccess } from "../chat";
 import { listProcedure, permissionProcedure, router } from "../trpc";
 
 export const automationRouter = router({
@@ -45,14 +46,55 @@ export const automationRouter = router({
           "task.created",
           "task.due_date_approaching",
           "task.sla_breach_risk",
+          "chat.message_contains",
         ]),
         triggerConfig: z.record(z.string(), z.any()).optional().default({}),
-        actionType: z.enum(["update_status", "assign_actor", "set_priority"]),
+        actionType: z.enum([
+          "update_status",
+          "assign_actor",
+          "set_priority",
+          "post_to_channel",
+          "create_task",
+        ]),
         actionConfig: z.record(z.string(), z.any()).optional().default({}),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const { db, activeOrganization, user } = ctx;
+
+      // Rules that touch chat can only use conversations the creator can post
+      // in, and a message trigger needs words to look for.
+      if (input.triggerEvent === "chat.message_contains") {
+        const contains = String(input.triggerConfig.contains ?? "").trim();
+
+        if (!contains || contains.length > 100) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Say which words a message should contain.",
+          });
+        }
+      }
+
+      if (input.actionType === "post_to_channel") {
+        const channelId = String(input.actionConfig.channelId ?? "");
+        const access = z.string().uuid().safeParse(channelId).success
+          ? await channelAccess(ctx, channelId)
+          : null;
+
+        if (!access?.canPost) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Pick a channel you can post in.",
+          });
+        }
+      }
+
+      if (input.actionType === "create_task" && !input.projectId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Pick the project the tasks should go in.",
+        });
+      }
 
       const [member] = await db
         .select({ id: automations.id })

@@ -13,6 +13,7 @@ import {
 } from "@zentro/ui/components/rich-text-editor";
 
 import { StarButton } from "~/src/components/favorites/star-button";
+import { DiscussionPanel } from "~/src/components/chat/discussion-panel";
 import { LinkedWork } from "~/src/components/links/linked-work";
 import { LinkedThread } from "~/src/components/thread/linked-thread";
 import { useAnyPermission } from "~/src/components/permissions/permission-provider";
@@ -161,8 +162,10 @@ export function TaskDetailView({
                   projectId={task.projectId}
                   projectName={task.projectName}
                   projectSlug={task.projectSlug}
+                  discussion={{ type: "task", id: task.id }}
                 />
               </section>
+              <DiscussionPanel type="task" id={task.id} />
             </>
           }
         />

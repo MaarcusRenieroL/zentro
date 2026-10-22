@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, isNull, sql } from "@zentro/db/drizzle";
 import {
   chatAttachments,
   chatChannels,
+  chatEmojis,
   chatMessages,
   files,
   members,
@@ -42,6 +43,20 @@ export async function canReadFile(ctx: OrganizationContext, fileId: string) {
   if (!file) return null;
   if (file.uploadedByMemberId === memberId) return file;
   if (!(await ctx.permissions.can("chat.view"))) return null;
+
+  // A custom emoji is for everyone in the organization to see.
+  const [emoji] = await ctx.db
+    .select({ id: chatEmojis.id })
+    .from(chatEmojis)
+    .where(
+      and(
+        eq(chatEmojis.fileId, fileId),
+        eq(chatEmojis.organizationId, ctx.activeOrganization.id),
+      ),
+    )
+    .limit(1);
+
+  if (emoji) return file;
 
   const readable = await readableChannelIds(ctx, memberId);
   const [attached] = readable.length

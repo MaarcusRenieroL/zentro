@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { XIcon } from "lucide-react";
+import { BellIcon, BellOffIcon, SparklesIcon, XIcon } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
-import { toastError } from "@zentro/ui/index";
+import { toastError, toastSuccess } from "@zentro/ui/index";
 import { Button } from "@zentro/ui/shadcn/button";
 import { Skeleton } from "@zentro/ui/shadcn/skeleton";
 
+import { SummaryDialog } from "./chat-dialogs-extra";
 import { Composer, type Draft, type Person } from "./composer";
+import { untilLabel } from "./message-body";
 import {
   MessageItem,
   type MessageActions,
@@ -45,6 +47,8 @@ export function ThreadPanel({
   const trpc = useTrpcClient();
   const [thread, setThread] = useState<Thread | null>(null);
   const [failed, setFailed] = useState(false);
+  const [following, setFollowing] = useState(true);
+  const [summary, setSummary] = useState(false);
   const end = useRef<HTMLDivElement>(null);
   const count = useRef(0);
 
@@ -68,6 +72,30 @@ export function ThreadPanel({
 
     return () => clearInterval(id);
   }, [load]);
+
+  useEffect(() => {
+    let live = true;
+
+    trpc.chat.threadFollowing
+      .query({ parentId: messageId })
+      .then((data) => live && setFollowing(data.following))
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+  }, [trpc, messageId]);
+
+  // Opening a thread, or a reply arriving while it is open, reads it.
+  const replyCount = thread?.replies.length;
+
+  useEffect(() => {
+    if (replyCount === undefined) return;
+
+    void trpc.chat.markThreadRead
+      .mutate({ parentId: messageId })
+      .catch(() => undefined);
+  }, [trpc, messageId, replyCount]);
 
   useEffect(() => {
     const replies = thread?.replies.length ?? 0;
@@ -95,6 +123,39 @@ export function ThreadPanel({
     }
   };
 
+  const toggleFollow = async () => {
+    try {
+      await trpc.chat.followThread.mutate({
+        parentId: messageId,
+        following: !following,
+      });
+      setFollowing(!following);
+      toastSuccess(
+        !following
+          ? "Following this thread"
+          : "Unfollowed. It will leave your Threads list.",
+      );
+    } catch (error) {
+      toastError(error, "Could not change that");
+    }
+  };
+
+  const schedule = async (draft: Draft, at: Date) => {
+    if (!thread) return;
+
+    try {
+      await trpc.chat.schedule.mutate({
+        channelId: thread.parent.channelId,
+        parentId: messageId,
+        body: draft.body,
+        sendAt: at,
+      });
+      toastSuccess(`Reply scheduled for ${untilLabel(at)}`);
+    } catch (error) {
+      toastError(error, "Could not schedule the reply");
+    }
+  };
+
   return (
     <aside
       aria-label="Thread"
@@ -105,6 +166,30 @@ export function ThreadPanel({
           <h2 className="font-semibold">Thread</h2>
           <p className="font-mono text-[11px] text-ink-3">#{channelName}</p>
         </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Summarize this thread"
+          title="Summarize"
+          disabled={!thread}
+          onClick={() => setSummary(true)}
+        >
+          <SparklesIcon className="size-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={following ? "Unfollow this thread" : "Follow this thread"}
+          aria-pressed={following}
+          title={following ? "Following" : "Not following"}
+          onClick={() => void toggleFollow()}
+        >
+          {following ? (
+            <BellIcon className="size-4" />
+          ) : (
+            <BellOffIcon className="size-4 text-ink-3" />
+          )}
+        </Button>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -184,8 +269,26 @@ export function ThreadPanel({
           disabledNote="You can read this thread but not reply."
           offline={offline}
           onSend={send}
+          draftScope={
+            thread
+              ? {
+                  channelId: thread.parent.channelId,
+                  key: `${thread.parent.channelId}:${messageId}`,
+                }
+              : undefined
+          }
+          onSchedule={schedule}
         />
       </div>
+
+      {summary && thread ? (
+        <SummaryDialog
+          channelId={thread.parent.channelId}
+          parentId={messageId}
+          title={`Thread in #${channelName}`}
+          onClose={() => setSummary(false)}
+        />
+      ) : null}
     </aside>
   );
 }

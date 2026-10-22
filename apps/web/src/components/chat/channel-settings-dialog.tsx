@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArchiveIcon,
+  DownloadIcon,
   HashIcon,
   LockIcon,
   PlusIcon,
@@ -28,7 +29,14 @@ import type { Person } from "./composer";
 import { LinkPicker, PeoplePicker } from "./pickers";
 import { Avatar } from "./message-item";
 
-type Tab = "about" | "members" | "notifications" | "archive";
+type Tab = "about" | "members" | "notifications" | "data" | "archive";
+
+const feedEvents = [
+  ["created", "A task is created"],
+  ["done", "A task is marked done"],
+  ["assigned", "A task is assigned"],
+  ["overdue", "A task becomes overdue"],
+] as const;
 
 /** Name, people, your notifications and archive for one channel. */
 export function ChannelSettingsDialog({
@@ -48,9 +56,22 @@ export function ChannelSettingsDialog({
   const [topic, setTopic] = useState(channel.topic ?? "");
   const [description, setDescription] = useState(channel.description ?? "");
   const [visibility, setVisibility] = useState(channel.visibility);
-  const [link, setLink] = useState(
-    channel.link ? { type: channel.link.type, id: channel.link.id } : null,
+  // Task and doc discussions stay tied to what they discuss; only teams and
+  // projects can be changed here.
+  const fixedLink =
+    channel.link?.type === "task" || channel.link?.type === "doc";
+  const [link, setLink] = useState<{
+    type: "team" | "project";
+    id: string;
+  } | null>(
+    channel.link && !fixedLink
+      ? { type: channel.link.type as "team" | "project", id: channel.link.id }
+      : null,
   );
+  const [feed, setFeed] = useState<{
+    enabled: boolean;
+    events: string[];
+  } | null>(null);
   const [find, setFind] = useState("");
   const [adding, setAdding] = useState(false);
   const [toAdd, setToAdd] = useState<string[]>([]);
@@ -65,7 +86,7 @@ export function ChannelSettingsDialog({
     topic !== (channel.topic ?? "") ||
     description !== (channel.description ?? "") ||
     visibility !== channel.visibility ||
-    link?.id !== channel.link?.id;
+    (!fixedLink && link?.id !== channel.link?.id);
 
   const call = async (action: () => Promise<unknown>, done?: string) => {
     setBusy(true);
@@ -81,10 +102,56 @@ export function ChannelSettingsDialog({
     }
   };
 
+  useEffect(() => {
+    if (tab !== "data" || channel.link?.type !== "project") return;
+
+    let live = true;
+
+    trpc.chat.feedGet
+      .query({ channelId: channel.id })
+      .then((data) => live && setFeed(data))
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+  }, [tab, trpc, channel.id, channel.link?.type]);
+
+  const exportChannel = async () => {
+    setBusy(true);
+
+    try {
+      const data = await trpc.chat.exportChannel.query({
+        channelId: channel.id,
+      });
+      const text = data.messages
+        .map(
+          (message) =>
+            `[${new Date(message.at).toISOString()}] ${message.inThread ? "  ↳ " : ""}${message.author}: ${message.text}`,
+        )
+        .join("\n");
+      const url = URL.createObjectURL(
+        new Blob([`# ${data.channel}\n\n${text}\n`], { type: "text/plain" }),
+      );
+      const anchor = document.createElement("a");
+
+      anchor.href = url;
+      anchor.download = `${data.channel}-${new Date().toISOString().slice(0, 10)}.txt`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toastSuccess(`Exported ${data.messages.length} messages`);
+    } catch (error) {
+      toastError(error, "Could not export the channel");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const tabs: Array<[Tab, string, number?]> = [
     ["about", "About"],
     ["members", "Members", channel.people.length],
     ["notifications", "Notifications"],
+    ["data", "Activity & data"],
     ["archive", channel.archivedAt ? "Restore" : "Archive"],
   ];
 
@@ -210,11 +277,25 @@ export function ChannelSettingsDialog({
               </fieldset>
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium">Link to</span>
-                <LinkPicker
-                  value={link}
-                  onChange={setLink}
-                  disabled={!canManage}
-                />
+                {fixedLink && channel.link ? (
+                  <p className="rounded-md border border-hairline px-3 py-2 text-sm text-ink-2">
+                    Discussion of{" "}
+                    <a
+                      href={channel.link.href}
+                      className="font-medium text-signal-strong hover:underline"
+                    >
+                      {channel.link.key ? `${channel.link.key} · ` : ""}
+                      {channel.link.name}
+                    </a>
+                    . It follows that {channel.link.type}.
+                  </p>
+                ) : (
+                  <LinkPicker
+                    value={link}
+                    onChange={setLink}
+                    disabled={!canManage}
+                  />
+                )}
               </div>
               {!canManage ? (
                 <p className="text-[13px] text-ink-3">
@@ -406,6 +487,149 @@ export function ChannelSettingsDialog({
             </div>
           ) : null}
 
+          {tab === "data" ? (
+            <div className="flex flex-col gap-5">
+              <section className="flex flex-col gap-2">
+                <h3 className="font-semibold">Activity feed</h3>
+                {channel.link?.type === "project" ? (
+                  <>
+                    <p className="text-[13px] text-ink-2">
+                      Post what happens to {channel.link.name}’s tasks into this
+                      channel.
+                    </p>
+                    <label className="flex items-center gap-2.5 text-sm">
+                      <input
+                        type="checkbox"
+                        disabled={!canManage || busy || !feed}
+                        checked={feed?.enabled ?? false}
+                        onChange={(event) => {
+                          const next = {
+                            enabled: event.target.checked,
+                            events: feed?.events.length
+                              ? feed.events
+                              : ["created", "done"],
+                          };
+
+                          setFeed(next);
+                          void call(
+                            () =>
+                              trpc.chat.feedSet.mutate({
+                                channelId: channel.id,
+                                enabled: next.enabled,
+                                events: next.events as Array<
+                                  "created" | "done" | "assigned" | "overdue"
+                                >,
+                              }),
+                            next.enabled
+                              ? "Activity feed on"
+                              : "Activity feed off",
+                          );
+                        }}
+                        className="size-4 accent-[var(--signal)]"
+                      />
+                      Send task activity here
+                    </label>
+                    {feed?.enabled ? (
+                      <div className="flex flex-col gap-1.5 pl-6">
+                        {feedEvents.map(([event, label]) => (
+                          <label
+                            key={event}
+                            className="flex items-center gap-2.5 text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              disabled={!canManage || busy}
+                              checked={feed.events.includes(event)}
+                              onChange={(change) => {
+                                const events = change.target.checked
+                                  ? [...feed.events, event]
+                                  : feed.events.filter(
+                                      (entry) => entry !== event,
+                                    );
+
+                                setFeed({ enabled: true, events });
+                                void call(() =>
+                                  trpc.chat.feedSet.mutate({
+                                    channelId: channel.id,
+                                    enabled: true,
+                                    events: events as Array<
+                                      | "created"
+                                      | "done"
+                                      | "assigned"
+                                      | "overdue"
+                                    >,
+                                  }),
+                                );
+                              }}
+                              className="size-4 accent-[var(--signal)]"
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-[13px] text-ink-3">
+                    Link this channel to a project to receive its task activity.
+                  </p>
+                )}
+              </section>
+
+              <section className="flex flex-col gap-2 border-t border-hairline pt-4">
+                <h3 className="font-semibold">Keep messages for</h3>
+                <p className="text-[13px] text-ink-2">
+                  Older messages are deleted every night. Pinned messages are
+                  always kept.
+                </p>
+                <select
+                  aria-label="Retention"
+                  disabled={!canManage || busy}
+                  value={
+                    channel.retentionDays ? String(channel.retentionDays) : ""
+                  }
+                  onChange={(event) =>
+                    void call(
+                      () =>
+                        trpc.chat.setRetention.mutate({
+                          channelId: channel.id,
+                          days: event.target.value
+                            ? Number(event.target.value)
+                            : null,
+                        }),
+                      "Retention updated",
+                    )
+                  }
+                  className="h-9 w-fit rounded-md border border-hairline bg-surface px-2 text-sm"
+                >
+                  <option value="">Forever</option>
+                  <option value="30">30 days</option>
+                  <option value="90">90 days</option>
+                  <option value="365">1 year</option>
+                </select>
+                {!canManage ? (
+                  <p className="text-[13px] text-ink-3">Channel admins only.</p>
+                ) : null}
+              </section>
+
+              <section className="flex flex-col gap-2 border-t border-hairline pt-4">
+                <h3 className="font-semibold">Export</h3>
+                <p className="text-[13px] text-ink-2">
+                  Download every message in this channel as a text file.
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-fit"
+                  disabled={!canManage || busy}
+                  onClick={() => void exportChannel()}
+                >
+                  <DownloadIcon />
+                  Export messages
+                </Button>
+              </section>
+            </div>
+          ) : null}
+
           {tab === "archive" ? (
             <div className="flex items-start gap-4 rounded-lg border border-hairline p-4">
               <div className="flex-1">
@@ -469,7 +693,8 @@ export function ChannelSettingsDialog({
                         topic: topic || null,
                         description: description || null,
                         visibility,
-                        link,
+                        // Left out for task and doc discussions, so they keep it.
+                        ...(fixedLink ? {} : { link }),
                       }),
                     "Saved",
                   )

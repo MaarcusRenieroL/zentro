@@ -287,11 +287,17 @@ export function SearchView() {
             {group.label} · {group.rows.length}
           </h3>
           {group.rows.map((result) => (
-            <Link
+            // A stretched link: the message body can hold its own links (task
+            // keys), and anchors can't nest.
+            <div
               key={result.id}
-              href={`${result.channel.name ? `/chat/${result.channel.name}` : `/chat/dm/${result.channelId}`}?m=${result.id}`}
-              className="group flex gap-3 rounded-lg px-3 py-2.5 hover:bg-hover"
+              className="group relative flex gap-3 rounded-lg px-3 py-2.5 hover:bg-hover"
             >
+              <Link
+                href={`${result.channel.name ? `/chat/${result.channel.name}` : `/chat/dm/${result.channelId}`}?m=${result.id}`}
+                className="absolute inset-0 rounded-lg"
+                aria-label={`Jump to message from ${result.author?.name ?? "someone"}`}
+              />
               <Avatar name={result.author?.name ?? "Someone"} size={30} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm">
@@ -300,18 +306,18 @@ export function SearchView() {
                     {relativeAgo(result.createdAt)}
                   </span>
                 </p>
-                <p className="line-clamp-2 text-[15px] leading-6">
+                <div className="pointer-events-none line-clamp-2 text-[15px] leading-6 [&_a]:pointer-events-auto [&_a]:relative">
                   <MessageBody
                     body={result.body}
                     names={result.names}
                     highlight={words}
                   />
-                </p>
+                </div>
               </div>
-              <span className="self-center font-mono text-xs text-ink-3 opacity-0 group-hover:opacity-100">
+              <span className="pointer-events-none self-center font-mono text-xs text-ink-3 opacity-0 group-hover:opacity-100">
                 Jump
               </span>
-            </Link>
+            </div>
           ))}
         </section>
       ))}

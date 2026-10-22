@@ -14,17 +14,25 @@ import {
   ArrowUpIcon,
   AtSignIcon,
   BoldIcon,
+  CheckSquareIcon,
+  ChevronDownIcon,
+  ClockIcon,
   CodeIcon,
   FileIcon,
+  FileTextIcon,
+  FolderKanbanIcon,
+  HashIcon,
   ImageIcon,
   ItalicIcon,
   LinkIcon,
   ListIcon,
   PaperclipIcon,
+  SlashIcon,
   SmileIcon,
   XIcon,
 } from "lucide-react";
 
+import { useTrpcClient } from "@zentro/api/react";
 import { cn } from "@zentro/ui/lib/utils";
 import { toastError } from "@zentro/ui/index";
 import { Button } from "@zentro/ui/shadcn/button";
@@ -36,6 +44,7 @@ import {
 
 import { ActorAvatar } from "~/src/components/actor-avatar";
 
+import { builtinShortcodes, useCustomEmoji } from "./custom-emoji";
 import { fileSize } from "./message-body";
 
 export type Person = {
@@ -48,6 +57,15 @@ export type Person = {
 
 export type Draft = { body: string; fileIds: string[] };
 
+/** A `/command` in the message box. */
+export type SlashCommand = {
+  name: string;
+  usage: string;
+  description: string;
+  /** Runs with the text after the command, mentions as <@id>. */
+  run: (args: string) => Promise<void> | void;
+};
+
 type Pending = {
   key: string;
   name: string;
@@ -58,6 +76,26 @@ type Pending = {
   error?: string;
   previewUrl?: string;
 };
+
+type Trigger = {
+  kind: "mention" | "link" | "emoji";
+  query: string;
+  start: number;
+};
+
+type LinkResult = {
+  kind: "task" | "doc" | "project";
+  label: string;
+  hint: string;
+  insert: string;
+};
+
+type Option =
+  | { kind: "person"; person: Person }
+  | { kind: "group"; id: string; note: string }
+  | { kind: "link"; result: LinkResult }
+  | { kind: "emoji"; name: string; glyph?: string; url?: string }
+  | { kind: "command"; command: SlashCommand };
 
 const emoji = [
   "👍",
@@ -106,7 +144,41 @@ function upload(file: File, onProgress: (value: number) => void) {
   });
 }
 
-/** The message box: formatting, @mentions, emoji and attachments. */
+const laterChoices: Array<[string, () => Date]> = [
+  ["In 30 minutes", () => new Date(Date.now() + 30 * 60_000)],
+  ["In 1 hour", () => new Date(Date.now() + 60 * 60_000)],
+  [
+    "Tomorrow at 9:00",
+    () => {
+      const date = new Date();
+
+      date.setDate(date.getDate() + 1);
+      date.setHours(9, 0, 0, 0);
+
+      return date;
+    },
+  ],
+  [
+    "Monday at 9:00",
+    () => {
+      const date = new Date();
+
+      date.setDate(date.getDate() + ((8 - date.getDay()) % 7 || 7));
+      date.setHours(9, 0, 0, 0);
+
+      return date;
+    },
+  ],
+];
+
+/** Local "YYYY-MM-DDTHH:mm" for a datetime-local input. */
+function localInput(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** The message box: formatting, @mentions, #links, emoji, commands, files. */
 export function Composer({
   placeholder,
   people,
@@ -118,6 +190,10 @@ export function Composer({
   autoFocus = false,
   compact = false,
   onTyped,
+  commands = [],
+  draftScope,
+  onSchedule,
+  onManageEmoji,
 }: {
   placeholder: string;
   people: Person[];
@@ -129,41 +205,82 @@ export function Composer({
   autoFocus?: boolean;
   compact?: boolean;
   onTyped?: () => void;
+  commands?: SlashCommand[];
+  /** Saves what is typed here, per conversation or thread. */
+  draftScope?: { channelId: string; key: string };
+  onSchedule?: (draft: Draft, at: Date) => Promise<void> | void;
+  onManageEmoji?: () => void;
 }) {
+  const trpc = useTrpcClient();
+  const custom = useCustomEmoji();
   const [text, setText] = useState("");
   const [pending, setPending] = useState<Pending[]>([]);
-  const [mention, setMention] = useState<{
-    query: string;
-    start: number;
-  } | null>(null);
+  const [trigger, setTrigger] = useState<Trigger | null>(null);
+  const [links, setLinks] = useState<LinkResult[]>([]);
   const [index, setIndex] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [later, setLater] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   // Names chosen from the popover, to turn "@Priya" back into a mention.
   const chosen = useRef(new Map<string, string>());
+  const draftKey = draftScope?.key;
+  const restored = useRef<string | null>(null);
+  // Set once the saved draft has been read, so an empty box never overwrites it.
+  const loaded = useRef<string | null>(null);
 
-  const options = useMemo(() => {
-    if (!mention) return [];
+  // A leading "/word" is a command being typed.
+  const slashQuery = /^\/([a-z]*)$/.exec(text)?.[1];
 
-    const needle = mention.query.toLowerCase();
-    const matches = people
-      .filter((person) => !person.isMe || needle)
-      .filter(
-        (person) =>
-          !needle ||
-          person.name.toLowerCase().includes(needle) ||
-          person.email.toLowerCase().startsWith(needle),
-      )
+  const options = useMemo<Option[]>(() => {
+    if (slashQuery !== undefined && commands.length) {
+      return commands
+        .filter((command) => command.name.startsWith(slashQuery))
+        .map((command) => ({ kind: "command" as const, command }));
+    }
+
+    if (!trigger) return [];
+
+    const needle = trigger.query.toLowerCase();
+
+    if (trigger.kind === "mention") {
+      const matches = people
+        .filter((person) => !person.isMe || needle)
+        .filter(
+          (person) =>
+            !needle ||
+            person.name.toLowerCase().includes(needle) ||
+            person.email.toLowerCase().startsWith(needle),
+        )
+        .slice(0, 5)
+        .map((person) => ({ kind: "person" as const, person }));
+      const groups = [
+        { kind: "group" as const, id: "channel", note: "Everyone here" },
+        { kind: "group" as const, id: "here", note: "People who are active" },
+      ].filter((group) => !needle || group.id.startsWith(needle));
+
+      return [...matches, ...groups];
+    }
+
+    if (trigger.kind === "link") {
+      return links.map((result) => ({ kind: "link" as const, result }));
+    }
+
+    const fromCustom = custom.list
+      .filter((entry) => entry.name.includes(needle))
       .slice(0, 5)
-      .map((person) => ({ kind: "person" as const, person }));
-    const groups = [
-      { kind: "group" as const, id: "channel", note: "Everyone here" },
-      { kind: "group" as const, id: "here", note: "People who are active" },
-    ].filter((group) => !needle || group.id.startsWith(needle));
+      .map((entry) => ({
+        kind: "emoji" as const,
+        name: entry.name,
+        url: entry.url,
+      }));
+    const fromBuiltin = Object.entries(builtinShortcodes)
+      .filter(([name]) => name.includes(needle))
+      .slice(0, 5)
+      .map(([name, glyph]) => ({ kind: "emoji" as const, name, glyph }));
 
-    return [...matches, ...groups];
-  }, [mention, people]);
+    return [...fromCustom, ...fromBuiltin].slice(0, 7);
+  }, [slashQuery, commands, trigger, people, links, custom.list]);
 
   useEffect(() => {
     if (autoFocus) area.current?.focus();
@@ -179,9 +296,129 @@ export function Composer({
     element.style.height = `${Math.min(element.scrollHeight, compact ? 140 : 220)}px`;
   }, [text, compact]);
 
+  // Look up tasks, docs and projects for a "#" link.
+  useEffect(() => {
+    if (trigger?.kind !== "link") {
+      setLinks([]);
+
+      return;
+    }
+
+    let live = true;
+    const timer = setTimeout(() => {
+      trpc.chat.linkSearch
+        .query({ q: trigger.query })
+        .then((data) => {
+          if (!live) return;
+
+          setLinks([
+            ...data.tasks.map((task) => ({
+              kind: "task" as const,
+              label: task.name,
+              hint: task.key,
+              insert: task.key,
+            })),
+            ...data.docs.map((doc) => ({
+              kind: "doc" as const,
+              label: doc.title,
+              hint: "Doc",
+              insert: `${window.location.origin}/docs/${doc.slug}`,
+            })),
+            ...data.projects.map((project) => ({
+              kind: "project" as const,
+              label: project.name,
+              hint: "Project",
+              insert: `${window.location.origin}/projects/${project.slug}`,
+            })),
+          ]);
+          setIndex(0);
+        })
+        .catch(() => undefined);
+    }, 150);
+
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [trigger, trpc]);
+
+  // Turn "<@id>" back into "@Name" for editing a saved draft.
+  const fromBody = useCallback(
+    (body: string) =>
+      body.replace(/<@([0-9a-f-]{36})>/g, (whole, id: string) => {
+        const person = people.find((entry) => entry.memberId === id);
+
+        if (!person) return whole;
+
+        chosen.current.set(person.name, id);
+
+        return `@${person.name}`;
+      }),
+    [people],
+  );
+
+  // Bring back an unsent draft once, when people are known.
+  useEffect(() => {
+    if (!draftKey || !draftScope || restored.current === draftKey) return;
+    if (!people.length) return;
+
+    restored.current = draftKey;
+
+    let live = true;
+
+    trpc.chat.draftGet
+      .query({ scope: draftKey })
+      .then((data) => {
+        if (live && data.body)
+          setText((current) => current || fromBody(data.body));
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        loaded.current = draftKey;
+      });
+
+    return () => {
+      live = false;
+    };
+  }, [draftKey, draftScope, people.length, trpc, fromBody]);
+
   const reading = pending.some((file) => !file.id && !file.error);
   const ready = pending.filter((file) => file.id);
   const empty = !text.trim() && !ready.length;
+
+  const toBody = useCallback((value: string) => {
+    let body = value.trim();
+
+    // Longest names first so "Ana Maria" wins over "Ana".
+    for (const [name, id] of [...chosen.current].sort(
+      (a, b) => b[0].length - a[0].length,
+    )) {
+      body = body.split(`@${name}`).join(`<@${id}>`);
+    }
+
+    return body.replace(/@(channel|here)\b/g, "<!$1>");
+  }, []);
+
+  // Save the draft shortly after typing stops, and only when it changed.
+  const draftChannel = draftScope?.channelId;
+  const lastSaved = useRef("");
+
+  useEffect(() => {
+    if (!draftChannel || !draftKey || loaded.current !== draftKey) return;
+
+    const body = toBody(text);
+
+    if (body === lastSaved.current) return;
+
+    const timer = setTimeout(() => {
+      lastSaved.current = body;
+      void trpc.chat.draftSet
+        .mutate({ channelId: draftChannel, scope: draftKey, body })
+        .catch(() => undefined);
+    }, 900);
+
+    return () => clearTimeout(timer);
+  }, [text, draftChannel, draftKey, trpc, toBody]);
 
   const addFiles = useCallback((list: FileList | File[]) => {
     for (const file of Array.from(list)) {
@@ -246,68 +483,145 @@ export function Composer({
     });
   };
 
-  const detectMention = (value: string, caret: number) => {
+  const detectTrigger = (value: string, caret: number) => {
     const upToCaret = value.slice(0, caret);
-    const match = /(?:^|\s)@([\w.-]{0,30})$/.exec(upToCaret);
+    const mention = /(?:^|\s)@([\w.-]{0,30})$/.exec(upToCaret);
+    const link = /(?:^|\s)#([\w-]{0,30})$/.exec(upToCaret);
+    const shortcode = /(?:^|\s):([a-z0-9_+-]{2,20})$/.exec(upToCaret);
 
-    setMention(
-      match
-        ? { query: match[1] ?? "", start: caret - (match[1]?.length ?? 0) - 1 }
-        : null,
-    );
+    if (mention) {
+      setTrigger({
+        kind: "mention",
+        query: mention[1] ?? "",
+        start: caret - (mention[1]?.length ?? 0) - 1,
+      });
+    } else if (link) {
+      setTrigger({
+        kind: "link",
+        query: link[1] ?? "",
+        start: caret - (link[1]?.length ?? 0) - 1,
+      });
+    } else if (shortcode) {
+      setTrigger({
+        kind: "emoji",
+        query: shortcode[1] ?? "",
+        start: caret - (shortcode[1]?.length ?? 0) - 1,
+      });
+    } else {
+      setTrigger(null);
+    }
+
     setIndex(0);
   };
 
-  const pick = (option: (typeof options)[number]) => {
-    if (!mention || !area.current) return;
+  const pick = (option: Option) => {
+    if (option.kind === "command") {
+      setText(`/${option.command.name} `);
+      requestAnimationFrame(() => area.current?.focus());
 
-    const label = option.kind === "person" ? option.person.name : option.id;
-
-    if (option.kind === "person") {
-      chosen.current.set(label, option.person.memberId);
+      return;
     }
 
+    if (!trigger || !area.current) return;
+
     const caret = area.current.selectionStart;
-    const next = `${text.slice(0, mention.start)}@${label} ${text.slice(caret)}`;
+    let replacement = "";
+
+    if (option.kind === "person") {
+      chosen.current.set(option.person.name, option.person.memberId);
+      replacement = `@${option.person.name} `;
+    } else if (option.kind === "group") {
+      replacement = `@${option.id} `;
+    } else if (option.kind === "link") {
+      replacement = `${option.result.insert} `;
+    } else {
+      replacement = option.url ? `:${option.name}: ` : `${option.glyph} `;
+    }
+
+    const next = `${text.slice(0, trigger.start)}${replacement}${text.slice(caret)}`;
 
     setText(next);
-    setMention(null);
+    setTrigger(null);
     requestAnimationFrame(() => {
-      const position = mention.start + label.length + 2;
+      const position = trigger.start + replacement.length;
 
       area.current?.focus();
       area.current?.setSelectionRange(position, position);
     });
   };
 
-  const toBody = () => {
-    let body = text.trim();
-
-    // Longest names first so "Ana Maria" wins over "Ana".
-    for (const [name, id] of [...chosen.current].sort(
-      (a, b) => b[0].length - a[0].length,
-    )) {
-      body = body.split(`@${name}`).join(`<@${id}>`);
-    }
-
-    return body.replace(/@(channel|here)\b/g, "<!$1>");
-  };
-
   const send = async () => {
     if (empty || reading || disabled) return;
 
-    const draft = { body: toBody(), fileIds: ready.map((file) => file.id!) };
+    const body = toBody(text);
+    const command = /^\/([a-z]+)(?:\s+([\s\S]*))?$/.exec(body);
+    const match = command
+      ? commands.find((entry) => entry.name === command[1])
+      : undefined;
+
+    if (match) {
+      setText("");
+      setTrigger(null);
+      chosen.current.clear();
+
+      try {
+        await match.run((command![2] ?? "").trim());
+      } catch (error) {
+        toastError(error, `Could not run /${match.name}`);
+        setText(text);
+      }
+
+      area.current?.focus();
+
+      return;
+    }
+
+    const draft = { body, fileIds: ready.map((file) => file.id!) };
 
     setText("");
     setPending([]);
-    setMention(null);
+    setTrigger(null);
     chosen.current.clear();
+
+    if (draftScope) {
+      lastSaved.current = "";
+      void trpc.chat.draftSet
+        .mutate({
+          channelId: draftScope.channelId,
+          scope: draftScope.key,
+          body: "",
+        })
+        .catch(() => undefined);
+    }
+
     await onSend(draft);
     area.current?.focus();
   };
 
+  const sendLater = async (at: Date) => {
+    if (empty || reading || disabled || !onSchedule) return;
+
+    const draft = {
+      body: toBody(text),
+      fileIds: ready.map((file) => file.id!),
+    };
+
+    if (!draft.body) {
+      toastError("Write a message to schedule.", "Nothing to schedule");
+
+      return;
+    }
+
+    setLater(false);
+    setText("");
+    setPending([]);
+    chosen.current.clear();
+    await onSchedule(draft, at);
+    area.current?.focus();
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (mention && options.length) {
+    if (options.length && (trigger || slashQuery !== undefined)) {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         setIndex(
@@ -320,15 +634,26 @@ export function Composer({
       }
 
       if (event.key === "Enter" || event.key === "Tab") {
-        event.preventDefault();
-        pick(options[index]!);
+        // A fully typed command with nothing to complete just runs.
+        const selected = options[index]!;
 
-        return;
+        if (
+          !(
+            selected.kind === "command" &&
+            event.key === "Enter" &&
+            slashQuery === selected.command.name
+          )
+        ) {
+          event.preventDefault();
+          pick(selected);
+
+          return;
+        }
       }
 
       if (event.key === "Escape") {
         event.preventDefault();
-        setMention(null);
+        setTrigger(null);
 
         return;
       }
@@ -372,6 +697,15 @@ export function Composer({
 
   const tool =
     "size-8 rounded-sm text-ink-2 hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-ring";
+  const showPopup = options.length > 0 && (trigger || slashQuery !== undefined);
+  const heading =
+    slashQuery !== undefined
+      ? "Commands"
+      : trigger?.kind === "link"
+        ? "Link a task, doc or project"
+        : trigger?.kind === "emoji"
+          ? "Emoji"
+          : "People";
 
   return (
     <div
@@ -388,25 +722,29 @@ export function Composer({
         dragging ? "border-signal bg-signal-subtle" : "border-hairline",
       )}
     >
-      {mention && options.length ? (
+      {showPopup ? (
         <div
           role="listbox"
-          aria-label="Mention someone"
-          className="absolute bottom-full left-0 z-20 mb-2 w-72 rounded-lg border border-hairline bg-popover p-1.5 shadow-lg"
+          aria-label={heading}
+          className="absolute bottom-full left-0 z-20 mb-2 w-80 max-w-full rounded-lg border border-hairline bg-popover p-1.5 shadow-lg"
         >
-          {options.some((option) => option.kind === "person") ? (
-            <p className="eyebrow px-2 pt-1 pb-1.5">People</p>
-          ) : null}
+          <p className="eyebrow px-2 pt-1 pb-1.5">{heading}</p>
           {options.map((option, optionIndex) => {
             const selected = optionIndex === index;
+            const key =
+              option.kind === "person"
+                ? option.person.memberId
+                : option.kind === "group"
+                  ? `g-${option.id}`
+                  : option.kind === "link"
+                    ? `l-${option.result.kind}-${option.result.insert}`
+                    : option.kind === "emoji"
+                      ? `e-${option.name}`
+                      : `c-${option.command.name}`;
 
             return (
               <button
-                key={
-                  option.kind === "person"
-                    ? option.person.memberId
-                    : `g-${option.id}`
-                }
+                key={key}
                 type="button"
                 role="option"
                 aria-selected={selected}
@@ -430,7 +768,7 @@ export function Composer({
                       {option.person.email.split("@")[0]}
                     </span>
                   </>
-                ) : (
+                ) : option.kind === "group" ? (
                   <>
                     <AtSignIcon
                       className="size-4 text-ink-3"
@@ -439,6 +777,63 @@ export function Composer({
                     <span className="font-mono">@{option.id}</span>
                     <span className="flex-1 truncate text-right text-xs text-ink-3">
                       {option.note}
+                    </span>
+                  </>
+                ) : option.kind === "link" ? (
+                  <>
+                    {option.result.kind === "task" ? (
+                      <CheckSquareIcon
+                        className="size-4 text-ink-3"
+                        aria-hidden="true"
+                      />
+                    ) : option.result.kind === "doc" ? (
+                      <FileTextIcon
+                        className="size-4 text-ink-3"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <FolderKanbanIcon
+                        className="size-4 text-ink-3"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="flex-1 truncate">
+                      {option.result.label}
+                    </span>
+                    <span className="font-mono text-[11px] text-ink-3">
+                      {option.result.hint}
+                    </span>
+                  </>
+                ) : option.kind === "emoji" ? (
+                  <>
+                    {option.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={option.url} alt="" className="size-5" />
+                    ) : (
+                      <span className="w-5 text-center text-base">
+                        {option.glyph}
+                      </span>
+                    )}
+                    <span className="font-mono text-[13px]">
+                      :{option.name}:
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <SlashIcon
+                      className="size-4 text-ink-3"
+                      aria-hidden="true"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-mono text-[13px]">
+                        /{option.command.name}{" "}
+                        <span className="text-ink-3">
+                          {option.command.usage}
+                        </span>
+                      </span>
+                      <span className="block truncate text-xs text-ink-3">
+                        {option.command.description}
+                      </span>
                     </span>
                   </>
                 )}
@@ -525,12 +920,12 @@ export function Composer({
         aria-label={placeholder}
         onChange={(event) => {
           setText(event.target.value);
-          detectMention(event.target.value, event.target.selectionStart);
+          detectTrigger(event.target.value, event.target.selectionStart);
           onTyped?.();
         }}
         onKeyDown={onKeyDown}
         onPaste={onPaste}
-        onBlur={() => setTimeout(() => setMention(null), 120)}
+        onBlur={() => setTimeout(() => setTrigger(null), 120)}
         className="block max-h-56 w-full resize-none bg-transparent px-4 pt-3.5 pb-1 text-[15px] leading-6 outline-none placeholder:text-ink-3"
       />
 
@@ -570,12 +965,25 @@ export function Composer({
         >
           <AtSignIcon className="size-4" />
         </Button>
-        <span aria-hidden="true" className="mx-1 h-4 w-px bg-hairline" />
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
           className={tool}
+          aria-label="Link a task, doc or project"
+          onClick={() => insert("#")}
+        >
+          <HashIcon className="size-4" />
+        </Button>
+        <span
+          aria-hidden="true"
+          className="mx-1 hidden h-4 w-px bg-hairline sm:block"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className={cn(tool, "hidden sm:inline-flex")}
           aria-label="Bold"
           onClick={() => insert("**", "**", "bold")}
         >
@@ -585,7 +993,7 @@ export function Composer({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className={tool}
+          className={cn(tool, "hidden sm:inline-flex")}
           aria-label="Italic"
           onClick={() => insert("_", "_", "italic")}
         >
@@ -595,9 +1003,13 @@ export function Composer({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className={tool}
+          className={cn(tool, "hidden sm:inline-flex")}
           aria-label="Code"
-          onClick={() => insert("`", "`", "code")}
+          onClick={() =>
+            text.includes("\n")
+              ? insert("```\n", "\n```", "code")
+              : insert("`", "`", "code")
+          }
         >
           <CodeIcon className="size-4" />
         </Button>
@@ -605,7 +1017,7 @@ export function Composer({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className={tool}
+          className={cn(tool, "hidden sm:inline-flex")}
           aria-label="List"
           onClick={() => insert("\n- ", "", "item")}
         >
@@ -615,7 +1027,7 @@ export function Composer({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className={tool}
+          className={cn(tool, "hidden sm:inline-flex")}
           aria-label="Link"
           onClick={() => insert("", " https://")}
         >
@@ -636,39 +1048,131 @@ export function Composer({
           </PopoverTrigger>
           <PopoverContent
             align="start"
-            className="grid w-56 grid-cols-6 gap-1 p-2"
+            className="flex w-60 flex-col gap-2 p-2"
           >
-            {emoji.map((item) => (
+            <div className="grid grid-cols-6 gap-1">
+              {emoji.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => insert(item)}
+                  className="rounded-sm p-1 text-lg hover:bg-hover"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            {custom.list.length ? (
+              <div className="grid grid-cols-6 gap-1 border-t border-hairline pt-2">
+                {custom.list.map((item) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    title={`:${item.name}:`}
+                    onClick={() => insert(`:${item.name}: `)}
+                    className="flex items-center justify-center rounded-sm p-1 hover:bg-hover"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={item.url} alt={item.name} className="size-5" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {onManageEmoji ? (
               <button
-                key={item}
                 type="button"
-                onClick={() => insert(item)}
-                className="rounded-sm p-1 text-lg hover:bg-hover"
+                onClick={onManageEmoji}
+                className="rounded-sm px-1 py-1 text-left text-xs text-signal-strong hover:bg-hover"
               >
-                {item}
+                Add or remove custom emoji…
               </button>
-            ))}
+            ) : null}
           </PopoverContent>
         </Popover>
 
         <span className="flex-1" />
-        <span className="mr-2 hidden font-mono text-[11px] text-ink-3 sm:block">
-          ↵ send · ⇧↵ new line
-        </span>
-        <Button
-          type="button"
-          size="icon-sm"
-          aria-label="Send message"
-          disabled={empty || reading}
-          onClick={() => void send()}
-          className="size-8 rounded-md"
-        >
-          {reading ? (
-            <ImageIcon className="size-4 animate-pulse" />
-          ) : (
-            <ArrowUpIcon className="size-4" />
-          )}
-        </Button>
+        {compact ? null : (
+          <span className="mr-2 hidden font-mono text-[11px] whitespace-nowrap text-ink-3 sm:block">
+            ↵ send · ⇧↵ new line
+          </span>
+        )}
+        <div className="flex items-center">
+          <Button
+            type="button"
+            size="icon-sm"
+            aria-label="Send message"
+            disabled={empty || reading}
+            onClick={() => void send()}
+            className={cn(
+              "size-8",
+              onSchedule ? "rounded-r-none" : "rounded-md",
+            )}
+          >
+            {reading ? (
+              <ImageIcon className="size-4 animate-pulse" />
+            ) : (
+              <ArrowUpIcon className="size-4" />
+            )}
+          </Button>
+          {onSchedule ? (
+            <Popover open={later} onOpenChange={setLater}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  aria-label="Send later"
+                  disabled={empty || reading}
+                  className="h-8 w-6 rounded-l-none border-l border-on-signal/30"
+                >
+                  <ChevronDownIcon className="size-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 gap-1 p-2">
+                <p className="flex items-center gap-1.5 px-2 pt-1 pb-1 text-sm font-semibold">
+                  <ClockIcon className="size-4" aria-hidden="true" />
+                  Send later
+                </p>
+                {laterChoices.map(([label, at]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => void sendLater(at())}
+                    className="rounded-md px-2 py-1.5 text-left text-sm hover:bg-hover"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <form
+                  className="flex flex-col gap-1.5 border-t border-hairline px-2 pt-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+
+                    const value = new FormData(event.currentTarget).get("at");
+
+                    if (typeof value === "string" && value) {
+                      void sendLater(new Date(value));
+                    }
+                  }}
+                >
+                  <label className="text-xs text-ink-2" htmlFor="send-at">
+                    Pick a time
+                  </label>
+                  <input
+                    id="send-at"
+                    name="at"
+                    type="datetime-local"
+                    min={localInput(new Date(Date.now() + 60_000))}
+                    required
+                    className="h-8 rounded-md border border-hairline bg-surface px-2 text-sm"
+                  />
+                  <Button type="submit" size="sm">
+                    Schedule
+                  </Button>
+                </form>
+              </PopoverContent>
+            </Popover>
+          ) : null}
+        </div>
       </div>
     </div>
   );
