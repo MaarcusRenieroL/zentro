@@ -60,6 +60,8 @@ const boardWork = [
   "whiteboards.delete_own",
 ];
 
+const mailWork = ["mail.view", "mail.send"];
+
 const docWork = [
   "docs.view",
   "docs.create",
@@ -108,6 +110,7 @@ export function getSystemRoleDefinitions(): SystemRoleDefinition[] {
         ...fileWork,
         ...calendarWork,
         ...boardWork,
+        ...mailWork,
         "modules.view",
       ],
       editable: true,

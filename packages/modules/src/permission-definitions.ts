@@ -594,3 +594,20 @@ export const whiteboardsPermissions: PermissionDefinition[] = [
     org,
   ),
 ];
+
+export const mailPermissions: PermissionDefinition[] = [
+  definePermission(
+    "mail.view",
+    "View mail",
+    "Open the user's own inbox, sent mail and drafts.",
+    "Mail",
+    org,
+  ),
+  definePermission(
+    "mail.send",
+    "Send mail",
+    "Write and send messages to people in the organization.",
+    "Mail",
+    org,
+  ),
+];

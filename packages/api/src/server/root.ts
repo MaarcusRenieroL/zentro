@@ -17,6 +17,7 @@ import { filesRouterProcedures } from "./routers/files";
 import { invitationRouter } from "./routers/invitation";
 import { linkRouter } from "./routers/link";
 import { notificationRouter } from "./routers/notification";
+import { mailRouter } from "./routers/mail";
 import { memberRouter } from "./routers/member";
 import { modulesRouter } from "./routers/modules";
 import { projectRouter } from "./routers/project";
@@ -50,6 +51,7 @@ export const appRouter = router({
   files: router(filesRouterProcedures),
   invitation: invitationRouter,
   link: linkRouter,
+  mail: mailRouter,
   member: memberRouter,
   notification: notificationRouter,
   modules: modulesRouter,
