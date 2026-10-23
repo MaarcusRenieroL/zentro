@@ -15,3 +15,4 @@ export * from "./favorite";
 export * from "./automation";
 export * from "./chat";
 export * from "./file";
+export * from "./calendar";

@@ -5,7 +5,8 @@ export type ModuleId =
   | "tasks"
   | "docs"
   | "chat"
-  | "files";
+  | "files"
+  | "calendar";
 
 export type ModuleNavLink = {
   label: string;

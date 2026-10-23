@@ -532,3 +532,34 @@ export const filesPermissions: PermissionDefinition[] = [
     org,
   ),
 ];
+
+export const calendarPermissions: PermissionDefinition[] = [
+  definePermission(
+    "calendar.view",
+    "View calendar",
+    "See the shared calendar and its events.",
+    "Calendar",
+    org,
+  ),
+  definePermission(
+    "calendar.create",
+    "Create events",
+    "Add events to the shared calendar.",
+    "Calendar",
+    org,
+  ),
+  definePermission(
+    "calendar.manage_own",
+    "Edit own events",
+    "Change or delete events the user created.",
+    "Calendar",
+    org,
+  ),
+  definePermission(
+    "calendar.manage_any",
+    "Edit any event",
+    "Change or delete any event.",
+    "Calendar",
+    org,
+  ),
+];

@@ -1,4 +1,5 @@
 import {
+  calendarPermissions,
   chatPermissions,
   docsPermissions,
   filesPermissions,
@@ -329,6 +330,33 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             href: "/files",
             permission: "files.view",
             icon: "Folder",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "calendar",
+    name: "Calendar",
+    description: "A shared calendar for meetings, deadlines and time off.",
+    icon: "Calendar",
+    basePath: "/calendar",
+    core: false,
+    defaultEnabled: true,
+    dependsOn: [],
+    permissionNamespaces: ["calendar"],
+    permissions: calendarPermissions,
+    nav: [
+      {
+        id: "work",
+        label: "Work",
+        order: 20,
+        items: [
+          {
+            label: "Calendar",
+            href: "/calendar",
+            permission: "calendar.view",
+            icon: "Calendar",
           },
         ],
       },

@@ -68,6 +68,7 @@ const shellIcons: Record<string, LucideIcon> = {
   docs: FileTextIcon,
   chat: MessageSquareIcon,
   files: FolderIcon,
+  calendar: CalendarIcon,
   team: UsersIcon,
   overview: ChartNoAxesColumnIcon,
   settings: SettingsIcon,

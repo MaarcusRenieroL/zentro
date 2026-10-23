@@ -48,6 +48,12 @@ const chatWork = [
 
 const fileWork = ["files.view", "files.upload", "files.delete_own"];
 
+const calendarWork = [
+  "calendar.view",
+  "calendar.create",
+  "calendar.manage_own",
+];
+
 const docWork = [
   "docs.view",
   "docs.create",
@@ -94,6 +100,7 @@ export function getSystemRoleDefinitions(): SystemRoleDefinition[] {
         ...docWork,
         ...chatWork,
         ...fileWork,
+        ...calendarWork,
         "modules.view",
       ],
       editable: true,
