@@ -5,6 +5,7 @@ import {
   filesPermissions,
   projectsPermissions,
   settingsPermissions,
+  whiteboardsPermissions,
   tasksPermissions,
 } from "./permission-definitions";
 import type { ModuleManifest } from "./types";
@@ -357,6 +358,33 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             href: "/calendar",
             permission: "calendar.view",
             icon: "Calendar",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "whiteboards",
+    name: "Whiteboards",
+    description: "Sketch, diagram and plan together on an open canvas.",
+    icon: "PenTool",
+    basePath: "/whiteboards",
+    core: false,
+    defaultEnabled: true,
+    dependsOn: [],
+    permissionNamespaces: ["whiteboards"],
+    permissions: whiteboardsPermissions,
+    nav: [
+      {
+        id: "work",
+        label: "Work",
+        order: 20,
+        items: [
+          {
+            label: "Whiteboards",
+            href: "/whiteboards",
+            permission: "whiteboards.view",
+            icon: "PenTool",
           },
         ],
       },

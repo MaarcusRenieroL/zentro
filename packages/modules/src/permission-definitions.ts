@@ -563,3 +563,34 @@ export const calendarPermissions: PermissionDefinition[] = [
     org,
   ),
 ];
+
+export const whiteboardsPermissions: PermissionDefinition[] = [
+  definePermission(
+    "whiteboards.view",
+    "View whiteboards",
+    "Open the organization's whiteboards.",
+    "Whiteboards",
+    org,
+  ),
+  definePermission(
+    "whiteboards.edit",
+    "Edit whiteboards",
+    "Create boards and draw on them.",
+    "Whiteboards",
+    org,
+  ),
+  definePermission(
+    "whiteboards.delete_own",
+    "Delete own whiteboards",
+    "Rename and delete boards the user created.",
+    "Whiteboards",
+    org,
+  ),
+  definePermission(
+    "whiteboards.delete_any",
+    "Delete any whiteboard",
+    "Rename and delete any board.",
+    "Whiteboards",
+    org,
+  ),
+];

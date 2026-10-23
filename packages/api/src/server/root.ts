@@ -22,6 +22,7 @@ import { modulesRouter } from "./routers/modules";
 import { projectRouter } from "./routers/project";
 import { searchRouter } from "./routers/search";
 import { taskRouter } from "./routers/task";
+import { whiteboardRouter } from "./routers/whiteboard";
 import { teamRouter } from "./routers/team";
 import { automationRouter } from "./routers/automation";
 
@@ -58,6 +59,7 @@ export const appRouter = router({
   search: searchRouter,
   task: taskRouter,
   team: teamRouter,
+  whiteboard: whiteboardRouter,
   user: userRouter,
 });
 

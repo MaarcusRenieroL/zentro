@@ -54,6 +54,12 @@ const calendarWork = [
   "calendar.manage_own",
 ];
 
+const boardWork = [
+  "whiteboards.view",
+  "whiteboards.edit",
+  "whiteboards.delete_own",
+];
+
 const docWork = [
   "docs.view",
   "docs.create",
@@ -101,6 +107,7 @@ export function getSystemRoleDefinitions(): SystemRoleDefinition[] {
         ...chatWork,
         ...fileWork,
         ...calendarWork,
+        ...boardWork,
         "modules.view",
       ],
       editable: true,
