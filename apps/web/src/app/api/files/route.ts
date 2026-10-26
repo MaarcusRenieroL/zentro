@@ -49,6 +49,8 @@ export async function POST(request: Request) {
   const caller = appRouter.createCaller(ctx);
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
+  // The Files library has its own permission and does not need Chat.
+  const library = form?.get("library") === "1";
 
   if (!(file instanceof File)) {
     return Response.json(
@@ -58,7 +60,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    await caller.files.authorizeUpload({ size: file.size || 1 });
+    await (library
+      ? caller.files.libraryAuthorize({ size: file.size || 1 })
+      : caller.files.authorizeUpload({ size: file.size || 1 }));
 
     const bytes = Buffer.from(await file.arrayBuffer());
 
@@ -75,7 +79,10 @@ export async function POST(request: Request) {
 
     await storage().put(key, bytes, mimeType);
 
-    const saved = await caller.files.register({
+    const register = library
+      ? caller.files.libraryRegister
+      : caller.files.register;
+    const saved = await register({
       name: file.name.slice(0, 255) || "file",
       mimeType,
       size: bytes.length,

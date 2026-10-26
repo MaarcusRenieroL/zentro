@@ -358,7 +358,7 @@ export function MailApp() {
                     <span className="flex items-center gap-2">
                       {row.unread ? (
                         <span
-                          className="size-2 shrink-0 rounded-full bg-blue-500"
+                          className="size-2 shrink-0 rounded-full bg-accent"
                           role="img"
                           aria-label="Unread"
                         />
@@ -372,7 +372,7 @@ export function MailApp() {
                       </span>
                       {row.starred ? (
                         <StarIcon
-                          className="size-3.5 shrink-0 fill-amber-400 text-amber-400"
+                          className="size-3.5 shrink-0 fill-warning text-warning"
                           aria-label="Starred"
                         />
                       ) : null}
@@ -431,7 +431,7 @@ export function MailApp() {
               >
                 <StarIcon
                   className={
-                    current?.starred ? "fill-amber-400 text-amber-400" : ""
+                    current?.starred ? "fill-warning text-warning" : ""
                   }
                   aria-hidden
                 />

@@ -116,6 +116,7 @@ export function FilesLibrary() {
       try {
         const body = new FormData();
         body.append("file", file);
+        body.append("library", "1");
         const response = await fetch("/api/files", { method: "POST", body });
 
         if (!response.ok) {

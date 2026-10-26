@@ -8,8 +8,12 @@ import { permissionProcedure, router, type OrganizationContext } from "../trpc";
 
 const uuid = z.string().uuid();
 
-const procedure = (permission: string) =>
-  permissionProcedure(permission, undefined, { module: "whiteboards" });
+const procedure = (permission: string, audit?: string[], also?: string[]) =>
+  permissionProcedure(permission, undefined, {
+    module: "whiteboards",
+    audit,
+    also,
+  });
 
 const num = z.number().finite().min(-1e6).max(1e6);
 
@@ -33,6 +37,7 @@ async function manageable(ctx: OrganizationContext, id: string) {
   const [board] = await ctx.db
     .select({
       id: whiteboards.id,
+      title: whiteboards.title,
       createdByMemberId: whiteboards.createdByMemberId,
     })
     .from(whiteboards)
@@ -64,7 +69,10 @@ async function manageable(ctx: OrganizationContext, id: string) {
 }
 
 export const whiteboardRouter = router({
-  list: procedure("whiteboards.view").query(async ({ ctx }) => {
+  list: procedure("whiteboards.view", undefined, [
+    "whiteboards.delete_own",
+    "whiteboards.delete_any",
+  ]).query(async ({ ctx }) => {
     const memberId = await currentMemberId(ctx);
     const any = await ctx.permissions.can("whiteboards.delete_any");
     const own = await ctx.permissions.can("whiteboards.delete_own");
@@ -120,19 +128,29 @@ export const whiteboardRouter = router({
       };
     }),
 
-  create: procedure("whiteboards.edit")
+  create: procedure("whiteboards.edit", ["whiteboard.created"])
     .input(z.object({ title }))
     .mutation(async ({ ctx, input }) => {
-      const [row] = await ctx.db
-        .insert(whiteboards)
-        .values({
-          title: input.title,
-          organizationId: ctx.activeOrganization.id,
-          createdByMemberId: await currentMemberId(ctx),
-        })
-        .returning({ id: whiteboards.id });
+      const memberId = await currentMemberId(ctx);
+      const id = await ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(whiteboards)
+          .values({
+            title: input.title,
+            organizationId: ctx.activeOrganization.id,
+            createdByMemberId: memberId,
+          })
+          .returning({ id: whiteboards.id });
 
-      return { id: row!.id };
+        await ctx.audit.record(tx, {
+          action: "whiteboard.created",
+          target: { id: row!.id, label: input.title },
+        });
+
+        return row!.id;
+      });
+
+      return { id };
     }),
 
   /** Saves the drawing. Anyone who can edit boards may draw on any board. */
@@ -157,25 +175,45 @@ export const whiteboardRouter = router({
       return { savedAt: new Date().toISOString() };
     }),
 
-  rename: procedure("whiteboards.view")
+  rename: procedure(
+    "whiteboards.view",
+    ["whiteboard.renamed"],
+    ["whiteboards.delete_own", "whiteboards.delete_any"],
+  )
     .input(z.object({ id: uuid, title }))
     .mutation(async ({ ctx, input }) => {
       const board = await manageable(ctx, input.id);
 
-      await ctx.db
-        .update(whiteboards)
-        .set({ title: input.title, updatedAt: new Date() })
-        .where(eq(whiteboards.id, board.id));
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(whiteboards)
+          .set({ title: input.title, updatedAt: new Date() })
+          .where(eq(whiteboards.id, board.id));
+        await ctx.audit.record(tx, {
+          action: "whiteboard.renamed",
+          target: { id: board.id, label: input.title },
+        });
+      });
 
       return { id: board.id };
     }),
 
-  remove: procedure("whiteboards.view")
+  remove: procedure(
+    "whiteboards.view",
+    ["whiteboard.deleted"],
+    ["whiteboards.delete_own", "whiteboards.delete_any"],
+  )
     .input(z.object({ id: uuid }))
     .mutation(async ({ ctx, input }) => {
       const board = await manageable(ctx, input.id);
 
-      await ctx.db.delete(whiteboards).where(eq(whiteboards.id, board.id));
+      await ctx.db.transaction(async (tx) => {
+        await tx.delete(whiteboards).where(eq(whiteboards.id, board.id));
+        await ctx.audit.record(tx, {
+          action: "whiteboard.deleted",
+          target: { id: board.id, label: board.title },
+        });
+      });
 
       return { id: board.id };
     }),

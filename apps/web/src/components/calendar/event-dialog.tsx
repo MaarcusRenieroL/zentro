@@ -18,15 +18,12 @@ import { Textarea } from "@zentro/ui/shadcn/textarea";
 import { addDays, fromInput, toInput } from "./dates";
 
 export const colors = {
-  blue: "bg-blue-500/15 text-blue-800 border-blue-500/40 dark:text-blue-200",
-  green:
-    "bg-green-500/15 text-green-800 border-green-500/40 dark:text-green-200",
-  amber:
-    "bg-amber-500/20 text-amber-900 border-amber-500/50 dark:text-amber-200",
-  red: "bg-red-500/15 text-red-800 border-red-500/40 dark:text-red-200",
-  violet:
-    "bg-violet-500/15 text-violet-800 border-violet-500/40 dark:text-violet-200",
-  gray: "bg-gray-500/15 text-gray-800 border-gray-500/40 dark:text-gray-200",
+  blue: "border-line bg-tint-projects text-ink",
+  green: "border-line bg-tint-teams text-ink",
+  amber: "border-line bg-tint-sun text-ink",
+  red: "border-line bg-danger-subtle text-ink",
+  violet: "border-line bg-tint-lilac text-ink",
+  gray: "border-line bg-tint-slate text-ink",
 } as const;
 
 export type EventColor = keyof typeof colors;
@@ -247,7 +244,7 @@ function EventForm({
             aria-label={name}
             aria-pressed={color === name}
             onClick={() => setColor(name)}
-            className={`size-6 rounded-full border-2 ${colors[name]} ${
+            className={`size-6 rounded-full border-2 border-line-strong ${colors[name]} ${
               color === name ? "ring-2 ring-offset-2 ring-ink" : ""
             }`}
           />
@@ -255,7 +252,7 @@ function EventForm({
       </fieldset>
 
       {error ? (
-        <p role="alert" className="text-sm text-red-700 dark:text-red-300">
+        <p role="alert" className="text-sm text-danger-text">
           {error}
         </p>
       ) : null}

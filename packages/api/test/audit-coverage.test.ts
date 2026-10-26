@@ -21,6 +21,8 @@ const mutations = procedures.filter(({ def }) => def.type === "mutation");
 const recordsNothing: Record<string, string> = {
   "files.register":
     "Records an upload; sharing it is a message in a conversation.",
+  "files.libraryRegister":
+    "Records an upload to the library; deleting and renaming are audited.",
   "chat.send":
     "Messages are the conversation itself; channel and membership changes are audited.",
   "chat.edit": "Editing your own message; the message shows it was edited.",
@@ -72,6 +74,12 @@ const recordsNothing: Record<string, string> = {
   "member.toggleOutOfOffice": "Personal out-of-office status toggle.",
   "task.createSubtask": "Creates child task record.",
   "task.logTime": "Personal time tracking entry.",
+  "whiteboard.save": "Autosave of the drawing; it would flood the audit log.",
+  "mail.saveDraft": "A personal unsent draft.",
+  "mail.send":
+    "Private messages are not logged, so administrators never read them.",
+  "mail.update": "Personal read, star and trash marks on your own mail.",
+  "mail.purge": "Removes a message from your own mailbox only.",
 };
 
 describe("audit coverage sweep", () => {

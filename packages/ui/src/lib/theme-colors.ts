@@ -21,3 +21,14 @@ export const brandColors = {
   paper: themeColors.light,
   ink: "#17161c",
 } as const;
+
+// Pen colors for whiteboards. They are saved with the drawing, so they stay
+// the same in both color schemes ("ink" follows the scheme instead).
+export const boardColors = [
+  "ink",
+  "#dc2626",
+  "#d97706",
+  "#16a34a",
+  "#2563eb",
+  "#7c3aed",
+] as const;

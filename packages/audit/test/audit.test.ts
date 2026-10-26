@@ -30,6 +30,9 @@ const targetTypes = [
   "session",
   "user",
   "audit",
+  "file",
+  "event",
+  "board",
 ];
 
 describe("event catalog", () => {

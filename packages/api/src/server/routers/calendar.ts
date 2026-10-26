@@ -16,8 +16,12 @@ export const eventColors = [
   "gray",
 ] as const;
 
-const procedure = (permission: string) =>
-  permissionProcedure(permission, undefined, { module: "calendar" });
+const procedure = (permission: string, audit?: string[], also?: string[]) =>
+  permissionProcedure(permission, undefined, {
+    module: "calendar",
+    audit,
+    also,
+  });
 
 const eventInput = z
   .object({
@@ -69,7 +73,10 @@ async function manageable(ctx: OrganizationContext, id: string) {
 
 export const calendarRouter = router({
   /** Events that overlap the given range. */
-  list: procedure("calendar.view")
+  list: procedure("calendar.view", undefined, [
+    "calendar.manage_own",
+    "calendar.manage_any",
+  ])
     .input(z.object({ from: z.coerce.date(), to: z.coerce.date() }))
     .query(async ({ ctx, input }) => {
       const memberId = await currentMemberId(ctx);
@@ -108,43 +115,70 @@ export const calendarRouter = router({
       }));
     }),
 
-  create: procedure("calendar.create")
+  create: procedure("calendar.create", ["calendar.event_created"])
     .input(eventInput)
     .mutation(async ({ ctx, input }) => {
       const memberId = await currentMemberId(ctx);
-      const [row] = await ctx.db
-        .insert(calendarEvents)
-        .values({
-          ...input,
-          organizationId: ctx.activeOrganization.id,
-          createdByMemberId: memberId,
-        })
-        .returning({ id: calendarEvents.id });
+      const id = await ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(calendarEvents)
+          .values({
+            ...input,
+            organizationId: ctx.activeOrganization.id,
+            createdByMemberId: memberId,
+          })
+          .returning({ id: calendarEvents.id });
 
-      return { id: row!.id };
+        await ctx.audit.record(tx, {
+          action: "calendar.event_created",
+          target: { id: row!.id, label: input.title },
+        });
+
+        return row!.id;
+      });
+
+      return { id };
     }),
 
-  update: procedure("calendar.view")
+  update: procedure(
+    "calendar.view",
+    ["calendar.event_updated"],
+    ["calendar.manage_own", "calendar.manage_any"],
+  )
     .input(z.object({ id: uuid, data: eventInput }))
     .mutation(async ({ ctx, input }) => {
       const event = await manageable(ctx, input.id);
 
-      await ctx.db
-        .update(calendarEvents)
-        .set({ ...input.data, updatedAt: new Date() })
-        .where(eq(calendarEvents.id, event.id));
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(calendarEvents)
+          .set({ ...input.data, updatedAt: new Date() })
+          .where(eq(calendarEvents.id, event.id));
+        await ctx.audit.record(tx, {
+          action: "calendar.event_updated",
+          target: { id: event.id, label: input.data.title },
+        });
+      });
 
       return { id: event.id };
     }),
 
-  remove: procedure("calendar.view")
+  remove: procedure(
+    "calendar.view",
+    ["calendar.event_deleted"],
+    ["calendar.manage_own", "calendar.manage_any"],
+  )
     .input(z.object({ id: uuid }))
     .mutation(async ({ ctx, input }) => {
       const event = await manageable(ctx, input.id);
 
-      await ctx.db
-        .delete(calendarEvents)
-        .where(eq(calendarEvents.id, event.id));
+      await ctx.db.transaction(async (tx) => {
+        await tx.delete(calendarEvents).where(eq(calendarEvents.id, event.id));
+        await ctx.audit.record(tx, {
+          action: "calendar.event_deleted",
+          target: { id: event.id, label: event.title },
+        });
+      });
 
       return { id: event.id };
     }),

@@ -142,12 +142,16 @@ describe("modules.list", () => {
     );
 
     expect(Object.keys(byId).sort()).toEqual([
+      "calendar",
       "chat",
       "dashboard",
       "docs",
+      "files",
+      "mail",
       "projects",
       "settings",
       "tasks",
+      "whiteboards",
     ]);
     expect(byId.dashboard).toMatchObject({
       core: true,

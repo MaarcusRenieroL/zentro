@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 
 import { useTrpcClient } from "@zentro/api/react";
+
+import { usePageCrumb } from "~/src/components/shell/breadcrumb-context";
+import { boardColors } from "@zentro/ui/lib/theme-colors";
 import { Button } from "@zentro/ui/shadcn/button";
 
 type Kind = "pen" | "rect" | "ellipse" | "line" | "arrow" | "text" | "sticky";
@@ -43,7 +46,7 @@ type El = {
 type Tool = "select" | "hand" | Kind;
 type View = { x: number; y: number; k: number };
 
-const palette = ["ink", "#dc2626", "#d97706", "#16a34a", "#2563eb", "#7c3aed"];
+const palette = boardColors;
 
 const tools: { id: Tool; label: string; icon: typeof PencilIcon }[] = [
   { id: "select", label: "Select", icon: MousePointer2Icon },
@@ -212,13 +215,14 @@ export function BoardEditor({ id }: { id: string }) {
   const trpc = useTrpcClient();
   const svgRef = useRef<SVGSVGElement>(null);
   const [title, setTitle] = useState("");
+  usePageCrumb(`/whiteboards/${id}`, title);
   const [canEdit, setCanEdit] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "missing">(
     "loading",
   );
   const [elements, setElements] = useState<El[]>([]);
   const [tool, setTool] = useState<Tool>("select");
-  const [color, setColor] = useState(palette[0]!);
+  const [color, setColor] = useState<string>(palette[0]);
   const [view, setView] = useState<View>({ x: 0, y: 0, k: 1 });
   const [selected, setSelected] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -619,7 +623,7 @@ export function BoardEditor({ id }: { id: string }) {
           <div
             role="toolbar"
             aria-label="Drawing tools"
-            className="absolute top-3 left-1/2 z-10 flex max-w-[calc(100%-1rem)] -translate-x-1/2 flex-wrap items-center gap-1 rounded-xl border border-line bg-canvas p-1 shadow-sm"
+            className="absolute top-3 left-1/2 z-10 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto [&>*]:shrink-0 rounded-xl border border-line bg-canvas p-1 shadow-sm"
           >
             {tools.map(({ id: toolId, label, icon: Icon }) => (
               <Button
@@ -691,7 +695,7 @@ export function BoardEditor({ id }: { id: string }) {
           style={{
             cursor,
             backgroundImage:
-              "radial-gradient(var(--color-line, #d4d4d8) 1px, transparent 1px)",
+              "radial-gradient(var(--color-line) 1px, transparent 1px)",
             backgroundSize: `${24 * view.k}px ${24 * view.k}px`,
             backgroundPosition: `${view.x}px ${view.y}px`,
           }}
@@ -753,7 +757,7 @@ export function BoardEditor({ id }: { id: string }) {
                 width={box.w + 12}
                 height={box.h + 12}
                 fill="none"
-                stroke="#2563eb"
+                stroke="var(--color-accent)"
                 strokeDasharray="5 4"
                 pointerEvents="none"
               />
