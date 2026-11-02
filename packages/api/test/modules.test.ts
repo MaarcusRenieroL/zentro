@@ -142,6 +142,7 @@ describe("modules.list", () => {
     );
 
     expect(Object.keys(byId).sort()).toEqual([
+      "admin",
       "calendar",
       "chat",
       "dashboard",

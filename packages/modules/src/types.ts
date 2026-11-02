@@ -11,7 +11,8 @@ export type ModuleId =
   | "mail"
   | "tickets"
   | "hr"
-  | "payroll";
+  | "payroll"
+  | "admin";
 
 export type ModuleNavLink = {
   label: string;

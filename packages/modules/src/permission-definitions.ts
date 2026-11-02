@@ -704,3 +704,13 @@ export const payrollPermissions: PermissionDefinition[] = [
     org,
   ),
 ];
+
+export const adminPermissions: PermissionDefinition[] = [
+  definePermission(
+    "admin.view",
+    "Open administration",
+    "See usage, security and setup status for the whole organization.",
+    "Administration",
+    org,
+  ),
+];

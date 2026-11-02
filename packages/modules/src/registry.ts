@@ -1,4 +1,5 @@
 import {
+  adminPermissions,
   calendarPermissions,
   chatPermissions,
   docsPermissions,
@@ -497,6 +498,33 @@ export const moduleRegistry: readonly ModuleManifest[] = [
             href: "/payroll",
             permission: "payroll.payslips.view",
             icon: "Wallet",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "admin",
+    name: "Administration",
+    description: "One console for usage, security and setup.",
+    icon: "ShieldCheck",
+    basePath: "/admin",
+    core: false,
+    defaultEnabled: true,
+    dependsOn: [],
+    permissionNamespaces: ["admin"],
+    permissions: adminPermissions,
+    nav: [
+      {
+        id: "organization",
+        label: "Organization",
+        order: 30,
+        items: [
+          {
+            label: "Administration",
+            href: "/admin",
+            permission: "admin.view",
+            icon: "ShieldCheck",
           },
         ],
       },

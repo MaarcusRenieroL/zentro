@@ -2,6 +2,7 @@ import { router, publicProcedure } from "./trpc";
 import { organizationRouter } from "./routers/organization";
 import { permissionsRouter } from "./routers/permissions";
 import { userRouter } from "./routers/user";
+import { adminRouter } from "./routers/admin";
 import { hrRouter } from "./routers/hr";
 import { payrollRouter } from "./routers/payroll";
 import { ticketsRouter } from "./routers/tickets";
@@ -38,6 +39,7 @@ export const appRouter = router({
     };
   }),
   activity: activityRouter,
+  admin: adminRouter,
   hr: hrRouter,
   payroll: payrollRouter,
   tickets: ticketsRouter,

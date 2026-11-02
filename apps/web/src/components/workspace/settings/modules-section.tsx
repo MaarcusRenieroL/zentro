@@ -25,6 +25,7 @@ const tints: Record<string, string> = {
   tickets: "bg-tint-lilac",
   hr: "bg-tint-teams",
   payroll: "bg-tint-slate",
+  admin: "bg-tint-audit",
 };
 
 // One line on every card about what it needs or what needs it.
