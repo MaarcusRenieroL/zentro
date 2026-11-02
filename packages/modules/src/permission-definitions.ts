@@ -649,3 +649,27 @@ export const ticketsPermissions: PermissionDefinition[] = [
     org,
   ),
 ];
+
+export const hrPermissions: PermissionDefinition[] = [
+  definePermission(
+    "hr.view",
+    "View the directory",
+    "See the people directory (name, title, team and location).",
+    "HR",
+    org,
+  ),
+  definePermission(
+    "hr.leave.request",
+    "Request time off",
+    "Ask for leave and cancel the user's own requests.",
+    "HR",
+    org,
+  ),
+  definePermission(
+    "hr.manage",
+    "Manage people",
+    "Add and edit employee records, and approve or reject leave.",
+    "HR",
+    org,
+  ),
+];

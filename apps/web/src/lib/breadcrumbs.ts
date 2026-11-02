@@ -9,6 +9,8 @@ const labels: Record<string, string> = {
   calendar: "Calendar",
   mail: "Mail",
   tickets: "Tickets",
+  hr: "HR",
+  leave: "Time off",
   whiteboards: "Whiteboards",
   chat: "Chat",
   projects: "Projects",

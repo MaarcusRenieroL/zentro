@@ -76,6 +76,8 @@ const recordsNothing: Record<string, string> = {
   "task.logTime": "Personal time tracking entry.",
   "whiteboard.save": "Autosave of the drawing; it would flood the audit log.",
   "tickets.reply": "A reply is part of the ticket thread, which shows it.",
+  "hr.leaveRequest": "A personal request; the decision on it is audited.",
+  "hr.leaveCancel": "Withdraws the caller's own pending request.",
   "mail.saveDraft": "A personal unsent draft.",
   "mail.send":
     "Private messages are not logged, so administrators never read them.",

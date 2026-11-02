@@ -18,7 +18,9 @@ export type AuditTargetType =
   | "file"
   | "event"
   | "board"
-  | "ticket";
+  | "ticket"
+  | "employee"
+  | "leave";
 
 /** Where an event belongs: a module id, or the platform itself. */
 export type AuditModule =
@@ -32,6 +34,7 @@ export type AuditModule =
   | "calendar"
   | "whiteboards"
   | "tickets"
+  | "hr"
   | "dashboard";
 
 export type AuditEventDefinition = {

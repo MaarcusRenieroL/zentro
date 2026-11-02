@@ -785,6 +785,42 @@ export const auditCatalog: readonly AuditEventDefinition[] = [
     "deleted the ticket {target}",
     "A ticket was removed.",
   ),
+  event(
+    "employee.added",
+    "Employee added",
+    "hr",
+    "employee",
+    true,
+    "added {target} to the directory",
+    "An employee record was created.",
+  ),
+  event(
+    "employee.updated",
+    "Employee updated",
+    "hr",
+    "employee",
+    true,
+    "changed the record of {target}",
+    "An employee record was changed.",
+  ),
+  event(
+    "employee.removed",
+    "Employee removed",
+    "hr",
+    "employee",
+    true,
+    "removed {target} from the directory",
+    "An employee record was deleted.",
+  ),
+  event(
+    "leave.decided",
+    "Leave decided",
+    "hr",
+    "leave",
+    true,
+    "decided the leave request of {target}",
+    "A leave request was approved or rejected.",
+  ),
 ] as const;
 
 const index = new Map(auditCatalog.map((entry) => [entry.key, entry]));

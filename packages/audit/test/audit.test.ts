@@ -34,6 +34,8 @@ const targetTypes = [
   "event",
   "board",
   "ticket",
+  "employee",
+  "leave",
 ];
 
 describe("event catalog", () => {

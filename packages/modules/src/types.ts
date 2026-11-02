@@ -9,7 +9,8 @@ export type ModuleId =
   | "calendar"
   | "whiteboards"
   | "mail"
-  | "tickets";
+  | "tickets"
+  | "hr";
 
 export type ModuleNavLink = {
   label: string;

@@ -69,6 +69,8 @@ const ticketWork = [
   "tickets.update",
 ];
 
+const peopleWork = ["hr.view", "hr.leave.request"];
+
 const docWork = [
   "docs.view",
   "docs.create",
@@ -119,6 +121,7 @@ export function getSystemRoleDefinitions(): SystemRoleDefinition[] {
         ...boardWork,
         ...mailWork,
         ...ticketWork,
+        ...peopleWork,
         "modules.view",
       ],
       editable: true,

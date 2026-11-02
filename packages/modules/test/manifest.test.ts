@@ -75,6 +75,7 @@ describe("manifest sanity", () => {
     expect(all.map((section) => section.id)).toEqual([
       "workspace",
       "work",
+      "people",
       "organization",
       "settings",
     ]);

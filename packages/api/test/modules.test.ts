@@ -147,6 +147,7 @@ describe("modules.list", () => {
       "dashboard",
       "docs",
       "files",
+      "hr",
       "mail",
       "projects",
       "settings",

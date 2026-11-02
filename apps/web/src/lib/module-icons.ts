@@ -27,6 +27,7 @@ import {
   StarIcon,
   Trash2Icon,
   UserPlusIcon,
+  UserRoundIcon,
   UsersIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -57,6 +58,7 @@ const moduleIcons: Record<string, LucideIcon> = {
   Star: StarIcon,
   Trash2: Trash2Icon,
   UserPlus: UserPlusIcon,
+  UserRound: UserRoundIcon,
   Users: UsersIcon,
 };
 
@@ -76,6 +78,7 @@ const shellIcons: Record<string, LucideIcon> = {
   whiteboards: PenToolIcon,
   mail: InboxIcon,
   tickets: LifeBuoyIcon,
+  hr: UserRoundIcon,
   team: UsersIcon,
   overview: ChartNoAxesColumnIcon,
   settings: SettingsIcon,
