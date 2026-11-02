@@ -22,6 +22,7 @@ const tints: Record<string, string> = {
   projects: "bg-tint-projects",
   tasks: "bg-tint-tasks",
   docs: "bg-tint-docs",
+  tickets: "bg-tint-lilac",
 };
 
 // One line on every card about what it needs or what needs it.
@@ -64,11 +65,6 @@ const planned: Array<{ name: string; description: string; tint: TileTint }> = [
     name: "Forms",
     description: "Collect requests that turn into tasks.",
     tint: "sun",
-  },
-  {
-    name: "Tickets",
-    description: "Support requests linked to the tasks that fix them.",
-    tint: "lilac",
   },
   {
     name: "HR",

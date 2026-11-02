@@ -611,3 +611,41 @@ export const mailPermissions: PermissionDefinition[] = [
     org,
   ),
 ];
+
+export const ticketsPermissions: PermissionDefinition[] = [
+  definePermission(
+    "tickets.view",
+    "View tickets",
+    "Open the support queue and read tickets.",
+    "Tickets",
+    org,
+  ),
+  definePermission(
+    "tickets.create",
+    "Create tickets",
+    "Log a new support request.",
+    "Tickets",
+    org,
+  ),
+  definePermission(
+    "tickets.reply",
+    "Reply to tickets",
+    "Answer the requester and leave internal notes.",
+    "Tickets",
+    org,
+  ),
+  definePermission(
+    "tickets.update",
+    "Update tickets",
+    "Change status, priority, assignee and the linked task.",
+    "Tickets",
+    org,
+  ),
+  definePermission(
+    "tickets.delete",
+    "Delete tickets",
+    "Remove a ticket and its thread.",
+    "Tickets",
+    org,
+  ),
+];

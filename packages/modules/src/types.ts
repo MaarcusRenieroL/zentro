@@ -8,7 +8,8 @@ export type ModuleId =
   | "files"
   | "calendar"
   | "whiteboards"
-  | "mail";
+  | "mail"
+  | "tickets";
 
 export type ModuleNavLink = {
   label: string;

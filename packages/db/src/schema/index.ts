@@ -18,3 +18,4 @@ export * from "./file";
 export * from "./calendar";
 export * from "./whiteboard";
 export * from "./mail";
+export * from "./ticket";

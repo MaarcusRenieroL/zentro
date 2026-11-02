@@ -8,6 +8,7 @@ const labels: Record<string, string> = {
   files: "Files",
   calendar: "Calendar",
   mail: "Mail",
+  tickets: "Tickets",
   whiteboards: "Whiteboards",
   chat: "Chat",
   projects: "Projects",

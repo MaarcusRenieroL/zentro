@@ -33,6 +33,7 @@ const targetTypes = [
   "file",
   "event",
   "board",
+  "ticket",
 ];
 
 describe("event catalog", () => {

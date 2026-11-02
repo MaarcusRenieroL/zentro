@@ -62,6 +62,13 @@ const boardWork = [
 
 const mailWork = ["mail.view", "mail.send"];
 
+const ticketWork = [
+  "tickets.view",
+  "tickets.create",
+  "tickets.reply",
+  "tickets.update",
+];
+
 const docWork = [
   "docs.view",
   "docs.create",
@@ -111,6 +118,7 @@ export function getSystemRoleDefinitions(): SystemRoleDefinition[] {
         ...calendarWork,
         ...boardWork,
         ...mailWork,
+        ...ticketWork,
         "modules.view",
       ],
       editable: true,

@@ -17,7 +17,8 @@ export type AuditTargetType =
   | "channel"
   | "file"
   | "event"
-  | "board";
+  | "board"
+  | "ticket";
 
 /** Where an event belongs: a module id, or the platform itself. */
 export type AuditModule =
@@ -30,6 +31,7 @@ export type AuditModule =
   | "files"
   | "calendar"
   | "whiteboards"
+  | "tickets"
   | "dashboard";
 
 export type AuditEventDefinition = {

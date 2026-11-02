@@ -151,6 +151,7 @@ describe("modules.list", () => {
       "projects",
       "settings",
       "tasks",
+      "tickets",
       "whiteboards",
     ]);
     expect(byId.dashboard).toMatchObject({

@@ -757,6 +757,34 @@ export const auditCatalog: readonly AuditEventDefinition[] = [
     "deleted the whiteboard {target}",
     "A whiteboard was deleted.",
   ),
+  // Tickets, HR and payroll.
+  event(
+    "ticket.created",
+    "Ticket created",
+    "tickets",
+    "ticket",
+    true,
+    "created the ticket {target}",
+    "A support ticket was logged.",
+  ),
+  event(
+    "ticket.updated",
+    "Ticket updated",
+    "tickets",
+    "ticket",
+    true,
+    "changed the ticket {target}",
+    "A ticket's status, priority, assignee or linked task was changed.",
+  ),
+  event(
+    "ticket.deleted",
+    "Ticket deleted",
+    "tickets",
+    "ticket",
+    true,
+    "deleted the ticket {target}",
+    "A ticket was removed.",
+  ),
 ] as const;
 
 const index = new Map(auditCatalog.map((entry) => [entry.key, entry]));
