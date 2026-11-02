@@ -29,6 +29,7 @@ import {
   UserPlusIcon,
   UserRoundIcon,
   UsersIcon,
+  WalletIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -60,6 +61,7 @@ const moduleIcons: Record<string, LucideIcon> = {
   UserPlus: UserPlusIcon,
   UserRound: UserRoundIcon,
   Users: UsersIcon,
+  Wallet: WalletIcon,
 };
 
 export function getModuleIcon(name: string): LucideIcon {
@@ -79,6 +81,7 @@ const shellIcons: Record<string, LucideIcon> = {
   mail: InboxIcon,
   tickets: LifeBuoyIcon,
   hr: UserRoundIcon,
+  payroll: WalletIcon,
   team: UsersIcon,
   overview: ChartNoAxesColumnIcon,
   settings: SettingsIcon,

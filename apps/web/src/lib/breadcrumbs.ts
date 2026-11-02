@@ -10,6 +10,7 @@ const labels: Record<string, string> = {
   mail: "Mail",
   tickets: "Tickets",
   hr: "HR",
+  payroll: "Payroll",
   leave: "Time off",
   whiteboards: "Whiteboards",
   chat: "Chat",

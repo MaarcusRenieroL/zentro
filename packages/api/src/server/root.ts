@@ -3,6 +3,7 @@ import { organizationRouter } from "./routers/organization";
 import { permissionsRouter } from "./routers/permissions";
 import { userRouter } from "./routers/user";
 import { hrRouter } from "./routers/hr";
+import { payrollRouter } from "./routers/payroll";
 import { ticketsRouter } from "./routers/tickets";
 import { activityRouter } from "./routers/activity";
 import { auditRouter } from "./routers/audit";
@@ -38,6 +39,7 @@ export const appRouter = router({
   }),
   activity: activityRouter,
   hr: hrRouter,
+  payroll: payrollRouter,
   tickets: ticketsRouter,
   audit: auditRouter,
   automation: automationRouter,

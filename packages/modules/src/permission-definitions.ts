@@ -673,3 +673,34 @@ export const hrPermissions: PermissionDefinition[] = [
     org,
   ),
 ];
+
+export const payrollPermissions: PermissionDefinition[] = [
+  definePermission(
+    "payroll.payslips.view",
+    "View own payslips",
+    "See the user's own payslips in finished pay runs.",
+    "Payroll",
+    org,
+  ),
+  definePermission(
+    "payroll.view",
+    "View payroll",
+    "See every pay run, payslip and salary.",
+    "Payroll",
+    org,
+  ),
+  definePermission(
+    "payroll.manage",
+    "Manage payroll",
+    "Set salaries, create draft pay runs and add bonuses.",
+    "Payroll",
+    org,
+  ),
+  definePermission(
+    "payroll.approve",
+    "Approve payroll",
+    "Approve a pay run and mark it paid.",
+    "Payroll",
+    org,
+  ),
+];

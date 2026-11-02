@@ -69,7 +69,7 @@ const ticketWork = [
   "tickets.update",
 ];
 
-const peopleWork = ["hr.view", "hr.leave.request"];
+const peopleWork = ["hr.view", "hr.leave.request", "payroll.payslips.view"];
 
 const docWork = [
   "docs.view",

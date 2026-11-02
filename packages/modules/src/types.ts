@@ -10,7 +10,8 @@ export type ModuleId =
   | "whiteboards"
   | "mail"
   | "tickets"
-  | "hr";
+  | "hr"
+  | "payroll";
 
 export type ModuleNavLink = {
   label: string;

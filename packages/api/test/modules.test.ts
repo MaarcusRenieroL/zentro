@@ -149,6 +149,7 @@ describe("modules.list", () => {
       "files",
       "hr",
       "mail",
+      "payroll",
       "projects",
       "settings",
       "tasks",
