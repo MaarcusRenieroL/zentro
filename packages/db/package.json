@@ -18,15 +18,15 @@
     "platform-admin": "tsx src/scripts/platform-admin.ts"
   },
   "dependencies": {
-    "@vercel/functions": "^3.10.1",
-    "drizzle-orm": "^0.45.2",
-    "pg": "^8.20.0"
+    "@vercel/functions": "^3.11.3",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.20.0",
+    "@types/pg": "^8.23.1",
     "@zentro/typescript-config": "workspace:*",
     "dotenv": "^17.4.2",
-    "drizzle-kit": "^0.31.10",
-    "tsx": "^4.21.0"
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15"
   }
 }
