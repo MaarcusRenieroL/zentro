@@ -12,12 +12,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.6.9",
+    "@better-auth/drizzle-adapter": "^1.7.25",
     "@zentro/db": "workspace:*",
     "@zentro/audit": "workspace:*",
     "@zentro/permissions": "workspace:*",
-    "better-auth": "^1.7.15",
-    "resend": "^6.12.2"
+    "better-auth": "^1.7.25",
+    "resend": "^6.38.1"
   },
   "devDependencies": {
     "@zentro/typescript-config": "workspace:*"

@@ -10,11 +10,11 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "drizzle-orm": "^0.45.2",
-    "pg": "^8.20.0"
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.20.0",
+    "@types/pg": "^8.23.1",
     "@zentro/typescript-config": "workspace:*"
   }
 }

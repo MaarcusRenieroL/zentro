@@ -14,24 +14,24 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.100.11",
-    "@trpc/client": "^11.17.0",
-    "@trpc/server": "^11.17.0",
-    "@trpc/tanstack-react-query": "^11.17.0",
+    "@tanstack/react-query": "^5.107.1",
+    "@trpc/client": "^11.28.3",
+    "@trpc/server": "^11.28.3",
+    "@trpc/tanstack-react-query": "^11.28.3",
     "@zentro/audit": "workspace:*",
     "@zentro/auth": "workspace:*",
     "@zentro/db": "workspace:*",
     "@zentro/modules": "workspace:*",
     "@zentro/permissions": "workspace:*",
     "@zentro/utils": "workspace:*",
-    "better-auth": "^1.7.15",
+    "better-auth": "^1.7.25",
     "superjson": "^2.2.6",
-    "undici": "^8.12.3",
+    "undici": "^8.12.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@zentro/test-utils": "workspace:*",
     "@zentro/typescript-config": "workspace:*",
-    "react": "19.2.4"
+    "react": "19.3.1"
   }
 }
