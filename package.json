@@ -20,7 +20,7 @@
     "@neon/env": "^1.6.2",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "^20.19.26",
+    "@types/node": "^20.19.43",
     "@types/react": "19.2.4",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.1",
